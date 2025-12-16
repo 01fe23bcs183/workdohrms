@@ -1,6 +1,9 @@
 # Demo folder - reference only, not part of project
 demo/
 
+# Composer phar file
+composer.phar
+
 # Environment files
 .env
 .env.local
@@ -9,6 +12,7 @@ demo/
 # Dependency directories
 node_modules/
 vendor/
+hrms/vendor/
 
 # IDE files
 .idea/
@@ -32,3 +36,4 @@ storage/framework/views/*
 
 # Compiled files
 bootstrap/cache/*
+
