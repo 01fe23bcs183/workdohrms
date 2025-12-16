@@ -48,6 +48,12 @@ use App\Http\Controllers\Api\GeneratedLetterController;
 use App\Http\Controllers\Api\AllowedIpAddressController;
 use App\Http\Controllers\Api\SystemConfigurationController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\DataTableController;
+use App\Http\Controllers\Api\DataImportController;
+use App\Http\Controllers\Api\DataExportController;
+use App\Http\Controllers\Api\PerformanceObjectiveController;
+use App\Http\Controllers\Api\AppraisalCycleController;
+use App\Http\Controllers\Api\AppraisalRecordController;
 
 /*
 |--------------------------------------------------------------------------
@@ -233,4 +239,52 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/headcount', [ReportController::class, 'headcountReport']);
     });
     Route::get('/dashboard', [ReportController::class, 'dashboard']);
+
+    // ============================================
+    // PROMPT SET 19: DataTables (Server-Side)
+    // ============================================
+    Route::prefix('datatables')->group(function () {
+        Route::get('/staff-members', [DataTableController::class, 'staffMembers']);
+        Route::get('/attendance', [DataTableController::class, 'attendance']);
+        Route::get('/leave-requests', [DataTableController::class, 'leaveRequests']);
+        Route::get('/payslips', [DataTableController::class, 'payslips']);
+    });
+
+    // ============================================
+    // PROMPT SET 20: Import/Export
+    // ============================================
+    Route::prefix('imports')->group(function () {
+        Route::get('/', [DataImportController::class, 'index']);
+        Route::get('/template', [DataImportController::class, 'template']);
+        Route::post('/staff-members', [DataImportController::class, 'importStaffMembers']);
+        Route::post('/attendance', [DataImportController::class, 'importAttendance']);
+        Route::post('/holidays', [DataImportController::class, 'importHolidays']);
+        Route::get('/{dataImport}', [DataImportController::class, 'show']);
+    });
+    
+    Route::prefix('exports')->group(function () {
+        Route::get('/staff-members', [DataExportController::class, 'exportStaffMembers']);
+        Route::get('/attendance', [DataExportController::class, 'exportAttendance']);
+        Route::get('/leaves', [DataExportController::class, 'exportLeaves']);
+        Route::get('/payroll', [DataExportController::class, 'exportPayroll']);
+    });
+
+    // ============================================
+    // PROMPT SET 21: Performance Management
+    // ============================================
+    Route::apiResource('performance-objectives', PerformanceObjectiveController::class);
+    Route::post('/performance-objectives/{performanceObjective}/progress', [PerformanceObjectiveController::class, 'updateProgress']);
+    Route::post('/performance-objectives/{performanceObjective}/rate', [PerformanceObjectiveController::class, 'rate']);
+
+    // ============================================
+    // PROMPT SET 22: Appraisals
+    // ============================================
+    Route::apiResource('appraisal-cycles', AppraisalCycleController::class);
+    Route::post('/appraisal-cycles/{appraisalCycle}/activate', [AppraisalCycleController::class, 'activate']);
+    Route::post('/appraisal-cycles/{appraisalCycle}/close', [AppraisalCycleController::class, 'close']);
+    Route::apiResource('appraisal-records', AppraisalRecordController::class)->except(['store', 'update', 'destroy']);
+    Route::post('/appraisal-records/{appraisalRecord}/self-review', [AppraisalRecordController::class, 'submitSelfReview']);
+    Route::post('/appraisal-records/{appraisalRecord}/manager-review', [AppraisalRecordController::class, 'submitManagerReview']);
+    Route::get('/my-appraisals', [AppraisalRecordController::class, 'myAppraisals']);
 });
+
