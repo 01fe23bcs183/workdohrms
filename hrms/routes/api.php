@@ -40,6 +40,14 @@ use App\Http\Controllers\Api\TaxSlabController;
 use App\Http\Controllers\Api\TaxExemptionController;
 use App\Http\Controllers\Api\MinimumTaxLimitController;
 use App\Http\Controllers\Api\CompanyEventController;
+use App\Http\Controllers\Api\DocumentTypeController;
+use App\Http\Controllers\Api\OrganizationPolicyController;
+use App\Http\Controllers\Api\OrganizationDocumentController;
+use App\Http\Controllers\Api\LetterTemplateController;
+use App\Http\Controllers\Api\GeneratedLetterController;
+use App\Http\Controllers\Api\AllowedIpAddressController;
+use App\Http\Controllers\Api\SystemConfigurationController;
+use App\Http\Controllers\Api\ReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -183,4 +191,46 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('company-events', CompanyEventController::class);
     Route::post('/company-events/{companyEvent}/rsvp', [CompanyEventController::class, 'rsvp']);
     Route::get('/calendar-data', [CompanyEventController::class, 'calendarData']);
+
+    // ============================================
+    // PROMPT SET 15: Company Policies & Documents
+    // ============================================
+    Route::apiResource('document-types', DocumentTypeController::class);
+    Route::apiResource('organization-policies', OrganizationPolicyController::class);
+    Route::post('/organization-policies/{organizationPolicy}/acknowledge', [OrganizationPolicyController::class, 'acknowledge']);
+    Route::get('/policies-pending', [OrganizationPolicyController::class, 'pending']);
+    Route::apiResource('organization-documents', OrganizationDocumentController::class);
+    Route::get('/organization-documents/{organizationDocument}/download', [OrganizationDocumentController::class, 'download']);
+
+    // ============================================
+    // PROMPT SET 16: Letter Templates
+    // ============================================
+    Route::apiResource('letter-templates', LetterTemplateController::class);
+    Route::get('/letter-placeholders', [LetterTemplateController::class, 'placeholders']);
+    Route::apiResource('generated-letters', GeneratedLetterController::class)->except(['store', 'update']);
+    Route::post('/generated-letters/generate', [GeneratedLetterController::class, 'generate']);
+    Route::get('/generated-letters/{generatedLetter}/preview', [GeneratedLetterController::class, 'preview']);
+
+    // ============================================
+    // PROMPT SET 17: IP Restriction & Settings
+    // ============================================
+    Route::apiResource('allowed-ip-addresses', AllowedIpAddressController::class);
+    Route::get('/check-ip', [AllowedIpAddressController::class, 'check']);
+    Route::get('/system-configurations', [SystemConfigurationController::class, 'index']);
+    Route::post('/system-configurations/get', [SystemConfigurationController::class, 'getValue']);
+    Route::post('/system-configurations/set', [SystemConfigurationController::class, 'setValue']);
+    Route::post('/system-configurations/bulk', [SystemConfigurationController::class, 'bulkUpdate']);
+    Route::get('/system-configurations/category/{category}', [SystemConfigurationController::class, 'getByCategory']);
+    Route::delete('/system-configurations/{systemConfiguration}', [SystemConfigurationController::class, 'destroy']);
+
+    // ============================================
+    // PROMPT SET 18: Reports & Dashboard
+    // ============================================
+    Route::prefix('reports')->group(function () {
+        Route::get('/attendance', [ReportController::class, 'attendanceReport']);
+        Route::get('/leave', [ReportController::class, 'leaveReport']);
+        Route::get('/payroll', [ReportController::class, 'payrollReport']);
+        Route::get('/headcount', [ReportController::class, 'headcountReport']);
+    });
+    Route::get('/dashboard', [ReportController::class, 'dashboard']);
 });
