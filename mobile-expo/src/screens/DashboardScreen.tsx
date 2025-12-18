@@ -30,8 +30,19 @@ export const DashboardScreen: React.FC = () => {
   const fetchDashboard = useCallback(async () => {
     try {
       const response = await dashboardService.getStats();
-      if (response.success) {
-        setDashboardData(response.data);
+      if (response.success && response.data) {
+        // Map nested API response to flat structure for display
+        const data = response.data as any;
+        const employees = data.employees || {};
+        const attendance = data.attendance || {};
+        const leaveRequests = data.leave_requests || {};
+
+        setDashboardData({
+          total_employees: employees.total || 0,
+          present_today: attendance.present || 0,
+          on_leave: employees.on_leave || 0,
+          pending_approvals: leaveRequests.pending || 0,
+        });
       }
     } catch (error) {
       console.error('Error fetching dashboard:', error);

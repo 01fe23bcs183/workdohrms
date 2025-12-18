@@ -129,21 +129,82 @@ class MoreScreen extends ConsumerWidget {
     final isAdmin = user?.role == 'administrator' || user?.role == 'hr_officer';
 
     final modules = [
-      {'name': 'Attendance', 'icon': Icons.access_time, 'route': '/attendance', 'admin': false},
-      {'name': 'Payroll', 'icon': Icons.attach_money, 'route': '/payroll', 'admin': false},
-      {'name': 'Staff Directory', 'icon': Icons.people, 'route': '/staff', 'admin': false},
-      {'name': 'Performance', 'icon': Icons.trending_up, 'route': '/performance', 'admin': false},
-      {'name': 'Training', 'icon': Icons.school, 'route': '/training', 'admin': false},
-      {'name': 'Assets', 'icon': Icons.inventory, 'route': '/assets', 'admin': false},
-      {'name': 'Documents', 'icon': Icons.description, 'route': '/documents', 'admin': false},
-      {'name': 'Company', 'icon': Icons.business, 'route': '/company', 'admin': false},
-      {'name': 'Travel', 'icon': Icons.flight, 'route': '/travel', 'admin': false},
-      {'name': 'Organization', 'icon': Icons.account_tree, 'route': '/organization', 'admin': false},
-      {'name': 'Recruitment', 'icon': Icons.person_add, 'route': '/recruitment', 'admin': true},
-      {'name': 'Settings', 'icon': Icons.settings, 'route': '/settings', 'admin': false},
+      {
+        'name': 'Attendance',
+        'icon': Icons.access_time,
+        'route': '/attendance',
+        'admin': false
+      },
+      {
+        'name': 'Payroll',
+        'icon': Icons.attach_money,
+        'route': '/payroll',
+        'admin': false
+      },
+      {
+        'name': 'Staff Directory',
+        'icon': Icons.people,
+        'route': '/staff',
+        'admin': false
+      },
+      {
+        'name': 'Performance',
+        'icon': Icons.trending_up,
+        'route': '/performance',
+        'admin': false
+      },
+      {
+        'name': 'Training',
+        'icon': Icons.school,
+        'route': '/training',
+        'admin': false
+      },
+      {
+        'name': 'Assets',
+        'icon': Icons.inventory,
+        'route': '/assets',
+        'admin': false
+      },
+      {
+        'name': 'Documents',
+        'icon': Icons.description,
+        'route': '/documents',
+        'admin': false
+      },
+      {
+        'name': 'Company',
+        'icon': Icons.business,
+        'route': '/company',
+        'admin': false
+      },
+      {
+        'name': 'Travel',
+        'icon': Icons.flight,
+        'route': '/travel',
+        'admin': false
+      },
+      {
+        'name': 'Organization',
+        'icon': Icons.account_tree,
+        'route': '/organization',
+        'admin': false
+      },
+      {
+        'name': 'Recruitment',
+        'icon': Icons.person_add,
+        'route': '/recruitment',
+        'admin': true
+      },
+      {
+        'name': 'Settings',
+        'icon': Icons.settings,
+        'route': '/settings',
+        'admin': false
+      },
     ];
 
-    final visibleModules = modules.where((m) => !m['admin'] as bool || isAdmin).toList();
+    final visibleModules =
+        modules.where((m) => !(m['admin'] as bool) || isAdmin).toList();
 
     return Scaffold(
       appBar: AppBar(

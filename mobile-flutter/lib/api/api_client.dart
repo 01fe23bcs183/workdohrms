@@ -7,8 +7,8 @@ class ApiClient {
 
   late Dio _dio;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
-  
-  static const String defaultBaseUrl = 'http://localhost:8000/api';
+
+  static const String defaultBaseUrl = 'http://10.0.2.2:8000/api';
   String _baseUrl = defaultBaseUrl;
 
   ApiClient._internal() {

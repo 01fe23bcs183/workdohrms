@@ -117,8 +117,8 @@ class DemoDataSeeder extends Seeder
                 'base_salary' => 95000,
             ],
             [
-                'name' => 'Employee User',
-                'email' => 'employee@hrms.local',
+                'name' => 'Staff User',
+                'email' => 'staff@hrms.local',
                 'role' => 'staff_member',
                 'staff_code' => 'EMP004',
                 'base_salary' => 55000,

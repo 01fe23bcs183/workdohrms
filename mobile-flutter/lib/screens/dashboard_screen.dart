@@ -26,8 +26,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     try {
       final response = await dashboardService.getStats();
       if (response['success'] == true && mounted) {
+        final data = response['data'] ?? {};
+        // Map nested API response to flat structure for display
+        final employees = data['employees'] ?? {};
+        final attendance = data['attendance'] ?? {};
+        final leaveRequests = data['leave_requests'] ?? {};
+
         setState(() {
-          _dashboardData = response['data'] ?? {};
+          _dashboardData = {
+            'total_employees': employees['total'] ?? 0,
+            'present_today': attendance['present'] ?? 0,
+            'on_leave': employees['on_leave'] ?? 0,
+            'pending_approvals': leaveRequests['pending'] ?? 0,
+          };
           _isLoading = false;
         });
       }
@@ -168,7 +179,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white.withOpacity(0.2),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -197,10 +209,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       children: [
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: (_isClockedIn || _clockLoading) ? null : _handleClockIn,
+                            onPressed: (_isClockedIn || _clockLoading)
+                                ? null
+                                : _handleClockIn,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF22C55E),
-                              disabledBackgroundColor: const Color(0xFF22C55E).withOpacity(0.5),
+                              disabledBackgroundColor:
+                                  const Color(0xFF22C55E).withOpacity(0.5),
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -212,7 +227,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     width: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
                                     ),
                                   )
                                 : const Text(
@@ -228,10 +244,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: (!_isClockedIn || _clockLoading) ? null : _handleClockOut,
+                            onPressed: (!_isClockedIn || _clockLoading)
+                                ? null
+                                : _handleClockOut,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFEF4444),
-                              disabledBackgroundColor: const Color(0xFFEF4444).withOpacity(0.5),
+                              disabledBackgroundColor:
+                                  const Color(0xFFEF4444).withOpacity(0.5),
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -243,7 +262,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     width: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Colors.white),
                                     ),
                                   )
                                 : const Text(
@@ -296,7 +316,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ),
                         _buildStatCard(
                           'Pending Approvals',
-                          _dashboardData['pending_approvals']?.toString() ?? '-',
+                          _dashboardData['pending_approvals']?.toString() ??
+                              '-',
                           const Color(0xFFFCE7F3),
                           const Color(0xFFBE185D),
                         ),
@@ -312,7 +333,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, Color bgColor, Color textColor) {
+  Widget _buildStatCard(
+      String label, String value, Color bgColor, Color textColor) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
