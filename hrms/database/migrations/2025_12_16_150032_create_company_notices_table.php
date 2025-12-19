@@ -35,7 +35,7 @@ return new class extends Migration
             $table->timestamp('read_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['company_notice_id', 'staff_member_id']);
+            $table->unique(['company_notice_id', 'staff_member_id'], 'notice_recipient_unique');
         });
     }
 

@@ -58,7 +58,7 @@ return new class extends Migration
             $table->timestamp('certificate_issued_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['training_session_id', 'staff_member_id']);
+            $table->unique(['training_session_id', 'staff_member_id'], 'training_participant_unique');
         });
     }
 

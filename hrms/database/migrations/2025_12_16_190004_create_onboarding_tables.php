@@ -49,7 +49,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->unique(['employee_onboarding_id', 'onboarding_task_id']);
+            $table->unique(['employee_onboarding_id', 'onboarding_task_id'], 'onboard_task_complete_unique');
         });
     }
 

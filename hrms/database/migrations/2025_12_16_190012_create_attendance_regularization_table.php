@@ -17,7 +17,7 @@ return new class extends Migration
                 $table->date('date');
                 $table->timestamp('original_clock_in')->nullable();
                 $table->timestamp('original_clock_out')->nullable();
-                $table->timestamp('requested_clock_in');
+                $table->timestamp('requested_clock_in')->nullable();
                 $table->timestamp('requested_clock_out')->nullable();
                 $table->text('reason');
                 $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');

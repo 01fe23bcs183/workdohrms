@@ -36,7 +36,7 @@ return new class extends Migration
             $table->string('ip_address', 45)->nullable();
             $table->timestamps();
 
-            $table->unique(['organization_policy_id', 'staff_member_id']);
+            $table->unique(['organization_policy_id', 'staff_member_id'], 'policy_ack_unique');
         });
     }
 
