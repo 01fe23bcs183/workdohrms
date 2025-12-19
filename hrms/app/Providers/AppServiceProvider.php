@@ -22,12 +22,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Scramble API docs - requires dedoc/scramble package
-        // Scramble::configure()
-        //     ->withDocumentTransformers(function (OpenApi $openApi) {
-        //         $openApi->secure(
-        //             SecurityScheme::http('bearer', 'JWT')
-        //         );
-        //     });
+        // Scramble API docs
+        Scramble::configure()
+            ->withDocumentTransformers(function (OpenApi $openApi) {
+                $openApi->secure(
+                    SecurityScheme::http('bearer', 'JWT')
+                );
+            });
     }
 }
