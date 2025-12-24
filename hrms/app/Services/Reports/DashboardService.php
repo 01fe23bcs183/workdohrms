@@ -8,6 +8,10 @@ use App\Models\SalarySlip;
 use App\Models\StaffMember;
 use App\Models\TimeOffRequest;
 use App\Models\WorkLog;
+use App\Services\Attendance\AttendanceService;
+use App\Services\Leave\LeaveService;
+use App\Services\Payroll\PayrollService;
+use App\Services\Staff\StaffMemberService;
 use Carbon\Carbon;
 
 /**
