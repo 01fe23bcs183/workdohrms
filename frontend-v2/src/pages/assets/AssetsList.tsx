@@ -50,21 +50,41 @@ export default function AssetsList() {
     fetchAssets();
   }, [page]);
 
-  const fetchAssets = async () => {
-    setIsLoading(true);
-    try {
-      const params: Record<string, unknown> = { page };
-      if (search) params.search = search;
+    const fetchAssets = async () => {
+      setIsLoading(true);
+      try {
+        const params: Record<string, unknown> = { page };
+        if (search) params.search = search;
       
-      const response = await assetService.getAll(params);
-      setAssets(response.data.data || []);
-      setMeta(response.data.meta);
-    } catch (error) {
-      console.error('Failed to fetch assets:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        const response = await assetService.getAll(params);
+        // Handle paginated response: response.data.data is the paginator object
+        // The actual array is in response.data.data.data for paginated responses
+        const payload = response.data.data;
+        if (Array.isArray(payload)) {
+          // Non-paginated response (when paginate=false)
+          setAssets(payload);
+          setMeta(null);
+        } else if (payload && Array.isArray(payload.data)) {
+          // Paginated response - extract the array and meta from paginator
+          setAssets(payload.data);
+          setMeta({
+            current_page: payload.current_page,
+            last_page: payload.last_page,
+            per_page: payload.per_page,
+            total: payload.total,
+          });
+        } else {
+          // Fallback to empty array if response is unexpected
+          setAssets([]);
+          setMeta(null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch assets:', error);
+        setAssets([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
   const handleSearch = () => {
     setPage(1);
