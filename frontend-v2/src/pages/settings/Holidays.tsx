@@ -57,6 +57,7 @@ export default function Holidays() {
     setIsLoading(true);
     try {
       const response = await settingsService.getHolidays();
+      debugger;
       setHolidays(response.data.data.data|| []);
     } catch (error) {
       console.error('Failed to fetch holidays:', error);
