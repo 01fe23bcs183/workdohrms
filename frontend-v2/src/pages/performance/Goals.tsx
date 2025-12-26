@@ -2,8 +2,27 @@ import { useState, useEffect } from 'react';
 import { performanceService } from '../../services/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
 import { Badge } from '../../components/ui/badge';
 import { Progress } from '../../components/ui/progress';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../../components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Plus, Target, ChevronLeft, ChevronRight, MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-react';
 import {
@@ -36,6 +55,17 @@ export default function Goals() {
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [viewingGoal, setViewingGoal] = useState<Goal | null>(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    target_date: '',
+    priority: 'medium',
+    status: 'not_started',
+  });
 
   useEffect(() => {
     fetchGoals();
@@ -52,6 +82,60 @@ export default function Goals() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingGoal) {
+        await performanceService.updateGoal(editingGoal.id, formData);
+      } else {
+        await performanceService.createGoal(formData);
+      }
+      setIsDialogOpen(false);
+      setEditingGoal(null);
+      resetForm();
+      fetchGoals();
+    } catch (error) {
+      console.error('Failed to save goal:', error);
+    }
+  };
+
+  const handleEdit = (goal: Goal) => {
+    setEditingGoal(goal);
+    setFormData({
+      title: goal.title,
+      description: goal.description || '',
+      target_date: goal.target_date || '',
+      priority: goal.priority || 'medium',
+      status: goal.status || 'not_started',
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleView = (goal: Goal) => {
+    setViewingGoal(goal);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this goal?')) return;
+    try {
+      await performanceService.deleteGoal(id);
+      fetchGoals();
+    } catch (error) {
+      console.error('Failed to delete goal:', error);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      description: '',
+      target_date: '',
+      priority: 'medium',
+      status: 'not_started',
+    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -81,10 +165,152 @@ export default function Goals() {
           <h1 className="text-2xl font-bold text-solarized-base02">Goals</h1>
           <p className="text-solarized-base01">Set and track employee goals</p>
         </div>
-        <Button className="bg-solarized-blue hover:bg-solarized-blue/90">
-          <Plus className="mr-2 h-4 w-4" />
-          Create Goal
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              className="bg-solarized-blue hover:bg-solarized-blue/90"
+              onClick={() => {
+                setEditingGoal(null);
+                resetForm();
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create Goal
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editingGoal ? 'Edit Goal' : 'Create Goal'}</DialogTitle>
+              <DialogDescription>
+                {editingGoal ? 'Update the goal details.' : 'Create a new goal.'}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Title</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="e.g., Complete project milestone"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Goal description..."
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="target_date">Target Date</Label>
+                  <Input
+                    id="target_date"
+                    type="date"
+                    value={formData.target_date}
+                    onChange={(e) => setFormData({ ...formData, target_date: e.target.value })}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="priority">Priority</Label>
+                    <Select
+                      value={formData.priority}
+                      onValueChange={(value) => setFormData({ ...formData, priority: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="critical">Critical</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) => setFormData({ ...formData, status: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="not_started">Not Started</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90">
+                  {editingGoal ? 'Update' : 'Create'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Goal Details</DialogTitle>
+            </DialogHeader>
+            {viewingGoal && (
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-solarized-base01">Title</Label>
+                  <p className="font-medium">{viewingGoal.title}</p>
+                </div>
+                <div>
+                  <Label className="text-solarized-base01">Description</Label>
+                  <p className="font-medium">{viewingGoal.description || '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-solarized-base01">Assigned To</Label>
+                  <p className="font-medium">{viewingGoal.staff_member?.full_name || '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-solarized-base01">Target Date</Label>
+                  <p className="font-medium">{viewingGoal.target_date}</p>
+                </div>
+                <div>
+                  <Label className="text-solarized-base01">Progress</Label>
+                  <div className="flex items-center gap-2">
+                    <Progress value={viewingGoal.progress} className="h-2 flex-1" />
+                    <span className="font-medium">{viewingGoal.progress}%</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Badge className={getStatusBadge(viewingGoal.status)}>
+                    {viewingGoal.status?.replace('_', ' ')}
+                  </Badge>
+                  <Badge className={getPriorityBadge(viewingGoal.priority)}>
+                    {viewingGoal.priority}
+                  </Badge>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-4">
@@ -188,15 +414,15 @@ export default function Goals() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleView(goal)}>
                           <Eye className="mr-2 h-4 w-4" />
                           View
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEdit(goal)}>
                           <Edit className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-solarized-red">
+                        <DropdownMenuItem onClick={() => handleDelete(goal.id)} className="text-solarized-red">
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete
                         </DropdownMenuItem>

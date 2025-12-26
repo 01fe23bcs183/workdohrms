@@ -3,7 +3,25 @@ import { assetService } from '../../services/api';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
 import { Badge } from '../../components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../../components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
 import {
   Table,
   TableBody,
@@ -45,6 +63,88 @@ export default function AssetsList() {
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+  const [viewingAsset, setViewingAsset] = useState<Asset | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    asset_code: '',
+    description: '',
+    purchase_date: '',
+    purchase_cost: '',
+    status: 'available',
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingAsset) {
+        await assetService.update(editingAsset.id, {
+          name: formData.name,
+          asset_code: formData.asset_code,
+          description: formData.description,
+          purchase_date: formData.purchase_date,
+          purchase_cost: Number(formData.purchase_cost),
+          status: formData.status,
+        });
+      } else {
+        await assetService.create({
+          name: formData.name,
+          asset_code: formData.asset_code,
+          description: formData.description,
+          purchase_date: formData.purchase_date,
+          purchase_cost: Number(formData.purchase_cost),
+          status: formData.status,
+        });
+      }
+      setIsDialogOpen(false);
+      setEditingAsset(null);
+      resetForm();
+      fetchAssets();
+    } catch (error) {
+      console.error('Failed to save asset:', error);
+    }
+  };
+
+  const handleEdit = (asset: Asset) => {
+    setEditingAsset(asset);
+    setFormData({
+      name: asset.name,
+      asset_code: asset.asset_code,
+      description: '',
+      purchase_date: asset.purchase_date,
+      purchase_cost: String(asset.purchase_cost),
+      status: asset.status,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleView = (asset: Asset) => {
+    setViewingAsset(asset);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this asset?')) return;
+    try {
+      await assetService.delete(id);
+      fetchAssets();
+    } catch (error) {
+      console.error('Failed to delete asset:', error);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      asset_code: '',
+      description: '',
+      purchase_date: '',
+      purchase_cost: '',
+      status: 'available',
+    });
+  };
 
   useEffect(() => {
     fetchAssets();
@@ -116,11 +216,165 @@ export default function AssetsList() {
           <h1 className="text-2xl font-bold text-solarized-base02">Assets</h1>
           <p className="text-solarized-base01">Manage company assets and equipment</p>
         </div>
-        <Button className="bg-solarized-blue hover:bg-solarized-blue/90">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Asset
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              className="bg-solarized-blue hover:bg-solarized-blue/90"
+              onClick={() => { setEditingAsset(null); resetForm(); }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Asset
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{editingAsset ? 'Edit Asset' : 'Add Asset'}</DialogTitle>
+              <DialogDescription>
+                {editingAsset ? 'Update asset details.' : 'Add a new asset to the inventory.'}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Asset Name</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="e.g., MacBook Pro"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="asset_code">Asset Code</Label>
+                    <Input
+                      id="asset_code"
+                      value={formData.asset_code}
+                      onChange={(e) => setFormData({ ...formData, asset_code: e.target.value })}
+                      placeholder="e.g., AST-001"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Asset description..."
+                    rows={3}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="purchase_date">Purchase Date</Label>
+                    <Input
+                      id="purchase_date"
+                      type="date"
+                      value={formData.purchase_date}
+                      onChange={(e) => setFormData({ ...formData, purchase_date: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="purchase_cost">Purchase Cost</Label>
+                    <Input
+                      id="purchase_cost"
+                      type="number"
+                      value={formData.purchase_cost}
+                      onChange={(e) => setFormData({ ...formData, purchase_cost: e.target.value })}
+                      placeholder="e.g., 1500"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) => setFormData({ ...formData, status: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="available">Available</SelectItem>
+                      <SelectItem value="assigned">Assigned</SelectItem>
+                      <SelectItem value="maintenance">Maintenance</SelectItem>
+                      <SelectItem value="retired">Retired</SelectItem>
+                      <SelectItem value="lost">Lost</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90">
+                  {editingAsset ? 'Update' : 'Create'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
+
+      {/* View Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Asset Details</DialogTitle>
+          </DialogHeader>
+          {viewingAsset && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-solarized-base01">Asset Code</p>
+                  <p className="font-mono">{viewingAsset.asset_code}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-solarized-base01">Name</p>
+                  <p className="font-medium">{viewingAsset.name}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-solarized-base01">Type</p>
+                  <p>{viewingAsset.asset_type?.name || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-solarized-base01">Status</p>
+                  <Badge className={getStatusBadge(viewingAsset.status)}>
+                    {viewingAsset.status}
+                  </Badge>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-solarized-base01">Purchase Date</p>
+                  <p>{viewingAsset.purchase_date}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-solarized-base01">Purchase Cost</p>
+                  <p>{formatCurrency(viewingAsset.purchase_cost)}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-solarized-base01">Assigned To</p>
+                <p>{viewingAsset.assigned_to?.full_name || 'Not assigned'}</p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-6 sm:grid-cols-4">
         <Card className="border-0 shadow-md">
@@ -253,15 +507,15 @@ export default function AssetsList() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleView(asset)}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 View
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEdit(asset)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-solarized-red">
+                              <DropdownMenuItem className="text-solarized-red" onClick={() => handleDelete(asset.id)}>
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete
                               </DropdownMenuItem>

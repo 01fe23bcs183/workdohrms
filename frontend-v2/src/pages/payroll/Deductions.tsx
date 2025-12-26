@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { payrollService, staffService } from '../../services/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
 import {
   Select,
   SelectContent,
@@ -9,6 +11,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../../components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -39,6 +50,42 @@ export default function Deductions() {
   const [selectedStaff, setSelectedStaff] = useState('');
   const [deductions, setDeductions] = useState<Deduction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    amount: '',
+    deduction_type: 'fixed',
+    frequency: 'monthly',
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await payrollService.createDeduction({
+        staff_member_id: Number(selectedStaff),
+        name: formData.name,
+        amount: Number(formData.amount),
+        deduction_type: formData.deduction_type,
+        frequency: formData.frequency,
+      });
+      setIsDialogOpen(false);
+      resetForm();
+      if (selectedStaff) {
+        fetchDeductions();
+      }
+    } catch (error) {
+      console.error('Failed to create deduction:', error);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      amount: '',
+      deduction_type: 'fixed',
+      frequency: 'monthly',
+    });
+  };
 
   useEffect(() => {
     const fetchStaff = async () => {
@@ -92,10 +139,91 @@ export default function Deductions() {
           <h1 className="text-2xl font-bold text-solarized-base02">Deductions</h1>
           <p className="text-solarized-base01">Manage employee deductions</p>
         </div>
-        <Button className="bg-solarized-blue hover:bg-solarized-blue/90">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Deduction
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              className="bg-solarized-blue hover:bg-solarized-blue/90"
+              onClick={() => resetForm()}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Deduction
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Deduction</DialogTitle>
+              <DialogDescription>
+                Add a new deduction for the selected employee.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Deduction Name</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g., Income Tax"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Amount</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                    placeholder="e.g., 100 or 15 for percentage"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="deduction_type">Type</Label>
+                    <Select
+                      value={formData.deduction_type}
+                      onValueChange={(value) => setFormData({ ...formData, deduction_type: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fixed">Fixed Amount</SelectItem>
+                        <SelectItem value="percentage">Percentage</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="frequency">Frequency</Label>
+                    <Select
+                      value={formData.frequency}
+                      onValueChange={(value) => setFormData({ ...formData, frequency: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select frequency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                        <SelectItem value="one_time">One Time</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90">
+                  Create
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card className="border-0 shadow-md">

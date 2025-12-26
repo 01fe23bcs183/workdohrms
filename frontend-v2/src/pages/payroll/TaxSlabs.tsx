@@ -5,6 +5,15 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../../components/ui/dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -29,6 +38,39 @@ export default function TaxSlabs() {
   const [annualIncome, setAnnualIncome] = useState('');
   const [calculatedTax, setCalculatedTax] = useState<number | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    income_from: '',
+    income_to: '',
+    fixed_amount: '',
+    percentage: '',
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await payrollService.createTaxSlab({
+        income_from: Number(formData.income_from),
+        income_to: Number(formData.income_to),
+        fixed_amount: Number(formData.fixed_amount),
+        percentage: Number(formData.percentage),
+      });
+      setIsDialogOpen(false);
+      resetForm();
+      fetchSlabs();
+    } catch (error) {
+      console.error('Failed to create tax slab:', error);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      income_from: '',
+      income_to: '',
+      fixed_amount: '',
+      percentage: '',
+    });
+  };
 
   useEffect(() => {
     fetchSlabs();
@@ -91,10 +133,85 @@ export default function TaxSlabs() {
           <h1 className="text-2xl font-bold text-solarized-base02">Tax Slabs</h1>
           <p className="text-solarized-base01">Configure income tax brackets and rates</p>
         </div>
-        <Button className="bg-solarized-blue hover:bg-solarized-blue/90">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Tax Slab
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              className="bg-solarized-blue hover:bg-solarized-blue/90"
+              onClick={() => resetForm()}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Tax Slab
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Tax Slab</DialogTitle>
+              <DialogDescription>
+                Add a new income tax bracket.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="income_from">Income From</Label>
+                    <Input
+                      id="income_from"
+                      type="number"
+                      value={formData.income_from}
+                      onChange={(e) => setFormData({ ...formData, income_from: e.target.value })}
+                      placeholder="e.g., 0"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="income_to">Income To</Label>
+                    <Input
+                      id="income_to"
+                      type="number"
+                      value={formData.income_to}
+                      onChange={(e) => setFormData({ ...formData, income_to: e.target.value })}
+                      placeholder="e.g., 10000"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fixed_amount">Fixed Amount</Label>
+                    <Input
+                      id="fixed_amount"
+                      type="number"
+                      value={formData.fixed_amount}
+                      onChange={(e) => setFormData({ ...formData, fixed_amount: e.target.value })}
+                      placeholder="e.g., 0"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="percentage">Tax Rate (%)</Label>
+                    <Input
+                      id="percentage"
+                      type="number"
+                      value={formData.percentage}
+                      onChange={(e) => setFormData({ ...formData, percentage: e.target.value })}
+                      placeholder="e.g., 10"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90">
+                  Create
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

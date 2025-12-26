@@ -2,9 +2,28 @@ import { useState, useEffect } from 'react';
 import { trainingService } from '../../services/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
 import { Badge } from '../../components/ui/badge';
 import { Progress } from '../../components/ui/progress';
 import { Skeleton } from '../../components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../../components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
 import { Plus, GraduationCap, Users, Calendar, ChevronLeft, ChevronRight, MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -37,6 +56,93 @@ export default function Programs() {
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [editingProgram, setEditingProgram] = useState<Program | null>(null);
+  const [viewingProgram, setViewingProgram] = useState<Program | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    trainer: '',
+    start_date: '',
+    end_date: '',
+    max_participants: '',
+    status: 'upcoming',
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingProgram) {
+        await trainingService.updateProgram(editingProgram.id, {
+          name: formData.name,
+          description: formData.description,
+          trainer: formData.trainer,
+          start_date: formData.start_date,
+          end_date: formData.end_date,
+          max_participants: Number(formData.max_participants),
+          status: formData.status,
+        });
+      } else {
+        await trainingService.createProgram({
+          name: formData.name,
+          description: formData.description,
+          trainer: formData.trainer,
+          start_date: formData.start_date,
+          end_date: formData.end_date,
+          max_participants: Number(formData.max_participants),
+          status: formData.status,
+        });
+      }
+      setIsDialogOpen(false);
+      setEditingProgram(null);
+      resetForm();
+      fetchPrograms();
+    } catch (error) {
+      console.error('Failed to save program:', error);
+    }
+  };
+
+  const handleEdit = (program: Program) => {
+    setEditingProgram(program);
+    setFormData({
+      name: program.name,
+      description: program.description,
+      trainer: program.trainer,
+      start_date: program.start_date,
+      end_date: program.end_date,
+      max_participants: String(program.max_participants),
+      status: program.status,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleView = (program: Program) => {
+    setViewingProgram(program);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this program?')) return;
+    try {
+      await trainingService.deleteProgram(id);
+      fetchPrograms();
+    } catch (error) {
+      console.error('Failed to delete program:', error);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      trainer: '',
+      start_date: '',
+      end_date: '',
+      max_participants: '',
+      status: 'upcoming',
+    });
+  };
 
   useEffect(() => {
     fetchPrograms();
@@ -46,10 +152,27 @@ export default function Programs() {
     setIsLoading(true);
     try {
       const response = await trainingService.getPrograms({ page });
-      setPrograms(response.data.data || []);
-      setMeta(response.data.meta);
+      // Handle both paginated and non-paginated responses
+      const data = response.data.data;
+      if (Array.isArray(data)) {
+        setPrograms(data);
+        setMeta(response.data.meta || null);
+      } else if (data && Array.isArray(data.data)) {
+        // Paginated response where data.data contains the array
+        setPrograms(data.data);
+        setMeta({
+          current_page: data.current_page,
+          last_page: data.last_page,
+          per_page: data.per_page,
+          total: data.total,
+        });
+      } else {
+        setPrograms([]);
+        setMeta(null);
+      }
     } catch (error) {
       console.error('Failed to fetch programs:', error);
+      setPrograms([]);
     } finally {
       setIsLoading(false);
     }
@@ -72,11 +195,178 @@ export default function Programs() {
           <h1 className="text-2xl font-bold text-solarized-base02">Training Programs</h1>
           <p className="text-solarized-base01">Manage employee training and development</p>
         </div>
-        <Button className="bg-solarized-blue hover:bg-solarized-blue/90">
-          <Plus className="mr-2 h-4 w-4" />
-          Create Program
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              className="bg-solarized-blue hover:bg-solarized-blue/90"
+              onClick={() => { setEditingProgram(null); resetForm(); }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create Program
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{editingProgram ? 'Edit Program' : 'Create Program'}</DialogTitle>
+              <DialogDescription>
+                {editingProgram ? 'Update training program details.' : 'Create a new training program.'}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Program Name</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g., Leadership Training"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Program description..."
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="trainer">Trainer</Label>
+                  <Input
+                    id="trainer"
+                    value={formData.trainer}
+                    onChange={(e) => setFormData({ ...formData, trainer: e.target.value })}
+                    placeholder="e.g., John Smith"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="start_date">Start Date</Label>
+                    <Input
+                      id="start_date"
+                      type="date"
+                      value={formData.start_date}
+                      onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="end_date">End Date</Label>
+                    <Input
+                      id="end_date"
+                      type="date"
+                      value={formData.end_date}
+                      onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="max_participants">Max Participants</Label>
+                    <Input
+                      id="max_participants"
+                      type="number"
+                      value={formData.max_participants}
+                      onChange={(e) => setFormData({ ...formData, max_participants: e.target.value })}
+                      placeholder="e.g., 20"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) => setFormData({ ...formData, status: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="upcoming">Upcoming</SelectItem>
+                        <SelectItem value="ongoing">Ongoing</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90">
+                  {editingProgram ? 'Update' : 'Create'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
+
+      {/* View Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Program Details</DialogTitle>
+          </DialogHeader>
+          {viewingProgram && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-solarized-base01">Program Name</p>
+                <p className="font-medium">{viewingProgram.name}</p>
+              </div>
+              <div>
+                <p className="text-sm text-solarized-base01">Description</p>
+                <p>{viewingProgram.description}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-solarized-base01">Trainer</p>
+                  <p>{viewingProgram.trainer}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-solarized-base01">Status</p>
+                  <Badge className={getStatusBadge(viewingProgram.status)}>
+                    {viewingProgram.status}
+                  </Badge>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-solarized-base01">Start Date</p>
+                  <p>{viewingProgram.start_date}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-solarized-base01">End Date</p>
+                  <p>{viewingProgram.end_date}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-solarized-base01">Max Participants</p>
+                  <p>{viewingProgram.max_participants}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-solarized-base01">Enrolled</p>
+                  <p>{viewingProgram.enrolled_count || 0}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-6 sm:grid-cols-4">
         <Card className="border-0 shadow-md">
@@ -179,15 +469,15 @@ export default function Programs() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleView(program)}>
                           <Eye className="mr-2 h-4 w-4" />
                           View
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEdit(program)}>
                           <Edit className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-solarized-red">
+                        <DropdownMenuItem className="text-solarized-red" onClick={() => handleDelete(program.id)}>
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete
                         </DropdownMenuItem>

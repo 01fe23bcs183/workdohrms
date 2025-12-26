@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { recruitmentService } from '../../services/api';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
 import { Badge } from '../../components/ui/badge';
 import {
   Table,
@@ -11,6 +14,22 @@ import {
   TableHeader,
   TableRow,
 } from '../../components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../../components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Plus, Briefcase, MapPin, Users, ChevronLeft, ChevronRight, MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-react';
 import {
@@ -43,6 +62,16 @@ export default function Jobs() {
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [editingJob, setEditingJob] = useState<Job | null>(null);
+  const [viewingJob, setViewingJob] = useState<Job | null>(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    employment_type: 'full_time',
+    status: 'draft',
+  });
 
   useEffect(() => {
     fetchJobs();
@@ -59,6 +88,58 @@ export default function Jobs() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingJob) {
+        await recruitmentService.updateJob(editingJob.id, formData);
+      } else {
+        await recruitmentService.createJob(formData);
+      }
+      setIsDialogOpen(false);
+      setEditingJob(null);
+      resetForm();
+      fetchJobs();
+    } catch (error) {
+      console.error('Failed to save job:', error);
+    }
+  };
+
+  const handleEdit = (job: Job) => {
+    setEditingJob(job);
+    setFormData({
+      title: job.title,
+      description: '',
+      employment_type: job.employment_type || 'full_time',
+      status: job.status || 'draft',
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleView = (job: Job) => {
+    setViewingJob(job);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this job posting?')) return;
+    try {
+      await recruitmentService.deleteJob(id);
+      fetchJobs();
+    } catch (error) {
+      console.error('Failed to delete job:', error);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      description: '',
+      employment_type: 'full_time',
+      status: 'draft',
+    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -78,10 +159,139 @@ export default function Jobs() {
           <h1 className="text-2xl font-bold text-solarized-base02">Job Postings</h1>
           <p className="text-solarized-base01">Manage job openings and recruitment</p>
         </div>
-        <Button className="bg-solarized-blue hover:bg-solarized-blue/90">
-          <Plus className="mr-2 h-4 w-4" />
-          Post New Job
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              className="bg-solarized-blue hover:bg-solarized-blue/90"
+              onClick={() => {
+                setEditingJob(null);
+                resetForm();
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Post New Job
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editingJob ? 'Edit Job Posting' : 'Post New Job'}</DialogTitle>
+              <DialogDescription>
+                {editingJob ? 'Update the job posting details.' : 'Create a new job posting.'}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Job Title</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="e.g., Software Engineer"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Job description..."
+                    rows={3}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="employment_type">Employment Type</Label>
+                    <Select
+                      value={formData.employment_type}
+                      onValueChange={(value) => setFormData({ ...formData, employment_type: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="full_time">Full Time</SelectItem>
+                        <SelectItem value="part_time">Part Time</SelectItem>
+                        <SelectItem value="contract">Contract</SelectItem>
+                        <SelectItem value="internship">Internship</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) => setFormData({ ...formData, status: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="open">Open</SelectItem>
+                        <SelectItem value="on_hold">On Hold</SelectItem>
+                        <SelectItem value="closed">Closed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90">
+                  {editingJob ? 'Update' : 'Create'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Job Details</DialogTitle>
+            </DialogHeader>
+            {viewingJob && (
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-solarized-base01">Title</Label>
+                  <p className="font-medium">{viewingJob.title}</p>
+                </div>
+                <div>
+                  <Label className="text-solarized-base01">Department</Label>
+                  <p className="font-medium">{viewingJob.department?.name || '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-solarized-base01">Location</Label>
+                  <p className="font-medium">{viewingJob.location?.name || '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-solarized-base01">Employment Type</Label>
+                  <p className="font-medium capitalize">{viewingJob.employment_type?.replace('_', ' ')}</p>
+                </div>
+                <div>
+                  <Label className="text-solarized-base01">Status</Label>
+                  <Badge className={getStatusBadge(viewingJob.status)}>
+                    {viewingJob.status?.replace('_', ' ')}
+                  </Badge>
+                </div>
+                <div>
+                  <Label className="text-solarized-base01">Applications</Label>
+                  <p className="font-medium">{viewingJob.applications_count || 0}</p>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-4">
@@ -211,15 +421,15 @@ export default function Jobs() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleView(job)}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 View
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEdit(job)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-solarized-red">
+                              <DropdownMenuItem onClick={() => handleDelete(job.id)} className="text-solarized-red">
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete
                               </DropdownMenuItem>
