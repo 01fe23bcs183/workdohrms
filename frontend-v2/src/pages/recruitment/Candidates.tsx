@@ -3,6 +3,7 @@ import { recruitmentService } from '../../services/api';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
 import { Badge } from '../../components/ui/badge';
 import { Avatar, AvatarFallback } from '../../components/ui/avatar';
 import {
@@ -13,6 +14,22 @@ import {
   TableHeader,
   TableRow,
 } from '../../components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../../components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Plus, Search, User, Mail, Phone, ChevronLeft, ChevronRight, MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-react';
 import {
@@ -45,6 +62,16 @@ export default function Candidates() {
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
+  const [viewingCandidate, setViewingCandidate] = useState<Candidate | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    status: 'new',
+  });
 
   useEffect(() => {
     fetchCandidates();
@@ -69,6 +96,58 @@ export default function Candidates() {
   const handleSearch = () => {
     setPage(1);
     fetchCandidates();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingCandidate) {
+        await recruitmentService.updateCandidate(editingCandidate.id, formData);
+      } else {
+        await recruitmentService.createCandidate(formData);
+      }
+      setIsDialogOpen(false);
+      setEditingCandidate(null);
+      resetForm();
+      fetchCandidates();
+    } catch (error) {
+      console.error('Failed to save candidate:', error);
+    }
+  };
+
+  const handleEdit = (candidate: Candidate) => {
+    setEditingCandidate(candidate);
+    setFormData({
+      name: candidate.name,
+      email: candidate.email,
+      phone: candidate.phone || '',
+      status: candidate.status || 'new',
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleView = (candidate: Candidate) => {
+    setViewingCandidate(candidate);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this candidate?')) return;
+    try {
+      await recruitmentService.deleteCandidate(id);
+      fetchCandidates();
+    } catch (error) {
+      console.error('Failed to delete candidate:', error);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      status: 'new',
+    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -99,10 +178,132 @@ export default function Candidates() {
           <h1 className="text-2xl font-bold text-solarized-base02">Candidates</h1>
           <p className="text-solarized-base01">Manage job applicants and candidates</p>
         </div>
-        <Button className="bg-solarized-blue hover:bg-solarized-blue/90">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Candidate
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button
+              className="bg-solarized-blue hover:bg-solarized-blue/90"
+              onClick={() => {
+                setEditingCandidate(null);
+                resetForm();
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Candidate
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editingCandidate ? 'Edit Candidate' : 'Add Candidate'}</DialogTitle>
+              <DialogDescription>
+                {editingCandidate ? 'Update the candidate details.' : 'Add a new candidate.'}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g., John Doe"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="e.g., john@example.com"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="e.g., +1 555-1234"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) => setFormData({ ...formData, status: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">New</SelectItem>
+                      <SelectItem value="screening">Screening</SelectItem>
+                      <SelectItem value="interview">Interview</SelectItem>
+                      <SelectItem value="offer">Offer</SelectItem>
+                      <SelectItem value="hired">Hired</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90">
+                  {editingCandidate ? 'Update' : 'Create'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Candidate Profile</DialogTitle>
+            </DialogHeader>
+            {viewingCandidate && (
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-solarized-base01">Name</Label>
+                  <p className="font-medium">{viewingCandidate.name}</p>
+                </div>
+                <div>
+                  <Label className="text-solarized-base01">Email</Label>
+                  <p className="font-medium">{viewingCandidate.email}</p>
+                </div>
+                <div>
+                  <Label className="text-solarized-base01">Phone</Label>
+                  <p className="font-medium">{viewingCandidate.phone || '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-solarized-base01">Applied For</Label>
+                  <p className="font-medium">{viewingCandidate.job?.title || '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-solarized-base01">Applied Date</Label>
+                  <p className="font-medium">{viewingCandidate.applied_date}</p>
+                </div>
+                <div>
+                  <Label className="text-solarized-base01">Status</Label>
+                  <Badge className={getStatusBadge(viewingCandidate.status)}>
+                    {viewingCandidate.status}
+                  </Badge>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card className="border-0 shadow-md">
@@ -189,15 +390,15 @@ export default function Candidates() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleView(candidate)}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Profile
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEdit(candidate)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-solarized-red">
+                              <DropdownMenuItem onClick={() => handleDelete(candidate.id)} className="text-solarized-red">
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete
                               </DropdownMenuItem>
