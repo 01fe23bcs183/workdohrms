@@ -1,4 +1,8 @@
-<?php
+
+use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\OrganizationController;
+use App\Http\Controllers\CompanyController;
+
 
 // Auth Controllers
 use App\Http\Controllers\Api\Assets\AssetController;
@@ -514,4 +518,28 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/attendance-regularizations/{attendanceRegularization}/reject', [AttendanceRegularizationController::class, 'reject']);
     Route::get('/attendance-regularizations-pending', [AttendanceRegularizationController::class, 'pending']);
     Route::get('/my-regularization-requests', [AttendanceRegularizationController::class, 'myRequests']);
+
+    // ============================================
+    // DYNAMIC STORAGE DOCUMENTS
+    // ============================================
+    Route::post('/documents/upload', [DocumentController::class, 'upload']);
+    Route::get('/documents/{id}/url', [DocumentController::class, 'getUrl']);
+
+    // ============================================
+    // ORGANIZATIONS & COMPANIES
+    // ============================================
+    // Organizations
+    Route::get('/organizations', [OrganizationController::class, 'index']);
+    Route::post('/organizations', [OrganizationController::class, 'store']);
+    Route::get('/organizations/{organization}', [OrganizationController::class, 'show']);
+    Route::put('/organizations/{organization}', [OrganizationController::class, 'update']);
+    Route::delete('/organizations/{organization}', [OrganizationController::class, 'destroy']);
+
+    // Companies
+    Route::get('/companies', [CompanyController::class, 'index']);
+    Route::post('/companies', [CompanyController::class, 'store']);
+    Route::get('/companies/{company}', [CompanyController::class, 'show']);
+    Route::put('/companies/{company}', [CompanyController::class, 'update']);
+    Route::delete('/companies/{company}', [CompanyController::class, 'destroy']);
+
 });

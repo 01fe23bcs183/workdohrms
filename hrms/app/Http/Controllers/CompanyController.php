@@ -1,0 +1,132 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Controllers\Controller;
+use App\Services\OrganizationService;
+use Illuminate\Http\Request;
+use Exception;
+use Illuminate\Support\Facades\Validator;
+
+class CompanyController extends Controller
+{
+    protected $orgService;
+
+    public function __construct(OrganizationService $orgService)
+    {
+        $this->orgService = $orgService;
+    }
+
+    /**
+     * List all Companies
+     */
+    public function index(Request $request)
+    {
+        try {
+            // Optional filter by org_id via query param ?org_id=1
+            $orgId = $request->query('org_id');
+            $companies = $this->orgService->getAllCompanies($orgId);
+            
+            return response()->json([
+                'success' => true,
+                'data' => $companies
+            ]);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Store a newly created Company.
+     */
+    public function store(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'org_id' => 'required|exists:organizations,id',
+            'company_name' => 'required|string|max:255',
+            'address' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation Error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $company = $this->orgService->createCompany($request->all());
+            return response()->json([
+                'success' => true,
+                'message' => 'Company created successfully',
+                'data' => $company
+            ], 201);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Get Company Details
+     */
+    public function show($id)
+    {
+        try {
+            $company = $this->orgService->getCompany($id);
+            if (!$company) {
+                return response()->json(['success' => false, 'message' => 'Company not found'], 404);
+            }
+            return response()->json(['success' => true, 'data' => $company]);
+        } catch (Exception $e) {
+             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update Company
+     */
+    public function update(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'org_id' => 'sometimes|exists:organizations,id',
+            'company_name' => 'sometimes|string|max:255',
+            'address' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation Error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $company = $this->orgService->updateCompany($id, $request->all());
+            return response()->json([
+                'success' => true,
+                'message' => 'Company updated successfully',
+                'data' => $company
+            ]);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Delete Company
+     */
+    public function destroy($id)
+    {
+        try {
+            $this->orgService->deleteCompany($id);
+            return response()->json([
+                'success' => true,
+                'message' => 'Company deleted successfully'
+            ]);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+}
