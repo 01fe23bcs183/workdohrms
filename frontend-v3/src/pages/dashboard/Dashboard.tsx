@@ -39,42 +39,42 @@ export default function Dashboard() {
   const stats = [
     {
       title: 'Total Employees',
-      value: data?.employees.total || 0,
+      value: data?.employees?.total || 0,
       icon: Users,
       color: 'text-solarized-blue',
       bgColor: 'bg-solarized-blue/10',
     },
     {
       title: 'Active Employees',
-      value: data?.employees.active || 0,
+      value: data?.employees?.active || 0,
       icon: UserCheck,
       color: 'text-solarized-green',
       bgColor: 'bg-solarized-green/10',
     },
     {
       title: 'On Leave Today',
-      value: data?.attendance.on_leave_today || 0,
+      value: data?.attendance?.on_leave_today || 0,
       icon: Calendar,
       color: 'text-solarized-yellow',
       bgColor: 'bg-solarized-yellow/10',
     },
     {
       title: 'Present Today',
-      value: data?.attendance.present_today || 0,
+      value: data?.attendance?.present_today || 0,
       icon: Clock,
       color: 'text-solarized-violet',
       bgColor: 'bg-solarized-violet/10',
     },
     {
       title: 'Pending Leave Requests',
-      value: data?.leave.pending_requests || 0,
+      value: data?.leave?.pending_requests || 0,
       icon: UserX,
       color: 'text-solarized-red',
       bgColor: 'bg-solarized-red/10',
     },
     {
       title: 'New This Month',
-      value: data?.employees.new_this_month || 0,
+      value: data?.employees?.new_this_month || 0,
       icon: TrendingUp,
       color: 'text-solarized-cyan',
       bgColor: 'bg-solarized-cyan/10',
@@ -82,10 +82,10 @@ export default function Dashboard() {
   ];
 
   const attendanceData = [
-    { name: 'Present', value: data?.attendance.present_today || 0 },
-    { name: 'Absent', value: data?.attendance.absent_today || 0 },
-    { name: 'Late', value: data?.attendance.late_today || 0 },
-    { name: 'On Leave', value: data?.attendance.on_leave_today || 0 },
+    { name: 'Present', value: data?.attendance?.present_today || 0 },
+    { name: 'Absent', value: data?.attendance?.absent_today || 0 },
+    { name: 'Late', value: data?.attendance?.late_today || 0 },
+    { name: 'On Leave', value: data?.attendance?.on_leave_today || 0 },
   ];
 
   if (isLoading) {
