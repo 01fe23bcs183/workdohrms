@@ -70,6 +70,7 @@ import OfficeLocations from './pages/settings/OfficeLocations';
 import Divisions from './pages/settings/Divisions';
 import JobTitles from './pages/settings/JobTitles';
 import Holidays from './pages/settings/Holidays';
+import FileCategories from './pages/settings/FileCategories';
 
 // Admin
 import Users from './pages/admin/Users';
@@ -161,12 +162,13 @@ function App() {
             <Route path="/reports/leave" element={<LeaveReport />} />
             <Route path="/reports/payroll" element={<PayrollReport />} />
 
-            {/* Settings */}
-            <Route path="/settings" element={<OfficeLocations />} />
-            <Route path="/settings/locations" element={<OfficeLocations />} />
-            <Route path="/settings/divisions" element={<Divisions />} />
-            <Route path="/settings/job-titles" element={<JobTitles />} />
-            <Route path="/settings/holidays" element={<Holidays />} />
+                        {/* Settings */}
+                        <Route path="/settings" element={<OfficeLocations />} />
+                        <Route path="/settings/locations" element={<OfficeLocations />} />
+                        <Route path="/settings/divisions" element={<Divisions />} />
+                        <Route path="/settings/job-titles" element={<JobTitles />} />
+                        <Route path="/settings/holidays" element={<Holidays />} />
+                        <Route path="/settings/file-categories" element={<FileCategories />} />
 
             {/* Admin */}
             <Route path="/admin" element={<Users />} />

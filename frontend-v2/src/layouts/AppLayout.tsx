@@ -149,18 +149,19 @@ const navigation: NavItem[] = [
       { name: 'Turnover', href: '/reports/turnover' },
     ]
   },
-  { 
-    name: 'Settings', 
-    href: '/settings', 
-    icon: Settings,
-    children: [
-      { name: 'Office Locations', href: '/settings/locations' },
-      { name: 'Divisions', href: '/settings/divisions' },
-      { name: 'Job Titles', href: '/settings/job-titles' },
-      { name: 'Holidays', href: '/settings/holidays' },
-      { name: 'Notices', href: '/settings/notices' },
-    ]
-  },
+    { 
+      name: 'Settings', 
+      href: '/settings', 
+      icon: Settings,
+      children: [
+        { name: 'Office Locations', href: '/settings/locations' },
+        { name: 'Divisions', href: '/settings/divisions' },
+        { name: 'Job Titles', href: '/settings/job-titles' },
+        { name: 'Holidays', href: '/settings/holidays' },
+        { name: 'File Categories', href: '/settings/file-categories' },
+        { name: 'Notices', href: '/settings/notices' },
+      ]
+    },
   { 
     name: 'Admin', 
     href: '/admin', 

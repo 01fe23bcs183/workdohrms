@@ -64,7 +64,7 @@ export const staffService = {
       headers: { 'Content-Type': 'multipart/form-data' }
     }),
   deleteFile: (id: number, fileId: number) => api.delete(`/staff-members/${id}/files/${fileId}`),
-  getFileCategories: () => api.get('/file-categories'),
+  getFileCategories: () => api.get('/file-categories', { params: { paginate: false } }),
 };
 
 export const attendanceService = {
@@ -129,15 +129,17 @@ export const recruitmentService = {
 };
 
 export const performanceService = {
-  getGoals: (params?: { staff_member_id?: number; page?: number }) => api.get('/goals', { params }),
-  createGoal: (data: Record<string, unknown>) => api.post('/goals', data),
-  updateGoal: (id: number, data: Record<string, unknown>) => api.put(`/goals/${id}`, data),
-  deleteGoal: (id: number) => api.delete(`/goals/${id}`),
-  getKPIs: (params?: { staff_member_id?: number }) => api.get('/kpis', { params }),
-  createKPI: (data: Record<string, unknown>) => api.post('/kpis', data),
-  getAppraisals: (params?: { staff_member_id?: number; page?: number }) => api.get('/appraisals', { params }),
-  createAppraisal: (data: Record<string, unknown>) => api.post('/appraisals', data),
-  getCompetencies: () => api.get('/competencies'),
+  getGoals: (params?: { staff_member_id?: number; page?: number }) => api.get('/performance-objectives', { params }),
+  createGoal: (data: Record<string, unknown>) => api.post('/performance-objectives', data),
+  updateGoal: (id: number, data: Record<string, unknown>) => api.put(`/performance-objectives/${id}`, data),
+  deleteGoal: (id: number) => api.delete(`/performance-objectives/${id}`),
+  updateProgress: (id: number, data: Record<string, unknown>) => api.post(`/performance-objectives/${id}/progress`, data),
+  rateGoal: (id: number, data: Record<string, unknown>) => api.post(`/performance-objectives/${id}/rate`, data),
+  getAppraisals: (params?: { staff_member_id?: number; page?: number }) => api.get('/appraisal-records', { params }),
+  getAppraisalCycles: () => api.get('/appraisal-cycles'),
+  createAppraisalCycle: (data: Record<string, unknown>) => api.post('/appraisal-cycles', data),
+  submitSelfReview: (id: number, data: Record<string, unknown>) => api.post(`/appraisal-records/${id}/self-review`, data),
+  submitManagerReview: (id: number, data: Record<string, unknown>) => api.post(`/appraisal-records/${id}/manager-review`, data),
 };
 
 export const assetService = {
@@ -145,25 +147,28 @@ export const assetService = {
   getAssetTypes: () => api.get('/asset-types'),
   createAssetType: (data: Record<string, unknown>) => api.post('/asset-types', data),
   getAssets: (params?: { type_id?: number; status?: string; page?: number }) => api.get('/assets', { params }),
-  createAsset: (data: Record<string, unknown>) => api.post('/assets', data),
-  updateAsset: (id: number, data: Record<string, unknown>) => api.put(`/assets/${id}`, data),
-  deleteAsset: (id: number) => api.delete(`/assets/${id}`),
-  getAssignments: (params?: { asset_id?: number; staff_member_id?: number }) =>
-    api.get('/asset-assignments', { params }),
-  assignAsset: (data: Record<string, unknown>) => api.post('/asset-assignments', data),
-  returnAsset: (id: number) => api.post(`/asset-assignments/${id}/return`),
+  create: (data: Record<string, unknown>) => api.post('/assets', data),
+  update: (id: number, data: Record<string, unknown>) => api.put(`/assets/${id}`, data),
+  delete: (id: number) => api.delete(`/assets/${id}`),
+  getAvailable: () => api.get('/assets-available'),
+  getByEmployee: (staffMemberId: number) => api.get(`/assets/employee/${staffMemberId}`),
+  assignAsset: (assetId: number, data: Record<string, unknown>) => api.post(`/assets/${assetId}/assign`, data),
+  returnAsset: (assetId: number) => api.post(`/assets/${assetId}/return`),
+  setMaintenance: (assetId: number, data: Record<string, unknown>) => api.post(`/assets/${assetId}/maintenance`, data),
 };
 
 export const trainingService = {
+  getTypes: () => api.get('/training-types'),
+  createType: (data: Record<string, unknown>) => api.post('/training-types', data),
   getPrograms: (params?: { page?: number }) => api.get('/training-programs', { params }),
   createProgram: (data: Record<string, unknown>) => api.post('/training-programs', data),
   updateProgram: (id: number, data: Record<string, unknown>) => api.put(`/training-programs/${id}`, data),
   deleteProgram: (id: number) => api.delete(`/training-programs/${id}`),
-  getEnrollments: (params?: { program_id?: number; staff_member_id?: number }) =>
-    api.get('/training-enrollments', { params }),
-  enroll: (data: Record<string, unknown>) => api.post('/training-enrollments', data),
-  completeEnrollment: (id: number, data: Record<string, unknown>) =>
-    api.post(`/training-enrollments/${id}/complete`, data),
+  getSessions: (params?: { page?: number }) => api.get('/training-sessions', { params }),
+  createSession: (data: Record<string, unknown>) => api.post('/training-sessions', data),
+  enrollInSession: (sessionId: number, data: Record<string, unknown>) => api.post(`/training-sessions/${sessionId}/enroll`, data),
+  completeSession: (sessionId: number, data: Record<string, unknown>) => api.post(`/training-sessions/${sessionId}/complete`, data),
+  getEmployeeTraining: (staffMemberId: number) => api.get(`/training/employee/${staffMemberId}`),
 };
 
 export const contractService = {
@@ -179,14 +184,22 @@ export const contractService = {
 };
 
 export const meetingService = {
+  getTypes: () => api.get('/meeting-types'),
+  createType: (data: Record<string, unknown>) => api.post('/meeting-types', data),
+  getRooms: () => api.get('/meeting-rooms'),
+  getAvailableRooms: () => api.get('/meeting-rooms-available'),
   getAll: (params?: { page?: number }) => api.get('/meetings', { params }),
   getMeetings: (params?: { page?: number }) => api.get('/meetings', { params }),
   createMeeting: (data: Record<string, unknown>) => api.post('/meetings', data),
   updateMeeting: (id: number, data: Record<string, unknown>) => api.put(`/meetings/${id}`, data),
   deleteMeeting: (id: number) => api.delete(`/meetings/${id}`),
-  getParticipants: (meetingId: number) => api.get(`/meetings/${meetingId}/participants`),
-  addParticipant: (meetingId: number, data: Record<string, unknown>) =>
-    api.post(`/meetings/${meetingId}/participants`, data),
+  addAttendees: (meetingId: number, data: Record<string, unknown>) => api.post(`/meetings/${meetingId}/attendees`, data),
+  startMeeting: (meetingId: number) => api.post(`/meetings/${meetingId}/start`),
+  completeMeeting: (meetingId: number) => api.post(`/meetings/${meetingId}/complete`),
+  addMinutes: (meetingId: number, data: Record<string, unknown>) => api.post(`/meetings/${meetingId}/minutes`, data),
+  addActionItem: (meetingId: number, data: Record<string, unknown>) => api.post(`/meetings/${meetingId}/action-items`, data),
+  getCalendar: () => api.get('/meetings-calendar'),
+  getMyMeetings: () => api.get('/my-meetings'),
 };
 
 export const reportService = {
@@ -225,6 +238,10 @@ export const settingsService = {
   deleteHoliday: (id: number) => api.delete(`/company-holidays/${id}`),
   getNotices: () => api.get('/company-notices'),
   createNotice: (data: Record<string, unknown>) => api.post('/company-notices', data),
+  getFileCategories: () => api.get('/file-categories', { params: { paginate: false } }),
+  createFileCategory: (data: Record<string, unknown>) => api.post('/file-categories', data),
+  updateFileCategory: (id: number, data: Record<string, unknown>) => api.put(`/file-categories/${id}`, data),
+  deleteFileCategory: (id: number) => api.delete(`/file-categories/${id}`),
 };
 
 export const adminService = {

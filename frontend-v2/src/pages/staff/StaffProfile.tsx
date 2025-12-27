@@ -402,13 +402,13 @@ export default function StaffProfile() {
                                 size="icon"
                                 asChild
                               >
-                                <a
-                                  href={`http://127.0.0.1:8000/storage/${file.file_path}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <Download className="h-4 w-4" />
-                                </a>
+                                                                <a
+                                                                  href={`http://127.0.0.1:8000/api/staff-members/${id}/files/${file.id}`}
+                                                                  target="_blank"
+                                                                  rel="noopener noreferrer"
+                                                                >
+                                                                  <Download className="h-4 w-4" />
+                                                                </a>
                               </Button>
                               <Button
                                 variant="ghost"
