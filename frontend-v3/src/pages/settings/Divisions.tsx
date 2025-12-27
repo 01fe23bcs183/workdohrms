@@ -64,7 +64,7 @@ export default function Divisions() {
     try {
       const data = {
         name: formData.name,
-        office_location_id: formData.office_location_id ? parseInt(formData.office_location_id) : null,
+        office_location_id: formData.office_location_id && formData.office_location_id !== '__none__' ? parseInt(formData.office_location_id) : null,
         description: formData.description || null,
         is_active: formData.is_active,
       };
@@ -184,7 +184,7 @@ export default function Divisions() {
                   <SelectValue placeholder="Select location" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-solarized-base2">
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="__none__">None</SelectItem>
                   {locations.map((loc) => (
                     <SelectItem key={loc.id} value={loc.id.toString()}>{loc.name}</SelectItem>
                   ))}

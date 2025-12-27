@@ -15,7 +15,7 @@ export default function WorkLogs() {
   const [isLoading, setIsLoading] = useState(true);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [staffFilter, setStaffFilter] = useState<string>('');
+  const [staffFilter, setStaffFilter] = useState<string>('__all__');
 
   const fetchWorkLogs = async () => {
     setIsLoading(true);
@@ -23,7 +23,7 @@ export default function WorkLogs() {
       const params: Record<string, unknown> = {};
       if (dateFrom) params.date_from = dateFrom;
       if (dateTo) params.date_to = dateTo;
-      if (staffFilter) params.staff_member_id = parseInt(staffFilter);
+      if (staffFilter && staffFilter !== '__all__') params.staff_member_id = parseInt(staffFilter);
 
       const response = await attendanceApi.getWorkLogs(params);
       if (response.success) {
@@ -118,7 +118,7 @@ export default function WorkLogs() {
                   <SelectValue placeholder="All Employees" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-solarized-base2">
-                  <SelectItem value="">All Employees</SelectItem>
+                  <SelectItem value="__all__">All Employees</SelectItem>
                   {staffMembers.map((staff) => (
                     <SelectItem key={staff.id} value={staff.id.toString()}>
                       {staff.full_name}

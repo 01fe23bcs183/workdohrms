@@ -64,7 +64,7 @@ export default function JobTitles() {
     try {
       const data = {
         name: formData.name,
-        division_id: formData.division_id ? parseInt(formData.division_id) : null,
+        division_id: formData.division_id && formData.division_id !== '__none__' ? parseInt(formData.division_id) : null,
         description: formData.description || null,
         is_active: formData.is_active,
       };
@@ -184,7 +184,7 @@ export default function JobTitles() {
                   <SelectValue placeholder="Select division" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-solarized-base2">
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="__none__">None</SelectItem>
                   {divisions.map((div) => (
                     <SelectItem key={div.id} value={div.id.toString()}>{div.name}</SelectItem>
                   ))}

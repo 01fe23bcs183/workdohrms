@@ -21,7 +21,7 @@ export default function Candidates() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('__all__');
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -36,7 +36,7 @@ export default function Candidates() {
     try {
       const params: Record<string, unknown> = {};
       if (search) params.search = search;
-      if (statusFilter) params.status = statusFilter;
+      if (statusFilter && statusFilter !== '__all__') params.status = statusFilter;
 
       const response = await recruitmentApi.getCandidates(params);
       if (response.success) {
@@ -181,7 +181,7 @@ export default function Candidates() {
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent className="bg-white border-solarized-base2">
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="__all__">All Status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="hired">Hired</SelectItem>
                 <SelectItem value="archived">Archived</SelectItem>
@@ -314,7 +314,7 @@ export default function Candidates() {
                     <SelectValue placeholder="Select source" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-solarized-base2">
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="__none__">None</SelectItem>
                     <SelectItem value="linkedin">LinkedIn</SelectItem>
                     <SelectItem value="indeed">Indeed</SelectItem>
                     <SelectItem value="referral">Referral</SelectItem>

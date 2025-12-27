@@ -27,18 +27,18 @@ export default function StaffList() {
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [locationFilter, setLocationFilter] = useState<string>('');
-  const [divisionFilter, setDivisionFilter] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [locationFilter, setLocationFilter] = useState<string>('__all__');
+  const [divisionFilter, setDivisionFilter] = useState<string>('__all__');
+  const [statusFilter, setStatusFilter] = useState<string>('__all__');
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const fetchStaff = async () => {
     try {
       const params: Record<string, unknown> = { paginate: false };
       if (search) params.search = search;
-      if (locationFilter) params.office_location_id = parseInt(locationFilter);
-      if (divisionFilter) params.division_id = parseInt(divisionFilter);
-      if (statusFilter) params.status = statusFilter;
+      if (locationFilter && locationFilter !== '__all__') params.office_location_id = parseInt(locationFilter);
+      if (divisionFilter && divisionFilter !== '__all__') params.division_id = parseInt(divisionFilter);
+      if (statusFilter && statusFilter !== '__all__') params.status = statusFilter;
 
       const response = await staffApi.getAll(params);
       if (response.success) {
@@ -148,7 +148,7 @@ export default function StaffList() {
                 <SelectValue placeholder="All Locations" />
               </SelectTrigger>
               <SelectContent className="bg-white border-solarized-base2">
-                <SelectItem value="">All Locations</SelectItem>
+                <SelectItem value="__all__">All Locations</SelectItem>
                 {locations.map((loc) => (
                   <SelectItem key={loc.id} value={loc.id.toString()}>
                     {loc.name}
@@ -161,7 +161,7 @@ export default function StaffList() {
                 <SelectValue placeholder="All Divisions" />
               </SelectTrigger>
               <SelectContent className="bg-white border-solarized-base2">
-                <SelectItem value="">All Divisions</SelectItem>
+                <SelectItem value="__all__">All Divisions</SelectItem>
                 {divisions.map((div) => (
                   <SelectItem key={div.id} value={div.id.toString()}>
                     {div.name}
@@ -174,7 +174,7 @@ export default function StaffList() {
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent className="bg-white border-solarized-base2">
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="__all__">All Status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="on_leave">On Leave</SelectItem>
                 <SelectItem value="suspended">Suspended</SelectItem>

@@ -22,7 +22,7 @@ export default function Jobs() {
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('__all__');
   const [formData, setFormData] = useState({
     title: '',
     division_id: '',
@@ -39,7 +39,7 @@ export default function Jobs() {
     setIsLoading(true);
     try {
       const params: Record<string, unknown> = {};
-      if (statusFilter) params.status = statusFilter;
+      if (statusFilter && statusFilter !== '__all__') params.status = statusFilter;
 
       const response = await recruitmentApi.getJobs(params);
       if (response.success) {
@@ -105,7 +105,7 @@ export default function Jobs() {
     try {
       const data = {
         title: formData.title,
-        division_id: formData.division_id ? parseInt(formData.division_id) : null,
+        division_id: formData.division_id && formData.division_id !== '__none__' ? parseInt(formData.division_id) : null,
         description: formData.description || null,
         requirements: formData.requirements || null,
         employment_type: formData.employment_type,
@@ -201,7 +201,7 @@ export default function Jobs() {
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent className="bg-white border-solarized-base2">
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="__all__">All Status</SelectItem>
                 <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="published">Published</SelectItem>
                 <SelectItem value="closed">Closed</SelectItem>
@@ -302,7 +302,7 @@ export default function Jobs() {
                     <SelectValue placeholder="Select division" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-solarized-base2">
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="__none__">None</SelectItem>
                     {divisions.map((div) => (
                       <SelectItem key={div.id} value={div.id.toString()}>{div.name}</SelectItem>
                     ))}

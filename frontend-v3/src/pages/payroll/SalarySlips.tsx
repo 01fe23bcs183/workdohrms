@@ -14,10 +14,10 @@ export default function SalarySlips() {
   const [salarySlips, setSalarySlips] = useState<SalarySlip[]>([]);
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [monthFilter, setMonthFilter] = useState('');
+  const [monthFilter, setMonthFilter] = useState('__all__');
   const [yearFilter, setYearFilter] = useState(new Date().getFullYear().toString());
-  const [staffFilter, setStaffFilter] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [staffFilter, setStaffFilter] = useState<string>('__all__');
+  const [statusFilter, setStatusFilter] = useState<string>('__all__');
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateForm, setGenerateForm] = useState({ staff_member_id: '', month: '', year: new Date().getFullYear().toString() });
@@ -27,10 +27,10 @@ export default function SalarySlips() {
     setIsLoading(true);
     try {
       const params: Record<string, unknown> = {};
-      if (monthFilter) params.month = parseInt(monthFilter);
+      if (monthFilter && monthFilter !== '__all__') params.month = parseInt(monthFilter);
       if (yearFilter) params.year = parseInt(yearFilter);
-      if (staffFilter) params.staff_member_id = parseInt(staffFilter);
-      if (statusFilter) params.status = statusFilter;
+      if (staffFilter && staffFilter !== '__all__') params.staff_member_id = parseInt(staffFilter);
+      if (statusFilter && statusFilter !== '__all__') params.status = statusFilter;
 
       const response = await payrollApi.getSalarySlips(params);
       if (response.success) {
@@ -139,7 +139,7 @@ export default function SalarySlips() {
                 <SelectValue placeholder="All Months" />
               </SelectTrigger>
               <SelectContent className="bg-white border-solarized-base2">
-                <SelectItem value="">All Months</SelectItem>
+                <SelectItem value="__all__">All Months</SelectItem>
                 {months.map((m) => (
                   <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
                 ))}
@@ -160,7 +160,7 @@ export default function SalarySlips() {
                 <SelectValue placeholder="All Employees" />
               </SelectTrigger>
               <SelectContent className="bg-white border-solarized-base2">
-                <SelectItem value="">All Employees</SelectItem>
+                <SelectItem value="__all__">All Employees</SelectItem>
                 {staffMembers.map((staff) => (
                   <SelectItem key={staff.id} value={staff.id.toString()}>{staff.full_name}</SelectItem>
                 ))}
@@ -171,7 +171,7 @@ export default function SalarySlips() {
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent className="bg-white border-solarized-base2">
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="__all__">All Status</SelectItem>
                 <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="generated">Generated</SelectItem>
                 <SelectItem value="paid">Paid</SelectItem>

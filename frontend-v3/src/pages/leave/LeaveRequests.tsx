@@ -18,8 +18,8 @@ export default function LeaveRequests() {
   const [categories, setCategories] = useState<TimeOffCategory[]>([]);
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [staffFilter, setStaffFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('__all__');
+  const [staffFilter, setStaffFilter] = useState<string>('__all__');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<TimeOffRequest | null>(null);
@@ -36,8 +36,8 @@ export default function LeaveRequests() {
     setIsLoading(true);
     try {
       const params: Record<string, unknown> = {};
-      if (statusFilter) params.status = statusFilter;
-      if (staffFilter) params.staff_member_id = parseInt(staffFilter);
+      if (statusFilter && statusFilter !== '__all__') params.status = statusFilter;
+      if (staffFilter && staffFilter !== '__all__') params.staff_member_id = parseInt(staffFilter);
 
       const response = await leaveApi.getRequests(params);
       if (response.success) {
@@ -57,8 +57,8 @@ export default function LeaveRequests() {
           leaveApi.getCategories(),
           staffApi.getDropdown(),
         ]);
-        if (catRes.success) setCategories(catRes.data);
-        if (staffRes.success) setStaffMembers(staffRes.data);
+        if (catRes.success) setCategories(Array.isArray(catRes.data) ? catRes.data : []);
+        if (staffRes.success) setStaffMembers(Array.isArray(staffRes.data) ? staffRes.data : []);
       } catch (error) {
         console.error('Failed to fetch data:', error);
       }
@@ -155,7 +155,7 @@ export default function LeaveRequests() {
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent className="bg-white border-solarized-base2">
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="__all__">All Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="approved">Approved</SelectItem>
                 <SelectItem value="declined">Declined</SelectItem>
@@ -167,7 +167,7 @@ export default function LeaveRequests() {
                 <SelectValue placeholder="All Employees" />
               </SelectTrigger>
               <SelectContent className="bg-white border-solarized-base2">
-                <SelectItem value="">All Employees</SelectItem>
+                <SelectItem value="__all__">All Employees</SelectItem>
                 {staffMembers.map((staff) => (
                   <SelectItem key={staff.id} value={staff.id.toString()}>
                     {staff.full_name}
