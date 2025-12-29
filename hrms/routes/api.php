@@ -4,6 +4,7 @@ use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\DocumentTypeController;
 use App\Http\Controllers\DocumentLocationController;
+use App\Http\Controllers\DocumentConfigController;
 
 
 // Auth Controllers
@@ -559,10 +560,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/document-types/{documentType}', [DocumentTypeController::class, 'update']);
     Route::delete('/document-types/{documentType}', [DocumentTypeController::class, 'destroy']);
 
-    // Document Locations
-    Route::get('/document-locations', [DocumentLocationController::class, 'index']);
-    Route::get('/document-locations/{documentLocation}', [DocumentLocationController::class, 'show']);
-    Route::put('/document-locations/{documentLocation}', [DocumentLocationController::class, 'update']); // Toggle active
-    Route::post('/document-locations/{documentLocation}/config', [DocumentLocationController::class, 'updateConfig']); // Update credentials
+    // Document Configurations (Separate Tables)
+    // Local
+    Route::post('/document-configs/local', [DocumentConfigController::class, 'storeLocal']);
+    Route::put('/document-configs/local/{id}', [DocumentConfigController::class, 'updateLocal']);
+
+    // Wasabi
+    Route::post('/document-configs/wasabi', [DocumentConfigController::class, 'storeWasabi']);
+    Route::put('/document-configs/wasabi/{id}', [DocumentConfigController::class, 'updateWasabi']);
+
+    // AWS
+    Route::post('/document-configs/aws', [DocumentConfigController::class, 'storeAws']);
+    Route::put('/document-configs/aws/{id}', [DocumentConfigController::class, 'updateAws']);
 
 });

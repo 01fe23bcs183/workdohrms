@@ -31,7 +31,11 @@ class DocumentService
         $path = "{$ownerType}/{$ownerId}/" . date('Y');
 
         // 4. Upload
-        $storagePath = Storage::disk($diskName)->putFileAs($path, $file, $filename);
+        try {
+            $storagePath = Storage::disk($diskName)->putFileAs($path, $file, $filename);
+        } catch (\Exception $e) {
+            throw new Exception("Storage Error: " . $e->getMessage());
+        }
 
         if (!$storagePath) throw new Exception("Failed to upload to {$storageType}");
 
