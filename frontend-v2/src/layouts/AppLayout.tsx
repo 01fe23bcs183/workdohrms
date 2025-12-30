@@ -22,6 +22,7 @@ import {
   ChevronDown,
   Bell,
   User,
+  Building2,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import {
@@ -41,9 +42,9 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { 
-    name: 'Staff', 
-    href: '/staff', 
+  {
+    name: 'Staff',
+    href: '/staff',
     icon: Users,
     children: [
       { name: 'All Staff', href: '/staff' },
@@ -51,9 +52,14 @@ const navigation: NavItem[] = [
       { name: 'Departments', href: '/staff/departments' },
     ]
   },
-  { 
-    name: 'Attendance', 
-    href: '/attendance', 
+  {
+    name: 'Organizations',
+    href: '/organizations',
+    icon: Building2,
+  },
+  {
+    name: 'Attendance',
+    href: '/attendance',
     icon: Clock,
     children: [
       { name: 'Clock In/Out', href: '/attendance/clock' },
@@ -62,9 +68,9 @@ const navigation: NavItem[] = [
       { name: 'Shifts', href: '/attendance/shifts' },
     ]
   },
-  { 
-    name: 'Leave', 
-    href: '/leave', 
+  {
+    name: 'Leave',
+    href: '/leave',
     icon: Calendar,
     children: [
       { name: 'My Requests', href: '/leave/requests' },
@@ -74,9 +80,9 @@ const navigation: NavItem[] = [
       { name: 'Categories', href: '/leave/categories' },
     ]
   },
-  { 
-    name: 'Payroll', 
-    href: '/payroll', 
+  {
+    name: 'Payroll',
+    href: '/payroll',
     icon: DollarSign,
     children: [
       { name: 'Salary Slips', href: '/payroll/slips' },
@@ -86,9 +92,9 @@ const navigation: NavItem[] = [
       { name: 'Tax Slabs', href: '/payroll/tax' },
     ]
   },
-  { 
-    name: 'Recruitment', 
-    href: '/recruitment', 
+  {
+    name: 'Recruitment',
+    href: '/recruitment',
     icon: Briefcase,
     children: [
       { name: 'Jobs', href: '/recruitment/jobs' },
@@ -97,9 +103,9 @@ const navigation: NavItem[] = [
       { name: 'Interviews', href: '/recruitment/interviews' },
     ]
   },
-  { 
-    name: 'Performance', 
-    href: '/performance', 
+  {
+    name: 'Performance',
+    href: '/performance',
     icon: Target,
     children: [
       { name: 'Goals', href: '/performance/goals' },
@@ -108,9 +114,9 @@ const navigation: NavItem[] = [
       { name: 'Competencies', href: '/performance/competencies' },
     ]
   },
-  { 
-    name: 'Assets', 
-    href: '/assets', 
+  {
+    name: 'Assets',
+    href: '/assets',
     icon: Package,
     children: [
       { name: 'All Assets', href: '/assets' },
@@ -118,28 +124,28 @@ const navigation: NavItem[] = [
       { name: 'Assignments', href: '/assets/assignments' },
     ]
   },
-  { 
-    name: 'Training', 
-    href: '/training', 
+  {
+    name: 'Training',
+    href: '/training',
     icon: GraduationCap,
     children: [
       { name: 'Programs', href: '/training/programs' },
       { name: 'Enrollments', href: '/training/enrollments' },
     ]
   },
-  { 
-    name: 'Contracts', 
-    href: '/contracts', 
+  {
+    name: 'Contracts',
+    href: '/contracts',
     icon: FileText,
   },
-  { 
-    name: 'Meetings', 
-    href: '/meetings', 
+  {
+    name: 'Meetings',
+    href: '/meetings',
     icon: Video,
   },
-  { 
-    name: 'Reports', 
-    href: '/reports', 
+  {
+    name: 'Reports',
+    href: '/reports',
     icon: BarChart3,
     children: [
       { name: 'Attendance Report', href: '/reports/attendance' },
@@ -149,22 +155,22 @@ const navigation: NavItem[] = [
       { name: 'Turnover', href: '/reports/turnover' },
     ]
   },
-    { 
-      name: 'Settings', 
-      href: '/settings', 
-      icon: Settings,
-      children: [
-        { name: 'Office Locations', href: '/settings/locations' },
-        { name: 'Divisions', href: '/settings/divisions' },
-        { name: 'Job Titles', href: '/settings/job-titles' },
-        { name: 'Holidays', href: '/settings/holidays' },
-        { name: 'File Categories', href: '/settings/file-categories' },
-        { name: 'Notices', href: '/settings/notices' },
-      ]
-    },
-  { 
-    name: 'Admin', 
-    href: '/admin', 
+  {
+    name: 'Settings',
+    href: '/settings',
+    icon: Settings,
+    children: [
+      { name: 'Office Locations', href: '/settings/locations' },
+      { name: 'Divisions', href: '/settings/divisions' },
+      { name: 'Job Titles', href: '/settings/job-titles' },
+      { name: 'Holidays', href: '/settings/holidays' },
+      { name: 'File Categories', href: '/settings/file-categories' },
+      { name: 'Notices', href: '/settings/notices' },
+    ]
+  },
+  {
+    name: 'Admin',
+    href: '/admin',
     icon: Shield,
     children: [
       { name: 'Users', href: '/admin/users' },
@@ -185,11 +191,10 @@ function NavItemComponent({ item, isCollapsed }: { item: NavItem; isCollapsed: b
       <div className="space-y-1">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-            isActive
-              ? 'bg-solarized-blue/10 text-solarized-blue'
-              : 'text-solarized-base01 hover:bg-solarized-base2 hover:text-solarized-base02'
-          }`}
+          className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors ${isActive
+            ? 'bg-solarized-blue/10 text-solarized-blue'
+            : 'text-solarized-base01 hover:bg-solarized-base2 hover:text-solarized-base02'
+            }`}
         >
           <div className="flex items-center gap-3">
             <Icon className="h-5 w-5" />
@@ -203,11 +208,10 @@ function NavItemComponent({ item, isCollapsed }: { item: NavItem; isCollapsed: b
               <Link
                 key={child.href}
                 to={child.href}
-                className={`block px-3 py-2 text-sm rounded-lg transition-colors ${
-                  location.pathname === child.href
-                    ? 'bg-solarized-blue/10 text-solarized-blue'
-                    : 'text-solarized-base01 hover:bg-solarized-base2 hover:text-solarized-base02'
-                }`}
+                className={`block px-3 py-2 text-sm rounded-lg transition-colors ${location.pathname === child.href
+                  ? 'bg-solarized-blue/10 text-solarized-blue'
+                  : 'text-solarized-base01 hover:bg-solarized-base2 hover:text-solarized-base02'
+                  }`}
               >
                 {child.name}
               </Link>
@@ -221,11 +225,10 @@ function NavItemComponent({ item, isCollapsed }: { item: NavItem; isCollapsed: b
   return (
     <Link
       to={item.href}
-      className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-        isActive
-          ? 'bg-solarized-blue/10 text-solarized-blue'
-          : 'text-solarized-base01 hover:bg-solarized-base2 hover:text-solarized-base02'
-      }`}
+      className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${isActive
+        ? 'bg-solarized-blue/10 text-solarized-blue'
+        : 'text-solarized-base01 hover:bg-solarized-base2 hover:text-solarized-base02'
+        }`}
       title={isCollapsed ? item.name : undefined}
     >
       <Icon className="h-5 w-5 flex-shrink-0" />
@@ -257,9 +260,8 @@ export default function AppLayout() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full bg-white border-r border-solarized-base2 transition-all duration-300 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 ${sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'}`}
+        className={`fixed top-0 left-0 z-50 h-full bg-white border-r border-solarized-base2 transition-all duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          } lg:translate-x-0 ${sidebarCollapsed ? 'lg:w-16' : 'lg:w-64'}`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}

@@ -257,3 +257,11 @@ export const adminService = {
   assignPermissions: (roleId: number, data: { permissions: string[] }) =>
     api.post(`/roles/${roleId}/permissions`, data),
 };
+
+export const organizationService = {
+  getAll: (params?: { page?: number; search?: string }) => api.get('/organizations', { params }),
+  getById: (id: number) => api.get(`/organizations/${id}`),
+  create: (data: Record<string, unknown>) => api.post('/organizations', data),
+  update: (id: number, data: Record<string, unknown>) => api.put(`/organizations/${id}`, data),
+  delete: (id: number) => api.delete(`/organizations/${id}`),
+};

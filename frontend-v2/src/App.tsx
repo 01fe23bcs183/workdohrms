@@ -14,10 +14,14 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import Dashboard from './pages/dashboard/Dashboard';
 
 // Staff Management
-import StaffList from './pages/staff/StaffList';
 import StaffCreate from './pages/staff/StaffCreate';
 import StaffProfile from './pages/staff/StaffProfile';
 import StaffEdit from './pages/staff/StaffEdit';
+
+
+// Organization
+import OrganizationList from './pages/organization/OrganizationList';
+import OrganizationForm from './pages/organization/OrganizationForm';
 
 // Attendance
 import ClockInOut from './pages/attendance/ClockInOut';
@@ -109,6 +113,11 @@ function App() {
             <Route path="/staff/:id" element={<StaffProfile />} />
             <Route path="/staff/:id/edit" element={<StaffEdit />} />
 
+            {/* Organization */}
+            <Route path="/organizations" element={<OrganizationList />} />
+            <Route path="/organizations/create" element={<OrganizationForm />} />
+            <Route path="/organizations/:id/edit" element={<OrganizationForm />} />
+
             {/* Attendance */}
             <Route path="/attendance" element={<ClockInOut />} />
             <Route path="/attendance/clock" element={<ClockInOut />} />
@@ -162,13 +171,13 @@ function App() {
             <Route path="/reports/leave" element={<LeaveReport />} />
             <Route path="/reports/payroll" element={<PayrollReport />} />
 
-                        {/* Settings */}
-                        <Route path="/settings" element={<OfficeLocations />} />
-                        <Route path="/settings/locations" element={<OfficeLocations />} />
-                        <Route path="/settings/divisions" element={<Divisions />} />
-                        <Route path="/settings/job-titles" element={<JobTitles />} />
-                        <Route path="/settings/holidays" element={<Holidays />} />
-                        <Route path="/settings/file-categories" element={<FileCategories />} />
+            {/* Settings */}
+            <Route path="/settings" element={<OfficeLocations />} />
+            <Route path="/settings/locations" element={<OfficeLocations />} />
+            <Route path="/settings/divisions" element={<Divisions />} />
+            <Route path="/settings/job-titles" element={<JobTitles />} />
+            <Route path="/settings/holidays" element={<Holidays />} />
+            <Route path="/settings/file-categories" element={<FileCategories />} />
 
             {/* Admin */}
             <Route path="/admin" element={<Users />} />
