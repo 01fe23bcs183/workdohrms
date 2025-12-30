@@ -32,8 +32,9 @@ class AppServiceProvider extends ServiceProvider
             });
 
         // Admin users have full access to all gates/abilities
+        // Support both new role name (admin) and legacy role name (administrator)
         Gate::before(function ($user, $ability) {
-            if ($user->hasRole('admin')) {
+            if ($user->hasAnyRole(['admin', 'administrator'])) {
                 return true;
             }
         });
