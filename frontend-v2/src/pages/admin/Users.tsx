@@ -79,10 +79,13 @@ export default function Users() {
       if (search) params.search = search;
       
       const response = await adminService.getUsers(params);
-      setUsers(response.data.data || []);
-      setMeta(response.data.meta);
+      const responseData = response.data.data;
+      const userData = responseData?.data || responseData;
+      setUsers(Array.isArray(userData) ? userData : []);
+      setMeta(responseData?.meta || response.data.meta || null);
     } catch (error) {
       console.error('Failed to fetch users:', error);
+      setUsers([]);
     } finally {
       setIsLoading(false);
     }

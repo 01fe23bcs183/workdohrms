@@ -16,13 +16,17 @@ class RoleController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Role::query()
-            ->withCount(['permissions', 'users']);
+            ->withCount(['permissions']);
 
         if ($request->has('search')) {
             $query->where('name', 'like', '%'.$request->search.'%');
         }
 
         $roles = $query->orderBy('hierarchy_level')->orderBy('name')->get();
+
+        $roles->each(function ($role) {
+            $role->users_count = \App\Models\User::role($role->name)->count();
+        });
 
         return $this->success($roles, 'Roles retrieved successfully');
     }
@@ -59,7 +63,8 @@ class RoleController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $role = Role::with(['permissions'])->withCount(['users'])->findOrFail($id);
+        $role = Role::with(['permissions'])->findOrFail($id);
+        $role->users_count = \App\Models\User::role($role->name)->count();
 
         return $this->success($role, 'Role retrieved successfully');
     }
