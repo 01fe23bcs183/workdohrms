@@ -21,24 +21,81 @@ class DocumentController extends Controller
     }
 
     // ==========================================
-    // 1. LOCAL STORAGE
+    // UNIFIED UPLOAD - AUTO LOCATION DETECTION
+    // ==========================================
+
+    /**
+     * Upload Document - Automatically determines storage based on org/company
+     * SINGLE API for all uploads
+     */
+    public function upload(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|max:20480', // 20MB
+            'document_type_id' => 'required|exists:document_types,id',
+            'owner_type' => ['required', new Enum(DocumentOwnerType::class)],
+            'owner_id' => 'required|integer',
+            'org_id' => 'nullable|exists:organizations,id',
+            'company_id' => 'nullable|exists:companies,id',
+            'document_name' => 'nullable|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation Error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $document = $this->documentService->uploadDocument(
+                $request->file('file'),
+                $request->all()
+            );
+
+            $location = $document->location;
+            $storageTypeName = match($location->location_type) {
+                1 => 'Local',
+                2 => 'Wasabi',
+                3 => 'AWS S3',
+                default => 'Unknown'
+            };
+
+            return response()->json([
+                'success' => true,
+                'message' => "Document uploaded to {$storageTypeName} successfully",
+                'data' => $document,
+                'storage_info' => [
+                    'type' => $storageTypeName,
+                    'location_id' => $location->id,
+                    'org_id' => $location->org_id,
+                    'company_id' => $location->company_id
+                ]
+            ], 201);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Upload failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ==========================================
+    // LEGACY: SPECIFIC STORAGE ENDPOINTS
+    // (Kept for backward compatibility)
     // ==========================================
     public function uploadLocal(Request $request)
     {
         return $this->handleUpload($request, 'local');
     }
 
-    // ==========================================
-    // 2. WASABI STORAGE
-    // ==========================================
     public function uploadWasabi(Request $request)
     {
         return $this->handleUpload($request, 'wasabi');
     }
 
-    // ==========================================
-    // 3. AWS STORAGE
-    // ==========================================
     public function uploadAws(Request $request)
     {
         return $this->handleUpload($request, 'aws');
@@ -97,6 +154,21 @@ class DocumentController extends Controller
         try {
             $doc = $this->documentService->updateDocumentMetadata($id, $request->all());
             return response()->json(['success' => true, 'message'=>'Updated', 'data' => $doc]);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Download Document
+     */
+    public function download($id)
+    {
+        try {
+            $document = $this->documentService->getDocument($id);
+            if (!$document) return response()->json(['success' => false, 'message' => 'Not Found'], 404);
+
+            return $this->documentService->downloadDocument($document);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }

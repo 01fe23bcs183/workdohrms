@@ -9,7 +9,11 @@ class DocumentLocation extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'slug', 'is_active'];
+    protected $fillable = [
+        'location_type',// 1 = local, 2 = wasabi, 3 = aws
+        'org_id',
+        'company_id'
+    ];
 
     public function localConfig()
     {

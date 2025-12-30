@@ -3,7 +3,7 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\DocumentTypeController;
-use App\Http\Controllers\DocumentLocationController;
+use App\Http\Controllers\Api\Documents\DocumentLocationController;
 use App\Http\Controllers\DocumentConfigController;
 
 
@@ -525,14 +525,19 @@ Route::middleware('auth:sanctum')->group(function () {
     // ============================================
     // DYNAMIC STORAGE DOCUMENTS & CRUD
     // ============================================
-    // 1. Specialized Upload Routes
+
+    // UNIFIED UPLOAD (Recommended - Auto-detects storage based on org/company)
+    Route::post('/documents/upload', [DocumentController::class, 'upload']);
+
+    // Legacy: Specific Storage Upload Routes (for backward compatibility)
     Route::post('/documents/upload-local', [DocumentController::class, 'uploadLocal']);
     Route::post('/documents/upload-wasabi', [DocumentController::class, 'uploadWasabi']);
     Route::post('/documents/upload-aws', [DocumentController::class, 'uploadAws']);
-    
-    // 2. Standard CRUD
+
+    // Standard CRUD
     Route::get('/documents', [DocumentController::class, 'index']);      // List
     Route::get('/documents/{id}', [DocumentController::class, 'show']);  // Show (includes URL)
+    Route::get('/documents/{id}/download', [DocumentController::class, 'download']); // Download
     Route::put('/documents/{id}', [DocumentController::class, 'update']); // Update Metadata
     Route::delete('/documents/{id}', [DocumentController::class, 'destroy']); // Delete File & Record
 
@@ -552,6 +557,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/companies/{company}', [CompanyController::class, 'show']);
     Route::put('/companies/{company}', [CompanyController::class, 'update']);
     Route::delete('/companies/{company}', [CompanyController::class, 'destroy']);
+
+    // Document Locations
+    Route::get('/document-locations', [DocumentLocationController::class, 'index']);
+    Route::post('/document-locations', [DocumentLocationController::class, 'store']);
+    Route::get('/document-locations/type/{type}', [DocumentLocationController::class, 'getByType']);
+    Route::get('/document-locations/org/{orgId}', [DocumentLocationController::class, 'getLocationTypeByOrg']);
+    Route::get('/document-locations/company/{companyId}', [DocumentLocationController::class, 'getLocationTypeByCompany']);
+    Route::get('/document-locations/{id}', [DocumentLocationController::class, 'show']);
+    Route::put('/document-locations/{id}', [DocumentLocationController::class, 'update']);
+    Route::delete('/document-locations/{id}', [DocumentLocationController::class, 'destroy']);
 
     // Document Types
     Route::get('/document-types', [DocumentTypeController::class, 'index']);
