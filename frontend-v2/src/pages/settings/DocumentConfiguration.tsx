@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { documentLocationService, documentConfigService } from '../../services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { HardDrive, Cloud, Database, Settings as SettingsIcon, Plus, Edit2, Trash2, MoreHorizontal } from 'lucide-react';
+import { HardDrive, Cloud, Database, Settings as SettingsIcon, Plus, Edit2, Trash2, MoreHorizontal, CheckCircle2 } from 'lucide-react';
 import { toast } from '../../hooks/use-toast';
 import { Badge } from '../../components/ui/badge';
 import { useAuth } from '../../context/AuthContext';
@@ -44,15 +44,16 @@ interface DocumentLocation {
 
 type StorageType = 'local' | 'wasabi' | 'aws';
 
-const STORAGE_TYPES = [
-    { type: 'local' as StorageType, id: 1, title: 'Local Storage', icon: HardDrive, color: 'text-solarized-blue' },
-    { type: 'wasabi' as StorageType, id: 2, title: 'Wasabi Cloud', icon: Cloud, color: 'text-solarized-green' },
-    { type: 'aws' as StorageType, id: 3, title: 'AWS S3', icon: Database, color: 'text-solarized-yellow' },
+const STORAGE_CARDS = [
+    { type: 'local' as StorageType, id: 1, title: 'Local Storage', description: 'Store documents on local server', icon: HardDrive, color: 'bg-solarized-blue', iconColor: 'text-solarized-blue' },
+    { type: 'wasabi' as StorageType, id: 2, title: 'Wasabi Cloud', description: 'Store documents on Wasabi cloud storage', icon: Cloud, color: 'bg-solarized-green', iconColor: 'text-solarized-green' },
+    { type: 'aws' as StorageType, id: 3, title: 'AWS S3', description: 'Store documents on Amazon S3', icon: Database, color: 'bg-solarized-yellow', iconColor: 'text-solarized-yellow' },
 ];
 
 export default function DocumentConfiguration() {
     const { user } = useAuth();
     const [locations, setLocations] = useState<DocumentLocation[]>([]);
+    const [loadingType, setLoadingType] = useState<StorageType | null>(null);
 
     // Modal & Form State
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -131,8 +132,10 @@ export default function DocumentConfiguration() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (loadingType) return;
         if (!user?.org_id || !user?.company_id || !currentStorage) return;
 
+        setLoadingType(currentStorage.type);
         try {
             let locationId: number;
 
@@ -165,6 +168,8 @@ export default function DocumentConfiguration() {
         } catch (error) {
             console.error('Failed to save config:', error);
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to save configuration' });
+        } finally {
+            setLoadingType(null);
         }
     };
 
@@ -177,6 +182,10 @@ export default function DocumentConfiguration() {
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete configuration' });
         }
+    };
+
+    const getConfiguredLocations = (locationType: number) => {
+        return locations.filter(loc => loc.location_type === locationType);
     };
 
     const renderTable = (storage: { type: StorageType; id: number; title: string }) => {
@@ -246,35 +255,76 @@ export default function DocumentConfiguration() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <SettingsIcon className="h-8 w-8 text-solarized-blue" />
-                    <div>
-                        <h1 className="text-2xl font-bold text-solarized-base02">Document Configuration</h1>
-                        <p className="text-solarized-base01">Manage storage locations and credentials</p>
-                    </div>
+            <div className="flex items-center gap-3">
+                <SettingsIcon className="h-8 w-8 text-solarized-blue" />
+                <div>
+                    <h1 className="text-2xl font-bold text-solarized-base02">Document Configuration</h1>
+                    <p className="text-solarized-base01">Manage storage locations and credentials</p>
                 </div>
             </div>
 
+            {/* Top Summary Grid */}
+            <div className="grid gap-6 md:grid-cols-3">
+                {STORAGE_CARDS.map((card) => {
+                    const Icon = card.icon;
+                    const configuredLocations = getConfiguredLocations(card.id);
+
+                    return (
+                        <Card
+                            key={card.type}
+                            className="border-0 shadow-md hover:shadow-lg transition-shadow"
+                        >
+                            <CardHeader>
+                                <div className={`w-12 h-12 rounded-lg ${card.color} flex items-center justify-center mb-4`}>
+                                    <Icon className="h-6 w-6 text-white" />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <CardTitle>{card.title}</CardTitle>
+                                    {configuredLocations.length > 0 && (
+                                        <Badge className="bg-solarized-green/10 text-solarized-green">
+                                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                                            {configuredLocations.length} Configured
+                                        </Badge>
+                                    )}
+                                </div>
+                                <CardDescription>{card.description}</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Button
+                                    size="sm"
+                                    className="bg-solarized-blue hover:bg-solarized-blue/90 w-full"
+                                    onClick={() => handleOpenAdd(card)}
+                                    disabled={loadingType !== null}
+                                >
+                                    {loadingType === card.type ? 'Configuring...' : 'Configure'}
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
+            </div>
+
+            {/* Detailed Management Sections */}
             <div className="grid gap-8">
-                {STORAGE_TYPES.map((storage) => (
+                {STORAGE_CARDS.map((storage) => (
                     <Card key={storage.type} className="border-0 shadow-md">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0">
                             <div className="flex items-center gap-3">
                                 <div className={`p-2 rounded-lg bg-solarized-base3`}>
-                                    <storage.icon className={`h-6 w-6 ${storage.color}`} />
+                                    <storage.icon className={`h-6 w-6 ${storage.iconColor}`} />
                                 </div>
                                 <div>
                                     <CardTitle className="text-lg">{storage.title}</CardTitle>
-                                    <CardDescription>Configure {storage.type} storage settings</CardDescription>
+                                    <CardDescription>Detailed {storage.title} settings</CardDescription>
                                 </div>
                             </div>
                             <Button
                                 className="bg-solarized-blue hover:bg-solarized-blue/90"
                                 onClick={() => handleOpenAdd(storage)}
+                                disabled={loadingType !== null}
                             >
                                 <Plus className="mr-2 h-4 w-4" />
-                                Add {storage.title}
+                                Add Configuration
                             </Button>
                         </CardHeader>
                         <CardContent>
@@ -376,7 +426,7 @@ export default function DocumentConfiguration() {
                             <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>
                                 Cancel
                             </Button>
-                            <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90">
+                            <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90" disabled={loadingType !== null}>
                                 {editingConfig ? 'Update' : 'Create'} Configuration
                             </Button>
                         </DialogFooter>
