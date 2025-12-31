@@ -89,7 +89,6 @@ export default function BenefitTypes() {
     e.preventDefault();
     try {
       if (isEditMode && editingId) {
-        // Update existing benefit type
         await payrollService.updateBenefitType(editingId, formData);
       } else {
         // Create new benefit type
