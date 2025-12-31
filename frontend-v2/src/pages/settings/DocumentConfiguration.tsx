@@ -69,8 +69,8 @@ export default function DocumentConfiguration() {
             const locationsWithConfigs = await Promise.all(
                 rawLocations.map(async (loc) => {
                     try {
-                        const configResponse = await documentConfigService.getConfig(loc.id);
-                        return { ...loc, config: configResponse.data.data };
+                        // const configResponse = await documentConfigService.getConfig(loc.id);
+                        return { ...loc, config: null };
                     } catch (err) {
                         return loc;
                     }
@@ -312,6 +312,23 @@ export default function DocumentConfiguration() {
                                     />
                                 </div>
                                 <div className="space-y-2">
+                                    {/* {configuredLocations.length > 0 && (
+                                        <div className="text-xs text-solarized-base01 mb-2 max-h-20 overflow-y-auto">
+                                            {configuredLocations.map(loc => (
+                                                <div key={loc.id} className="truncate">
+                                                    • {loc.organization?.name || 'N/A'} - {loc.company?.company_name || 'N/A'}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )} */}
+                                    {/* <Button
+                                        size="sm"
+                                        className="bg-solarized-blue hover:bg-solarized-blue/90 w-full"
+                                        onClick={() => handleConfigureStorage(card.locationType, card.type)}
+                                        disabled={loadingType === card.type}
+                                    >
+                                        {loadingType === card.type ? 'Configuring...' : 'Configure'}
+                                    </Button> */}
                                     <Label htmlFor="secret_key">Secret Key</Label>
                                     <Input
                                         id="secret_key"

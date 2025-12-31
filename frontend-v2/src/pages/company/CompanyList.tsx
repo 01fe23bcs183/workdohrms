@@ -127,10 +127,7 @@ export default function CompanyList() {
 
     const fetchOrganizations = async () => {
         try {
-            const response = await organizationService.getAll({ page: 1 }); // Assuming we want all or paginated? For dropdown usually want all. Using page 1 for now.
-            // Ideally backend should support "all" or specific endpoint for dropdowns.
-            // Assuming the current getAll returns paginated data, we might need to handle "load more" or assume page 1 covers enough for now or user search.
-            // For now, let's just take whatever comes back.
+            const response = await organizationService.getAll({ page: 1 }); 
             const payload = response.data.data;
             if (Array.isArray(payload)) {
                 setOrganizations(payload);
