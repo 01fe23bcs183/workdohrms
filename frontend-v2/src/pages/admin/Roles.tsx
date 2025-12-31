@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
 import { roleService } from '../../services/api';
 import { Card, CardContent } from '../../components/ui/card';
@@ -106,23 +105,10 @@ export default function Roles() {
 
   const handleDelete = async (id: number, isSystem: boolean) => {
     if (isSystem) {
-      Swal.fire('Error', 'System roles cannot be deleted.', 'error');
+      alert('System roles cannot be deleted.');
       return;
     }
-
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: 'Are you sure you want to delete this role?',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#dc2626',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Yes, delete it!',
-      cancelButtonText: 'Cancel',
-    });
-
-    if (!result.isConfirmed) return;
-
+    if (!confirm('Are you sure you want to delete this role?')) return;
     try {
       await roleService.delete(id);
       fetchRoles();

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import Swal from 'sweetalert2';
 import { Link } from 'react-router-dom';
 import { staffService } from '../../services/api';
 import { Card, CardContent, CardHeader } from '../../components/ui/card';
@@ -99,19 +98,7 @@ export default function StaffList() {
     };
 
   const handleDelete = async (id: number) => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: 'Are you sure you want to delete this staff member?',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#dc2626',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Yes, delete it!',
-      cancelButtonText: 'Cancel',
-    });
-
-    if (!result.isConfirmed) return;
-
+    if (!confirm('Are you sure you want to delete this staff member?')) return;
     try {
       await staffService.delete(id);
       fetchStaff();

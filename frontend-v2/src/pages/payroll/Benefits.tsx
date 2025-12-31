@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import Swal from 'sweetalert2';
 import { payrollService, staffService } from '../../services/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -244,18 +243,9 @@ export default function Benefits() {
   };
 
   const handleDelete = async (benefit: Benefit) => {
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: `Are you sure you want to delete this benefit: "${benefit.description}"?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#dc2626',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Yes, delete it!',
-      cancelButtonText: 'Cancel',
-    });
-
-    if (!result.isConfirmed) return;
+    if (!confirm(`Are you sure you want to delete this benefit: "${benefit.description}"?`)) {
+      return;
+    }
 
     try {
       await payrollService.deleteBenefit(benefit.id);
@@ -264,7 +254,7 @@ export default function Benefits() {
       }
     } catch (error) {
       console.error('Failed to delete benefit:', error);
-      Swal.fire('Error', 'Failed to delete benefit. Please try again.', 'error');
+      alert('Failed to delete benefit. Please try again.');
     }
   };
 
