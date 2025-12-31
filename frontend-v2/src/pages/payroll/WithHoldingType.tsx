@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import { payrollService } from '../../services/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -118,9 +119,18 @@ export default function WithholdingTypes() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this withholding type? This action cannot be undone.')) {
-      return;
-    }
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to delete this withholding type? This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       await payrollService.deleteWithholdingType(id);
@@ -128,9 +138,9 @@ export default function WithholdingTypes() {
     } catch (error: any) {
       console.error('Failed to delete withholding type:', error);
       if (error.response?.data?.message) {
-        alert(`Failed to delete: ${error.response.data.message}`);
+        Swal.fire('Error', `Failed to delete: ${error.response.data.message}`, 'error');
       } else {
-        alert('Failed to delete withholding type. It may be in use.');
+        Swal.fire('Error', 'Failed to delete withholding type. It may be in use.', 'error');
       }
     }
   };

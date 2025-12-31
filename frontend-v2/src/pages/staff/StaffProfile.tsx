@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { staffService } from '../../services/api';
 import {
@@ -157,7 +158,19 @@ export default function StaffProfile() {
   };
 
   const handleFileDelete = async (fileId: number) => {
-    if (!confirm('Are you sure you want to delete this file?')) return;
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to delete this file?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
       await staffService.deleteFile(Number(id), fileId);
       setFiles(files.filter(f => f.id !== fileId));

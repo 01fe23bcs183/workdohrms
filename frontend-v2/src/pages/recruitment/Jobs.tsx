@@ -1,5 +1,6 @@
 // Jobs.tsx
 import { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import { recruitmentService, settingsService } from '../../services/api'; // Only import the service
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -407,7 +408,19 @@ const handleView = async (job: Job) => {
 
   // Handle delete job
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this job posting?')) return;
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Are you sure you want to delete this job posting?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
       const response = await recruitmentService.deleteJob(id);
       if (response.data.success) {
