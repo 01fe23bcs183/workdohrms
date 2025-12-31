@@ -5,9 +5,13 @@ interface User {
   id: number;
   name: string;
   email: string;
-  role: string; // Added to match backend response
+  role: string;
+  role_display: string;
   roles: string[];
   permissions: string[];
+  primary_role: string;
+  primary_role_icon: string;
+  primary_role_hierarchy: number;
   staff_member_id?: number;
   org_id?: number;
   company_id?: number;

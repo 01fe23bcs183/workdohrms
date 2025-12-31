@@ -19,6 +19,33 @@ interface DocumentLocation {
 
 type StorageType = 'local' | 'wasabi' | 'aws';
 
+const STORAGE_CARDS = [
+    {
+        type: 'local' as StorageType,
+        title: 'Local Storage',
+        description: 'Store documents on local server',
+        icon: HardDrive,
+        color: 'bg-solarized-blue',
+        locationType: 1,
+    },
+    {
+        type: 'wasabi' as StorageType,
+        title: 'Wasabi Cloud',
+        description: 'Store documents on Wasabi cloud storage',
+        icon: Cloud,
+        color: 'bg-solarized-green',
+        locationType: 2,
+    },
+    {
+        type: 'aws' as StorageType,
+        title: 'AWS S3',
+        description: 'Store documents on Amazon S3',
+        icon: Database,
+        color: 'bg-solarized-yellow',
+        locationType: 3,
+    },
+];
+
 export default function DocumentConfiguration() {
     const { user } = useAuth();
     const [locations, setLocations] = useState<DocumentLocation[]>([]);
@@ -48,6 +75,8 @@ export default function DocumentConfiguration() {
     };
 
     const handleConfigureStorage = async (locationType: number, type: StorageType) => {
+        if (loadingType) return; // Prevent concurrent requests
+
         if (!user?.org_id || !user?.company_id) {
             toast({
                 variant: 'destructive',
@@ -83,32 +112,6 @@ export default function DocumentConfiguration() {
         }
     };
 
-    const storageCards = [
-        {
-            type: 'local' as StorageType,
-            title: 'Local Storage',
-            description: 'Store documents on local server',
-            icon: HardDrive,
-            color: 'bg-solarized-blue',
-            locationType: 1,
-        },
-        {
-            type: 'wasabi' as StorageType,
-            title: 'Wasabi Cloud',
-            description: 'Store documents on Wasabi cloud storage',
-            icon: Cloud,
-            color: 'bg-solarized-green',
-            locationType: 2,
-        },
-        {
-            type: 'aws' as StorageType,
-            title: 'AWS S3',
-            description: 'Store documents on Amazon S3',
-            icon: Database,
-            color: 'bg-solarized-yellow',
-            locationType: 3,
-        },
-    ];
 
     return (
         <div className="space-y-6">
@@ -123,7 +126,7 @@ export default function DocumentConfiguration() {
 
             {/* Storage Type Cards */}
             <div className="grid gap-6 md:grid-cols-3">
-                {storageCards.map((card) => {
+                {STORAGE_CARDS.map((card) => {
                     const Icon = card.icon;
                     const configuredLocations = getConfiguredLocations(card.locationType);
 
@@ -162,7 +165,7 @@ export default function DocumentConfiguration() {
                                         size="sm"
                                         className="bg-solarized-blue hover:bg-solarized-blue/90 w-full"
                                         onClick={() => handleConfigureStorage(card.locationType, card.type)}
-                                        disabled={loadingType !== null}
+                                        disabled={loadingType === card.type}
                                     >
                                         {loadingType === card.type ? 'Configuring...' : 'Configure'}
                                     </Button>
