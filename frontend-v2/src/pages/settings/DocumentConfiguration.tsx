@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { documentLocationService, documentConfigService } from '../../services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { HardDrive, Cloud, Database, Settings as SettingsIcon, Plus, Edit2, Trash2, MoreHorizontal, CheckCircle2 } from 'lucide-react';
+import { HardDrive, Cloud, Database, Settings as SettingsIcon, Plus, CheckCircle2 } from 'lucide-react';
 import { toast } from '../../hooks/use-toast';
 import { Badge } from '../../components/ui/badge';
 import { useAuth } from '../../context/AuthContext';
@@ -17,20 +17,7 @@ import {
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Switch } from '../../components/ui/switch';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '../../components/ui/table';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '../../components/ui/dropdown-menu';
+
 
 interface DocumentLocation {
     id: number;
@@ -58,7 +45,6 @@ export default function DocumentConfiguration() {
     // Modal & Form State
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [currentStorage, setCurrentStorage] = useState<{ type: StorageType; id: number; title: string } | null>(null);
-    const [editingConfig, setEditingConfig] = useState<any | null>(null);
     const [formData, setFormData] = useState<any>({
         root_path: '',
         bucket: '',
@@ -79,7 +65,7 @@ export default function DocumentConfiguration() {
             const payload = response.data.data;
             let rawLocations: DocumentLocation[] = Array.isArray(payload) ? payload : (payload?.data || []);
 
-            // For each location, fetch its specific config
+            // For each location, fetch its specific config (optional for quick-configured ones)
             const locationsWithConfigs = await Promise.all(
                 rawLocations.map(async (loc) => {
                     try {
@@ -100,9 +86,33 @@ export default function DocumentConfiguration() {
         }
     };
 
+    const handleConfigureStorage = async (locationType: number, type: StorageType) => {
+        if (loadingType) return;
+        if (!user?.org_id || !user?.company_id) {
+            toast({ variant: 'destructive', title: 'Error', description: 'User organization or company not found.' });
+            return;
+        }
+
+        setLoadingType(type);
+        try {
+            await documentLocationService.create({
+                location_type: locationType,
+                org_id: Number(user.org_id),
+                company_id: Number(user.company_id),
+            });
+
+            toast({ title: 'Success', description: `${type.charAt(0).toUpperCase()}${type.slice(1)} storage configured successfully` });
+            fetchLocations();
+        } catch (error) {
+            console.error('Failed to configure:', error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to configure storage' });
+        } finally {
+            setLoadingType(null);
+        }
+    };
+
     const handleOpenAdd = (storage: { type: StorageType; id: number; title: string }) => {
         setCurrentStorage(storage);
-        setEditingConfig(null);
         setFormData({
             root_path: '',
             bucket: '',
@@ -111,21 +121,6 @@ export default function DocumentConfiguration() {
             secret_key: '',
             endpoint: '',
             is_active: true,
-        });
-        setIsDialogOpen(true);
-    };
-
-    const handleOpenEdit = (storage: { type: StorageType; id: number; title: string }, location: DocumentLocation) => {
-        setCurrentStorage(storage);
-        setEditingConfig(location);
-        setFormData({
-            root_path: location.config?.root_path || '',
-            bucket: location.config?.bucket || '',
-            region: location.config?.region || '',
-            access_key: location.config?.access_key || '',
-            secret_key: location.config?.secret_key || '',
-            endpoint: location.config?.endpoint || '',
-            is_active: location.config?.is_active ?? true,
         });
         setIsDialogOpen(true);
     };
@@ -139,118 +134,33 @@ export default function DocumentConfiguration() {
         try {
             let locationId: number;
 
-            if (editingConfig) {
-                locationId = editingConfig.id;
-                // Update specific config
-                const configData = { ...formData, location_id: locationId };
-                if (currentStorage.type === 'local') await documentConfigService.updateLocal(editingConfig.config.id, configData);
-                else if (currentStorage.type === 'wasabi') await documentConfigService.updateWasabi(editingConfig.config.id, configData);
-                else if (currentStorage.type === 'aws') await documentConfigService.updateAws(editingConfig.config.id, configData);
-            } else {
-                // 1. Create Location
-                const locResponse = await documentLocationService.create({
-                    location_type: currentStorage.id,
-                    org_id: user.org_id,
-                    company_id: user.company_id,
-                });
-                locationId = locResponse.data.data.id;
+            // 1. Create Location
+            const locResponse = await documentLocationService.create({
+                location_type: currentStorage.id,
+                org_id: user.org_id,
+                company_id: user.company_id,
+            });
+            locationId = locResponse.data.data.id;
 
-                // 2. Create specific config
-                const configData = { ...formData, location_id: locationId };
-                if (currentStorage.type === 'local') await documentConfigService.createLocal(configData);
-                else if (currentStorage.type === 'wasabi') await documentConfigService.createWasabi(configData);
-                else if (currentStorage.type === 'aws') await documentConfigService.createAws(configData);
-            }
+            // 2. Create specific config
+            const configData = { ...formData, location_id: locationId };
+            if (currentStorage.type === 'local') await documentConfigService.createLocal(configData);
+            else if (currentStorage.type === 'wasabi') await documentConfigService.createWasabi(configData);
+            else if (currentStorage.type === 'aws') await documentConfigService.createAws(configData);
 
-            toast({ title: 'Success', description: 'Configuration saved successfully' });
+            toast({ title: 'Success', description: 'Detailed configuration saved successfully' });
             setIsDialogOpen(false);
             fetchLocations();
         } catch (error) {
             console.error('Failed to save config:', error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to save configuration' });
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to save detailed configuration' });
         } finally {
             setLoadingType(null);
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('Are you sure you want to delete this configuration?')) return;
-        try {
-            await documentLocationService.delete(id);
-            toast({ title: 'Success', description: 'Configuration deleted' });
-            fetchLocations();
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete configuration' });
-        }
-    };
-
     const getConfiguredLocations = (locationType: number) => {
         return locations.filter(loc => loc.location_type === locationType);
-    };
-
-    const renderTable = (storage: { type: StorageType; id: number; title: string }) => {
-        const { id: locationType, type } = storage;
-        const filtered = locations.filter(l => l.location_type === locationType);
-
-        return (
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Organization/Company</TableHead>
-                        {type === 'local' && <TableHead>Root Path</TableHead>}
-                        {(type === 'wasabi' || type === 'aws') && <TableHead>Bucket</TableHead>}
-                        {(type === 'wasabi' || type === 'aws') && <TableHead>Region</TableHead>}
-                        {type === 'wasabi' && <TableHead>Endpoint</TableHead>}
-                        <TableHead>Status</TableHead>
-                        <TableHead className="w-[100px]">Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {filtered.length === 0 ? (
-                        <TableRow>
-                            <TableCell colSpan={6} className="text-center py-8 text-solarized-base01">
-                                No configurations found for {type}
-                            </TableCell>
-                        </TableRow>
-                    ) : (
-                        filtered.map((loc) => (
-                            <TableRow key={loc.id}>
-                                <TableCell>
-                                    <div className="font-medium text-solarized-base02">{loc.organization?.name}</div>
-                                    <div className="text-xs text-solarized-base01">{loc.company?.company_name}</div>
-                                </TableCell>
-                                {type === 'local' && <TableCell className="font-mono text-xs">{loc.config?.root_path || '-'}</TableCell>}
-                                {(type === 'wasabi' || type === 'aws') && <TableCell>{loc.config?.bucket || '-'}</TableCell>}
-                                {(type === 'wasabi' || type === 'aws') && <TableCell>{loc.config?.region || '-'}</TableCell>}
-                                {type === 'wasabi' && <TableCell className="text-xs text-solarized-base01">{loc.config?.endpoint || '-'}</TableCell>}
-                                <TableCell>
-                                    <Badge className={loc.config?.is_active ? 'bg-solarized-green/10 text-solarized-green' : 'bg-red-100 text-red-600'}>
-                                        {loc.config?.is_active ? 'Active' : 'Inactive'}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => handleOpenEdit(storage, loc)}>
-                                                <Edit2 className="mr-2 h-4 w-4" /> Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleDelete(loc.id)} className="text-red-500">
-                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
-                            </TableRow>
-                        ))
-                    )}
-                </TableBody>
-            </Table>
-        );
     };
 
     return (
@@ -263,7 +173,7 @@ export default function DocumentConfiguration() {
                 </div>
             </div>
 
-            {/* Top Summary Grid */}
+            {/* Top Summary Grid - Direct Configuration */}
             <div className="grid gap-6 md:grid-cols-3">
                 {STORAGE_CARDS.map((card) => {
                     const Icon = card.icon;
@@ -293,7 +203,7 @@ export default function DocumentConfiguration() {
                                 <Button
                                     size="sm"
                                     className="bg-solarized-blue hover:bg-solarized-blue/90 w-full"
-                                    onClick={() => handleOpenAdd(card)}
+                                    onClick={() => handleConfigureStorage(card.id, card.type)}
                                     disabled={loadingType !== null}
                                 >
                                     {loadingType === card.type ? 'Configuring...' : 'Configure'}
@@ -304,40 +214,36 @@ export default function DocumentConfiguration() {
                 })}
             </div>
 
-            {/* Detailed Management Sections */}
-            <div className="grid gap-8">
-                {STORAGE_CARDS.map((storage) => (
-                    <Card key={storage.type} className="border-0 shadow-md">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                            <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-lg bg-solarized-base3`}>
-                                    <storage.icon className={`h-6 w-6 ${storage.iconColor}`} />
-                                </div>
-                                <div>
-                                    <CardTitle className="text-lg">{storage.title}</CardTitle>
-                                    <CardDescription>Detailed {storage.title} settings</CardDescription>
-                                </div>
-                            </div>
-                            <Button
-                                className="bg-solarized-blue hover:bg-solarized-blue/90"
-                                onClick={() => handleOpenAdd(storage)}
-                                disabled={loadingType !== null}
-                            >
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add Configuration
-                            </Button>
-                        </CardHeader>
-                        <CardContent>
-                            {renderTable(storage)}
-                        </CardContent>
-                    </Card>
-                ))}
+            {/* Bottom Section - Detailed Configuration Buttons */}
+            <div className="pt-4">
+                <Card className="border-0 shadow-md">
+                    <CardHeader>
+                        <CardTitle className="text-lg">Detailed Configuration</CardTitle>
+                        <CardDescription>Setup advanced credentials for cloud and local storage</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-wrap gap-4">
+                            {STORAGE_CARDS.map((storage) => (
+                                <Button
+                                    key={`detail-${storage.type}`}
+                                    variant="outline"
+                                    className="border-solarized-blue text-solarized-blue hover:bg-solarized-blue/5"
+                                    onClick={() => handleOpenAdd(storage)}
+                                    disabled={loadingType !== null}
+                                >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Add {storage.title} Config
+                                </Button>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
-                        <DialogTitle>{editingConfig ? 'Edit' : 'Add'} {currentStorage?.title} Configuration</DialogTitle>
+                        <DialogTitle>Add {currentStorage?.title} Configuration</DialogTitle>
                         <DialogDescription>
                             Enter the details for your {currentStorage?.type} storage.
                         </DialogDescription>
@@ -427,7 +333,7 @@ export default function DocumentConfiguration() {
                                 Cancel
                             </Button>
                             <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90" disabled={loadingType !== null}>
-                                {editingConfig ? 'Update' : 'Create'} Configuration
+                                Create Configuration
                             </Button>
                         </DialogFooter>
                     </form>
