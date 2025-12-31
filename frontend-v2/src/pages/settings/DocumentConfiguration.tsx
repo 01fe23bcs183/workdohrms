@@ -1,11 +1,18 @@
 import { useState, useEffect } from 'react';
-import { documentLocationService } from '../../services/api';
+import { documentLocationService, organizationService, companyService } from '../../services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
+import { Label } from '../../components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '../../components/ui/select';
 import { HardDrive, Cloud, Database, Settings as SettingsIcon, CheckCircle2 } from 'lucide-react';
 import { toast } from '../../hooks/use-toast';
 import { Badge } from '../../components/ui/badge';
-import { useAuth } from '../../context/AuthContext';
 
 interface DocumentLocation {
     id: number;
@@ -16,17 +23,62 @@ interface DocumentLocation {
     company?: { company_name: string };
 }
 
+interface Organization {
+    id: number;
+    name: string;
+}
+
+interface Company {
+    id: number;
+    company_name: string;
+}
+
 type StorageType = 'local' | 'wasabi' | 'aws';
 
 export default function DocumentConfiguration() {
-    const { user } = useAuth();
     const [locations, setLocations] = useState<DocumentLocation[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [organizations, setOrganizations] = useState<Organization[]>([]);
+    const [companies, setCompanies] = useState<Company[]>([]);
+    const [loadingType, setLoadingType] = useState<StorageType | null>(null);
+
+    const [formData, setFormData] = useState({
+        org_id: '',
+        company_id: '',
+    });
 
     useEffect(() => {
         fetchLocations();
+        fetchOrganizations();
+        fetchCompanies();
     }, []);
 
+    const fetchOrganizations = async () => {
+        try {
+            const response = await organizationService.getAll({});
+            const payload = response.data.data;
+            if (Array.isArray(payload)) {
+                setOrganizations(payload);
+            } else if (payload && Array.isArray(payload.data)) {
+                setOrganizations(payload.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch organizations:', error);
+        }
+    };
+
+    const fetchCompanies = async () => {
+        try {
+            const response = await companyService.getAll({});
+            const payload = response.data.data;
+            if (Array.isArray(payload)) {
+                setCompanies(payload);
+            } else if (payload && Array.isArray(payload.data)) {
+                setCompanies(payload.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch companies:', error);
+        }
+    };
 
     const fetchLocations = async () => {
         try {
@@ -47,21 +99,21 @@ export default function DocumentConfiguration() {
     };
 
     const handleConfigureStorage = async (locationType: number, type: StorageType) => {
-        if (!user?.org_id || !user?.company_id) {
+        if (!formData.org_id || !formData.company_id) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'User organization or company not found',
+                description: 'Please select both organization and company',
             });
             return;
         }
 
-        setIsLoading(true);
+        setLoadingType(type);
         try {
             await documentLocationService.create({
                 location_type: locationType,
-                org_id: Number(user.org_id),
-                company_id: Number(user.company_id),
+                org_id: Number(formData.org_id),
+                company_id: Number(formData.company_id),
             });
 
             toast({
@@ -78,7 +130,7 @@ export default function DocumentConfiguration() {
                 description: 'Failed to configure storage location',
             });
         } finally {
-            setIsLoading(false);
+            setLoadingType(null);
         }
     };
 
@@ -119,6 +171,53 @@ export default function DocumentConfiguration() {
                 </div>
             </div>
 
+            {/* Selection Form */}
+            <Card className="border-0 shadow-md">
+                <CardHeader>
+                    <CardTitle>Select Organization & Company</CardTitle>
+                    <CardDescription>Choose the organization and company for storage configuration</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="org_id">Organization *</Label>
+                            <Select
+                                value={formData.org_id}
+                                onValueChange={(value) => setFormData({ ...formData, org_id: value })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select organization" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {organizations.map((org) => (
+                                        <SelectItem key={org.id} value={String(org.id)}>
+                                            {org.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="company_id">Company *</Label>
+                            <Select
+                                value={formData.company_id}
+                                onValueChange={(value) => setFormData({ ...formData, company_id: value })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select company" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {companies.map((company) => (
+                                        <SelectItem key={company.id} value={String(company.id)}>
+                                            {company.company_name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Storage Type Cards */}
             <div className="grid gap-6 md:grid-cols-3">
@@ -161,9 +260,9 @@ export default function DocumentConfiguration() {
                                         size="sm"
                                         className="bg-solarized-blue hover:bg-solarized-blue/90 w-full"
                                         onClick={() => handleConfigureStorage(card.locationType, card.type)}
-                                        disabled={isLoading}
+                                        disabled={loadingType !== null}
                                     >
-                                        {isLoading ? 'Configuring...' : 'Configure'}
+                                        {loadingType === card.type ? 'Configuring...' : 'Configure'}
                                     </Button>
                                 </div>
                             </CardContent>
