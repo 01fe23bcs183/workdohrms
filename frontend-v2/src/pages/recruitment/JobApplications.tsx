@@ -59,23 +59,24 @@ interface JobApplication {
   id: number;
   job_posting_id: number;
   candidate_id: number;
-  job_stage_id: number;
+  job_stage_id: number | null;
   applied_date: string;
   rating: number | null;
   notes: string | null;
-  custom_answers: Record<string, unknown> | null;
+  custom_answers: string[] | null;
   status: 'pending' | 'shortlisted' | 'rejected' | 'hired';
+  created_at: string;
+  updated_at: string;
   job?: {
     id: number;
     title: string;
-    job_category?: {
+    category?: {
       title: string;
     };
   };
   candidate?: {
     id: number;
-    first_name: string;
-    last_name: string;
+    name: string;
     email: string;
     phone: string;
   };
@@ -83,25 +84,21 @@ interface JobApplication {
     id: number;
     title: string;
     color: string;
-  };
-  interviews?: Array<{
-    id: number;
-    scheduled_date: string;
-    status: string;
-  }>;
+  } | null;
 }
 
 interface Job {
   id: number;
   title: string;
-  status: string;
+  status: 'draft' | 'open' | 'closed';
+  applications_count: number;
 }
 
 interface Candidate {
   id: number;
-  first_name: string;
-  last_name: string;
+  name: string;
   email: string;
+  phone: string;
 }
 
 interface JobStage {
@@ -148,7 +145,7 @@ export default function JobApplications() {
     try {
       const response = await recruitmentService.getJobs({ paginate: false });
       if (response.data && response.data.data) {
-        // Filter to only show active jobs for new applications
+        // Filter to only show open jobs for new applications (based on your backend statuses)
         setJobs(response.data.data);
       }
     } catch (error) {
@@ -247,7 +244,7 @@ export default function JobApplications() {
             selectedApplication.id,
             { 
               rating: Number(formData.rating),
-              notes: selectedApplication.notes || ''
+              notes: formData.note || selectedApplication.notes || ''
             }
           );
           break;
@@ -262,9 +259,13 @@ export default function JobApplications() {
       resetForm();
       setActionType('');
       fetchApplications();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to perform action:', error);
-      alert('Failed to perform action. Please try again.');
+      if (error.response?.data?.message) {
+        alert(error.response.data.message);
+      } else {
+        alert('Failed to perform action. Please try again.');
+      }
     }
   };
 
@@ -282,9 +283,13 @@ export default function JobApplications() {
           break;
       }
       fetchApplications();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to perform quick action:', error);
-      alert('Failed to perform action. Please try again.');
+      if (error.response?.data?.message) {
+        alert(error.response.data.message);
+      } else {
+        alert('Failed to perform action. Please try again.');
+      }
     }
   };
 
@@ -309,7 +314,7 @@ export default function JobApplications() {
     setActionType(type);
     setFormData({
       ...formData,
-      job_stage_id: application.job_stage_id.toString(),
+      job_stage_id: application.job_stage_id?.toString() || '',
       rating: application.rating?.toString() || '3',
     });
     setIsActionDialogOpen(true);
@@ -359,8 +364,8 @@ export default function JobApplications() {
     hired: applications.filter(a => a.status === 'hired').length,
   };
 
-  // Get active jobs for the form
-  const activeJobs = jobs.filter(job => job.status === 'active' || job.status === 'published');
+  // Get open jobs for the form (based on your backend statuses)
+  const openJobs = jobs.filter(job => job.status === 'open');
 
   return (
     <div className="space-y-6">
@@ -402,13 +407,16 @@ export default function JobApplications() {
                       <SelectValue placeholder="Select job" />
                     </SelectTrigger>
                     <SelectContent>
-                      {activeJobs.map((job) => (
+                      {openJobs.map((job) => (
                         <SelectItem key={job.id} value={job.id.toString()}>
                           {job.title}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {openJobs.length === 0 && (
+                    <p className="text-sm text-red-500">No open jobs available. Please create an open job first.</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -424,7 +432,7 @@ export default function JobApplications() {
                     <SelectContent>
                       {candidates.map((candidate) => (
                         <SelectItem key={candidate.id} value={candidate.id.toString()}>
-                          {candidate.first_name} {candidate.last_name} ({candidate.email})
+                          {candidate.name} ({candidate.email})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -452,7 +460,7 @@ export default function JobApplications() {
                 <Button
                   type="submit"
                   className="bg-solarized-blue hover:bg-solarized-blue/90"
-                  disabled={!formData.job_id || !formData.candidate_id}
+                  disabled={!formData.job_id || !formData.candidate_id || openJobs.length === 0}
                 >
                   Create Application
                 </Button>
@@ -620,7 +628,7 @@ export default function JobApplications() {
                     <TableCell className="font-medium">
                       <div>
                         <p className="font-medium">
-                          {application.candidate?.first_name} {application.candidate?.last_name}
+                          {application.candidate?.name}
                         </p>
                         <p className="text-sm text-solarized-base01">
                           {application.candidate?.email}
@@ -629,18 +637,17 @@ export default function JobApplications() {
                     </TableCell>
                     <TableCell>
                       {application.job?.title || 'N/A'}
-                      {application.job?.job_category && (
-                        <p className="text-sm text-solarized-base01">
-                          {application.job.job_category.title}
-                        </p>
-                      )}
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        style={{ backgroundColor: `${application.stage?.color}20`, color: application.stage?.color }}
-                      >
-                        {application.stage?.title || 'N/A'}
-                      </Badge>
+                      {application.stage ? (
+                        <Badge
+                          style={{ backgroundColor: `${application.stage.color}20`, color: application.stage.color }}
+                        >
+                          {application.stage.title}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">No Stage</Badge>
+                      )}
                     </TableCell>
                     <TableCell>{formatDate(application.applied_date)}</TableCell>
                     <TableCell>{renderStars(application.rating)}</TableCell>
@@ -656,7 +663,7 @@ export default function JobApplications() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleView(application)}>
                             <Eye className="mr-2 h-4 w-4" />
-                            View Details
+                            View
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleActionClick(application, 'move')}>
                             <Briefcase className="mr-2 h-4 w-4" />
@@ -752,14 +759,18 @@ export default function JobApplications() {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-solarized-base01">Current Stage</Label>
-                      <Badge
-                        style={{ 
-                          backgroundColor: `${selectedApplication.stage?.color}20`, 
-                          color: selectedApplication.stage?.color 
-                        }}
-                      >
-                        {selectedApplication.stage?.title || 'N/A'}
-                      </Badge>
+                      {selectedApplication.stage ? (
+                        <Badge
+                          style={{ 
+                            backgroundColor: `${selectedApplication.stage.color}20`, 
+                            color: selectedApplication.stage.color 
+                          }}
+                        >
+                          {selectedApplication.stage.title}
+                        </Badge>
+                      ) : (
+                        <p className="font-medium">No Stage</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label className="text-solarized-base01">Applied Date</Label>
@@ -767,7 +778,7 @@ export default function JobApplications() {
                     </div>
                   </div>
                   
-                  {selectedApplication.custom_answers && (
+                  {selectedApplication.custom_answers && selectedApplication.custom_answers.length > 0 && (
                     <div className="space-y-2">
                       <Label className="text-solarized-base01">Custom Answers</Label>
                       <pre className="bg-solarized-base03/10 p-4 rounded text-sm overflow-auto">
@@ -782,9 +793,7 @@ export default function JobApplications() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label className="text-solarized-base01">Name</Label>
-                        <p className="font-medium">
-                          {selectedApplication.candidate.first_name} {selectedApplication.candidate.last_name}
-                        </p>
+                        <p className="font-medium">{selectedApplication.candidate.name}</p>
                       </div>
                       <div className="space-y-2">
                         <Label className="text-solarized-base01">Email</Label>
@@ -894,6 +903,16 @@ export default function JobApplications() {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="note">Note</Label>
+                    <Textarea
+                      id="note"
+                      value={formData.note}
+                      onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                      placeholder="Enter your notes here..."
+                      rows={4}
+                    />
                   </div>
                 </>
               )}
