@@ -13,6 +13,8 @@ import { Badge } from '../../components/ui/badge';
 import { Avatar, AvatarFallback } from '../../components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Skeleton } from '../../components/ui/skeleton';
+import Swal from "sweetalert2";
+import "../../styles/swal-custom.css";
 import {
   ArrowLeft,
   Edit,
@@ -97,6 +99,50 @@ export default function StaffProfile() {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  const showAlert = (
+    type: "success" | "error" | "warning",
+    title: string,
+    text: string,
+    timer?: number
+  ) => {
+    const config: any = {
+      icon: type,
+      title,
+      text,
+      confirmButtonColor: "#268bd2",
+      customClass: {
+        popup: "swal-solarized",
+        title: "swal-title",
+        htmlContainer: "swal-text",
+      },
+    };
+
+    if (timer) {
+      config.timer = timer;
+      config.showConfirmButton = false;
+    }
+
+    return Swal.fire(config);
+  };
+
+  const showConfirmDialog = async (title: string, text: string) => {
+    return Swal.fire({
+      title,
+      text,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc322f",
+      cancelButtonColor: "#268bd2",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+      customClass: {
+        popup: "swal-solarized",
+        title: "swal-title",
+        htmlContainer: "swal-text",
+      },
+    });
+  };
+
   useEffect(() => {
     const fetchStaff = async () => {
       try {
@@ -157,12 +203,21 @@ export default function StaffProfile() {
   };
 
   const handleFileDelete = async (fileId: number) => {
-    if (!confirm('Are you sure you want to delete this file?')) return;
+    const result = await showConfirmDialog(
+      "Are you sure?",
+      "You want to delete this file?"
+    );
+
+    if (!result.isConfirmed) return;
+
     try {
       await staffService.deleteFile(Number(id), fileId);
+      showAlert("success", "Deleted!", "File deleted successfully", 2000);
       setFiles(files.filter(f => f.id !== fileId));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete file:', error);
+      const errorMessage = error?.response?.data?.message || "Failed to delete file";
+      showAlert("error", "Error", errorMessage);
     }
   };
 

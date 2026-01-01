@@ -5,6 +5,8 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Badge } from '../../components/ui/badge';
+import Swal from "sweetalert2";
+import "../../styles/swal-custom.css";
 import {
   Dialog,
   DialogContent,
@@ -87,6 +89,50 @@ export default function AssetsList() {
     location: '',
   });
 
+  const showAlert = (
+    type: "success" | "error" | "warning",
+    title: string,
+    text: string,
+    timer?: number
+  ) => {
+    const config: any = {
+      icon: type,
+      title,
+      text,
+      confirmButtonColor: "#268bd2",
+      customClass: {
+        popup: "swal-solarized",
+        title: "swal-title",
+        htmlContainer: "swal-text",
+      },
+    };
+
+    if (timer) {
+      config.timer = timer;
+      config.showConfirmButton = false;
+    }
+
+    return Swal.fire(config);
+  };
+
+  const showConfirmDialog = async (title: string, text: string) => {
+    return Swal.fire({
+      title,
+      text,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc322f",
+      cancelButtonColor: "#268bd2",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+      customClass: {
+        popup: "swal-solarized",
+        title: "swal-title",
+        htmlContainer: "swal-text",
+      },
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -134,12 +180,21 @@ export default function AssetsList() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this asset?')) return;
+    const result = await showConfirmDialog(
+      "Are you sure?",
+      "You want to delete this asset?"
+    );
+
+    if (!result.isConfirmed) return;
+
     try {
       await assetService.delete(id);
+      showAlert("success", "Deleted!", "Asset deleted successfully", 2000);
       fetchAssets();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete asset:', error);
+      const errorMessage = error?.response?.data?.message || "Failed to delete asset";
+      showAlert("error", "Error", errorMessage);
     }
   };
 

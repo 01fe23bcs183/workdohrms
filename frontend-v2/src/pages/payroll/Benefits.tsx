@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../..
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
+import Swal from "sweetalert2";
+import "../../styles/swal-custom.css";
 import {
   Select,
   SelectContent,
@@ -104,6 +106,50 @@ export default function Benefits() {
     effective_until: '',
     is_active: 'true',
   });
+
+  const showAlert = (
+    type: "success" | "error" | "warning",
+    title: string,
+    text: string,
+    timer?: number
+  ) => {
+    const config: any = {
+      icon: type,
+      title,
+      text,
+      confirmButtonColor: "#268bd2",
+      customClass: {
+        popup: "swal-solarized",
+        title: "swal-title",
+        htmlContainer: "swal-text",
+      },
+    };
+
+    if (timer) {
+      config.timer = timer;
+      config.showConfirmButton = false;
+    }
+
+    return Swal.fire(config);
+  };
+
+  const showConfirmDialog = async (title: string, text: string) => {
+    return Swal.fire({
+      title,
+      text,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc322f",
+      cancelButtonColor: "#268bd2",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+      customClass: {
+        popup: "swal-solarized",
+        title: "swal-title",
+        htmlContainer: "swal-text",
+      },
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -243,18 +289,23 @@ export default function Benefits() {
   };
 
   const handleDelete = async (benefit: Benefit) => {
-    if (!confirm(`Are you sure you want to delete this benefit: "${benefit.description}"?`)) {
-      return;
-    }
+    const result = await showConfirmDialog(
+      "Are you sure?",
+      `You want to delete this benefit: "${benefit.description}"?`
+    );
+
+    if (!result.isConfirmed) return;
 
     try {
       await payrollService.deleteBenefit(benefit.id);
+      showAlert("success", "Deleted!", "Benefit deleted successfully", 2000);
       if (selectedStaff) {
         fetchBenefits();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete benefit:', error);
-      alert('Failed to delete benefit. Please try again.');
+      const errorMessage = error?.response?.data?.message || "Failed to delete benefit. Please try again.";
+      showAlert("error", "Error", errorMessage);
     }
   };
 

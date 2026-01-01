@@ -6,6 +6,8 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { Badge } from '../../components/ui/badge';
+import Swal from "sweetalert2";
+import "../../styles/swal-custom.css";
 import {
   Select,
   SelectContent,
@@ -65,6 +67,50 @@ export default function Divisions() {
       office_location_id: '',
     });
 
+  const showAlert = (
+    type: "success" | "error" | "warning",
+    title: string,
+    text: string,
+    timer?: number
+  ) => {
+    const config: any = {
+      icon: type,
+      title,
+      text,
+      confirmButtonColor: "#268bd2",
+      customClass: {
+        popup: "swal-solarized",
+        title: "swal-title",
+        htmlContainer: "swal-text",
+      },
+    };
+
+    if (timer) {
+      config.timer = timer;
+      config.showConfirmButton = false;
+    }
+
+    return Swal.fire(config);
+  };
+
+  const showConfirmDialog = async (title: string, text: string) => {
+    return Swal.fire({
+      title,
+      text,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc322f",
+      cancelButtonColor: "#268bd2",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+      customClass: {
+        popup: "swal-solarized",
+        title: "swal-title",
+        htmlContainer: "swal-text",
+      },
+    });
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -113,12 +159,21 @@ export default function Divisions() {
     };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this division?')) return;
+    const result = await showConfirmDialog(
+      "Are you sure?",
+      "You want to delete this division?"
+    );
+
+    if (!result.isConfirmed) return;
+
     try {
       await settingsService.deleteDivision(id);
+      showAlert("success", "Deleted!", "Division deleted successfully", 2000);
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete division:', error);
+      const errorMessage = error?.response?.data?.message || "Failed to delete division";
+      showAlert("error", "Error", errorMessage);
     }
   };
 
