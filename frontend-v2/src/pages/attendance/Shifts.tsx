@@ -4,6 +4,8 @@ import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
+import Swal from "sweetalert2";
+import "../../styles/swal-custom.css";
 import {
   Table,
   TableBody,
@@ -56,6 +58,50 @@ export default function Shifts() {
     end_time: '',
     break_duration_minutes: '60',
   });
+
+  const showAlert = (
+    type: "success" | "error" | "warning",
+    title: string,
+    text: string,
+    timer?: number
+  ) => {
+    const config: any = {
+      icon: type,
+      title,
+      text,
+      confirmButtonColor: "#268bd2",
+      customClass: {
+        popup: "swal-solarized",
+        title: "swal-title",
+        htmlContainer: "swal-text",
+      },
+    };
+
+    if (timer) {
+      config.timer = timer;
+      config.showConfirmButton = false;
+    }
+
+    return Swal.fire(config);
+  };
+
+  const showConfirmDialog = async (title: string, text: string) => {
+    return Swal.fire({
+      title,
+      text,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc322f",
+      cancelButtonColor: "#268bd2",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+      customClass: {
+        popup: "swal-solarized",
+        title: "swal-title",
+        htmlContainer: "swal-text",
+      },
+    });
+  };
 
   /* =========================
      FETCH SHIFTS
@@ -125,17 +171,22 @@ export default function Shifts() {
     setIsDialogOpen(true);
   };
 
-  /* =========================
-     DELETE
-  ========================= */
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this shift?')) return;
+    const result = await showConfirmDialog(
+      "Are you sure?",
+      "You want to delete this shift?"
+    );
+
+    if (!result.isConfirmed) return;
 
     try {
       await attendanceService.deleteShift(id);
+      showAlert("success", "Deleted!", "Shift deleted successfully", 2000);
       fetchShifts();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete shift:', error);
+      const errorMessage = error?.response?.data?.message || "Failed to delete shift";
+      showAlert("error", "Error", errorMessage);
     }
   };
 

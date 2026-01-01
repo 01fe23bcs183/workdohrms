@@ -6,6 +6,8 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Badge } from '../../components/ui/badge';
 import { Switch } from '../../components/ui/switch';
+import Swal from "sweetalert2";
+import "../../styles/swal-custom.css";
 import {
   Table,
   TableBody,
@@ -62,6 +64,50 @@ export default function LeaveCategories() {
     is_carry_forward_allowed: false,
     max_carry_forward_days: '0',
   });
+
+  const showAlert = (
+    type: "success" | "error" | "warning",
+    title: string,
+    text: string,
+    timer?: number
+  ) => {
+    const config: any = {
+      icon: type,
+      title,
+      text,
+      confirmButtonColor: "#268bd2",
+      customClass: {
+        popup: "swal-solarized",
+        title: "swal-title",
+        htmlContainer: "swal-text",
+      },
+    };
+
+    if (timer) {
+      config.timer = timer;
+      config.showConfirmButton = false;
+    }
+
+    return Swal.fire(config);
+  };
+
+  const showConfirmDialog = async (title: string, text: string) => {
+    return Swal.fire({
+      title,
+      text,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc322f",
+      cancelButtonColor: "#268bd2",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+      customClass: {
+        popup: "swal-solarized",
+        title: "swal-title",
+        htmlContainer: "swal-text",
+      },
+    });
+  };
 
   /* =========================
      FETCH
@@ -151,16 +197,22 @@ export default function LeaveCategories() {
     setIsDialogOpen(true);
   };
 
-  /* =========================
-     DELETE
-  ========================= */
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this category?')) return;
+    const result = await showConfirmDialog(
+      "Are you sure?",
+      "You want to delete this category?"
+    );
+
+    if (!result.isConfirmed) return;
+
     try {
       await leaveService.deleteCategory(id);
+      showAlert("success", "Deleted!", "Category deleted successfully", 2000);
       fetchCategories();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete category:', error);
+      const errorMessage = error?.response?.data?.message || "Failed to delete category";
+      showAlert("error", "Error", errorMessage);
     }
   };
 

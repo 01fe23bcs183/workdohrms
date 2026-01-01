@@ -7,6 +7,8 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Badge } from '../../components/ui/badge';
 import { Textarea } from '../../components/ui/textarea';
+import Swal from "sweetalert2";
+import "../../styles/swal-custom.css";
 import {
   Table,
   TableBody,
@@ -59,6 +61,50 @@ export default function Roles() {
     hierarchy_level: 99,
   });
 
+  const showAlert = (
+    type: "success" | "error" | "warning",
+    title: string,
+    text: string,
+    timer?: number
+  ) => {
+    const config: any = {
+      icon: type,
+      title,
+      text,
+      confirmButtonColor: "#268bd2",
+      customClass: {
+        popup: "swal-solarized",
+        title: "swal-title",
+        htmlContainer: "swal-text",
+      },
+    };
+
+    if (timer) {
+      config.timer = timer;
+      config.showConfirmButton = false;
+    }
+
+    return Swal.fire(config);
+  };
+
+  const showConfirmDialog = async (title: string, text: string) => {
+    return Swal.fire({
+      title,
+      text,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc322f",
+      cancelButtonColor: "#268bd2",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+      customClass: {
+        popup: "swal-solarized",
+        title: "swal-title",
+        htmlContainer: "swal-text",
+      },
+    });
+  };
+
   useEffect(() => {
     fetchRoles();
   }, []);
@@ -105,15 +151,25 @@ export default function Roles() {
 
   const handleDelete = async (id: number, isSystem: boolean) => {
     if (isSystem) {
-      alert('System roles cannot be deleted.');
+      showAlert("warning", "Cannot Delete", "System roles cannot be deleted.");
       return;
     }
-    if (!confirm('Are you sure you want to delete this role?')) return;
+
+    const result = await showConfirmDialog(
+      "Are you sure?",
+      "You want to delete this role?"
+    );
+
+    if (!result.isConfirmed) return;
+
     try {
       await roleService.delete(id);
+      showAlert("success", "Deleted!", "Role deleted successfully", 2000);
       fetchRoles();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete role:', error);
+      const errorMessage = error?.response?.data?.message || "Failed to delete role";
+      showAlert("error", "Error", errorMessage);
     }
   };
 

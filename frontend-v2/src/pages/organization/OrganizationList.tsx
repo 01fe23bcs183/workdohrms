@@ -5,6 +5,8 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
+import Swal from "sweetalert2";
+import "../../styles/swal-custom.css";
 import {
     Table,
     TableBody,
@@ -70,6 +72,50 @@ export default function OrganizationList() {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const showAlert = (
+        type: "success" | "error" | "warning",
+        title: string,
+        text: string,
+        timer?: number
+    ) => {
+        const config: any = {
+            icon: type,
+            title,
+            text,
+            confirmButtonColor: "#268bd2",
+            customClass: {
+                popup: "swal-solarized",
+                title: "swal-title",
+                htmlContainer: "swal-text",
+            },
+        };
+
+        if (timer) {
+            config.timer = timer;
+            config.showConfirmButton = false;
+        }
+
+        return Swal.fire(config);
+    };
+
+    const showConfirmDialog = async (title: string, text: string) => {
+        return Swal.fire({
+            title,
+            text,
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#dc322f",
+            cancelButtonColor: "#268bd2",
+            confirmButtonText: "Yes, delete it!",
+            cancelButtonText: "Cancel",
+            customClass: {
+                popup: "swal-solarized",
+                title: "swal-title",
+                htmlContainer: "swal-text",
+            },
+        });
+    };
+
     useEffect(() => {
         fetchOrganizations();
     }, [page, search]);
@@ -118,21 +164,21 @@ export default function OrganizationList() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('Are you sure you want to delete this organization?')) return;
+        const result = await showConfirmDialog(
+            "Are you sure?",
+            "You want to delete this organization?"
+        );
+
+        if (!result.isConfirmed) return;
+
         try {
             await organizationService.delete(id);
-            toast({
-                title: 'Success',
-                description: 'Organization deleted successfully',
-            });
+            showAlert("success", "Deleted!", "Organization deleted successfully", 2000);
             fetchOrganizations();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to delete organization:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: 'Failed to delete organization',
-            });
+            const errorMessage = error?.response?.data?.message || "Failed to delete organization";
+            showAlert("error", "Error", errorMessage);
         }
     };
 
