@@ -6,14 +6,6 @@ import { HardDrive, Cloud, Database, Settings as SettingsIcon, Plus, CheckCircle
 import { toast } from '../../hooks/use-toast';
 import { Badge } from '../../components/ui/badge';
 import { useAuth } from '../../context/AuthContext';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Switch } from '../../components/ui/switch';
@@ -43,7 +35,8 @@ export default function DocumentConfiguration() {
     const [loadingTypes, setLoadingTypes] = useState<Set<StorageType>>(new Set());
 
     // Modal & Form State
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [showDetailed, setShowDetailed] = useState(false);
+    const [selectedType, setSelectedType] = useState<StorageType | null>(null);
     const [currentStorage, setCurrentStorage] = useState<{ type: StorageType; id: number; title: string } | null>(null);
     const [formData, setFormData] = useState<any>({
         root_path: '',
@@ -115,8 +108,9 @@ export default function DocumentConfiguration() {
         }
     };
 
-    const handleOpenAdd = (storage: { type: StorageType; id: number; title: string }) => {
+    const handleSelectType = (storage: { type: StorageType; id: number; title: string }) => {
         setCurrentStorage(storage);
+        setSelectedType(storage.type);
         setFormData({
             root_path: '',
             bucket: '',
@@ -126,7 +120,6 @@ export default function DocumentConfiguration() {
             endpoint: '',
             is_active: true,
         });
-        setIsDialogOpen(true);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -153,7 +146,8 @@ export default function DocumentConfiguration() {
             else if (currentStorage.type === 'aws') await documentConfigService.createAws(configData);
 
             toast({ title: 'Success', description: 'Detailed configuration saved successfully' });
-            setIsDialogOpen(false);
+            setSelectedType(null);
+            setCurrentStorage(null);
             fetchLocations();
         } catch (error) {
             console.error('Failed to save config:', error);
@@ -227,153 +221,146 @@ export default function DocumentConfiguration() {
             {/* Bottom Section - Detailed Configuration */}
             <div className="pt-4">
                 <Card className="border-0 shadow-md">
-                    <CardHeader>
-                        <CardTitle className="text-lg">Detailed Configuration</CardTitle>
-                        <CardDescription>Setup advanced credentials for cloud and local storage</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {STORAGE_CARDS.map((storage) => (
-                                <div key={`detail-${storage.type}`} className="flex flex-col gap-3 p-4 rounded-xl border border-solarized-base3 hover:border-solarized-blue/20 transition-colors bg-solarized-base3/30">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`p-1.5 rounded-md bg-white shadow-sm`}>
-                                            <storage.icon className={`h-4 w-4 ${storage.iconColor}`} />
-                                        </div>
-                                        <span className="font-medium text-solarized-base02 text-sm">{storage.title}</span>
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="w-full border-solarized-blue text-solarized-blue hover:bg-solarized-blue hover:text-white transition-all shadow-sm group"
-                                        onClick={() => handleOpenAdd(storage)}
-                                        disabled={loadingTypes.has(storage.type)}
-                                    >
-                                        <Plus className="mr-2 h-4 w-4 group-hover:rotate-90 transition-transform" />
-                                        Setup {storage.title}
-                                    </Button>
-                                </div>
-                            ))}
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
+                        <div>
+                            <CardTitle className="text-lg">Detailed Configuration</CardTitle>
+                            <CardDescription>Setup advanced credentials for cloud and local storage</CardDescription>
                         </div>
-                    </CardContent>
+                        {!showDetailed && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-solarized-blue text-solarized-blue hover:bg-solarized-blue hover:text-white"
+                                onClick={() => setShowDetailed(true)}
+                            >
+                                <Plus className="mr-2 h-4 w-4" />
+                                Start Detailed Setup
+                            </Button>
+                        )}
+                    </CardHeader>
+                    {showDetailed && (
+                        <CardContent className="space-y-6">
+                            <div className="flex flex-wrap gap-4 justify-center p-2 bg-solarized-base3/20 rounded-xl">
+                                {STORAGE_CARDS.map((storage) => (
+                                    <Button
+                                        key={`btn-${storage.type}`}
+                                        variant={selectedType === storage.type ? "default" : "outline"}
+                                        className={selectedType === storage.type ? "bg-solarized-blue hover:bg-solarized-blue/90" : "border-solarized-blue/20 hover:border-solarized-blue"}
+                                        onClick={() => handleSelectType(storage)}
+                                    >
+                                        <storage.icon className="mr-2 h-4 w-4" />
+                                        {storage.title}
+                                    </Button>
+                                ))}
+                            </div>
+
+                            {selectedType && (
+                                <div className="p-6 border border-solarized-base3 rounded-xl bg-white/50 backdrop-blur-sm shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+                                    <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                                        {selectedType === 'local' ? <HardDrive className="h-5 w-5 text-solarized-blue" /> : selectedType === 'wasabi' ? <Cloud className="h-5 w-5 text-solarized-green" /> : <Database className="h-5 w-5 text-solarized-yellow" />}
+                                        Configure {currentStorage?.title}
+                                    </h3>
+
+                                    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto">
+                                        {selectedType === 'local' && (
+                                            <div className="space-y-2">
+                                                <Label htmlFor="root_path">Root Path</Label>
+                                                <Input
+                                                    id="root_path"
+                                                    placeholder="/var/www/storage/app/public"
+                                                    value={formData.root_path}
+                                                    onChange={(e) => setFormData({ ...formData, root_path: e.target.value })}
+                                                    required
+                                                />
+                                                <p className="text-xs text-solarized-base01">The absolute file path on your server where documents will be stored.</p>
+                                            </div>
+                                        )}
+
+                                        {(selectedType === 'wasabi' || selectedType === 'aws') && (
+                                            <>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="bucket">Bucket Name</Label>
+                                                        <Input
+                                                            id="bucket"
+                                                            value={formData.bucket}
+                                                            onChange={(e) => setFormData({ ...formData, bucket: e.target.value })}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor="region">Region</Label>
+                                                        <Input
+                                                            id="region"
+                                                            value={formData.region}
+                                                            onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="access_key">Access Key</Label>
+                                                    <Input
+                                                        id="access_key"
+                                                        value={formData.access_key}
+                                                        onChange={(e) => setFormData({ ...formData, access_key: e.target.value })}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="secret_key">Secret Key</Label>
+                                                    <Input
+                                                        id="secret_key"
+                                                        type="password"
+                                                        value={formData.secret_key}
+                                                        onChange={(e) => setFormData({ ...formData, secret_key: e.target.value })}
+                                                        required
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {selectedType === 'wasabi' && (
+                                            <div className="space-y-2">
+                                                <Label htmlFor="endpoint">Endpoint URL</Label>
+                                                <Input
+                                                    id="endpoint"
+                                                    placeholder="https://s3.wasabisys.com"
+                                                    value={formData.endpoint}
+                                                    onChange={(e) => setFormData({ ...formData, endpoint: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-center justify-between p-4 bg-solarized-base3/10 rounded-lg">
+                                            <div className="space-y-0.5">
+                                                <Label htmlFor="is_active">Active Status</Label>
+                                                <p className="text-xs text-solarized-base01">Set this configuration as active immediately</p>
+                                            </div>
+                                            <Switch
+                                                id="is_active"
+                                                checked={formData.is_active}
+                                                onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                                            />
+                                        </div>
+
+                                        <div className="flex gap-3 pt-4 border-t border-solarized-base3/30">
+                                            <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90 flex-1" disabled={currentStorage ? loadingTypes.has(currentStorage.type) : false}>
+                                                {loadingTypes.has(selectedType) ? 'Saving...' : 'Save Configuration'}
+                                            </Button>
+                                            <Button type="button" variant="ghost" onClick={() => { setSelectedType(null); setCurrentStorage(null); }}>
+                                                Cancel
+                                            </Button>
+                                        </div>
+                                    </form>
+                                </div>
+                            )}
+                        </CardContent>
+                    )}
                 </Card>
             </div>
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-[500px]">
-                    <DialogHeader>
-                        <DialogTitle>Add {currentStorage?.title} Configuration</DialogTitle>
-                        <DialogDescription>
-                            Enter the details for your {currentStorage?.type} storage.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-4 py-4">
-                        {currentStorage?.type === 'local' && (
-                            <div className="space-y-2">
-                                <Label htmlFor="root_path">Root Path</Label>
-                                <Input
-                                    id="root_path"
-                                    placeholder="/var/www/storage/app/public"
-                                    value={formData.root_path}
-                                    onChange={(e) => setFormData({ ...formData, root_path: e.target.value })}
-                                    required
-                                />
-                            </div>
-                        )}
-
-                        {(currentStorage?.type === 'wasabi' || currentStorage?.type === 'aws') && (
-                            <>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="bucket">Bucket Name</Label>
-                                        <Input
-                                            id="bucket"
-                                            value={formData.bucket}
-                                            onChange={(e) => setFormData({ ...formData, bucket: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="region">Region</Label>
-                                        <Input
-                                            id="region"
-                                            value={formData.region}
-                                            onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="access_key">Access Key</Label>
-                                    <Input
-                                        id="access_key"
-                                        value={formData.access_key}
-                                        onChange={(e) => setFormData({ ...formData, access_key: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    {/* {configuredLocations.length > 0 && (
-                                        <div className="text-xs text-solarized-base01 mb-2 max-h-20 overflow-y-auto">
-                                            {configuredLocations.map(loc => (
-                                                <div key={loc.id} className="truncate">
-                                                    • {loc.organization?.name || 'N/A'} - {loc.company?.company_name || 'N/A'}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )} */}
-                                    {/* <Button
-                                        size="sm"
-                                        className="bg-solarized-blue hover:bg-solarized-blue/90 w-full"
-                                        onClick={() => handleConfigureStorage(card.locationType, card.type)}
-                                        disabled={loadingType === card.type}
-                                    >
-                                        {loadingType === card.type ? 'Configuring...' : 'Configure'}
-                                    </Button> */}
-                                    <Label htmlFor="secret_key">Secret Key</Label>
-                                    <Input
-                                        id="secret_key"
-                                        type="password"
-                                        value={formData.secret_key}
-                                        onChange={(e) => setFormData({ ...formData, secret_key: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                            </>
-                        )}
-
-                        {currentStorage?.type === 'wasabi' && (
-                            <div className="space-y-2">
-                                <Label htmlFor="endpoint">Endpoint URL</Label>
-                                <Input
-                                    id="endpoint"
-                                    placeholder="https://s3.wasabisys.com"
-                                    value={formData.endpoint}
-                                    onChange={(e) => setFormData({ ...formData, endpoint: e.target.value })}
-                                    required
-                                />
-                            </div>
-                        )}
-
-                        <div className="flex items-center justify-between pt-2">
-                            <Label htmlFor="is_active">Active Status</Label>
-                            <Switch
-                                id="is_active"
-                                checked={formData.is_active}
-                                onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                            />
-                        </div>
-
-                        <DialogFooter className="pt-4">
-                            <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>
-                                Cancel
-                            </Button>
-                            <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90" disabled={currentStorage ? loadingTypes.has(currentStorage.type) : false}>
-                                Create Configuration
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }
