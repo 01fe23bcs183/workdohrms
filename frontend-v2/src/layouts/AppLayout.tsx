@@ -128,7 +128,7 @@ const navigation: NavItem[] = [
     icon: Target,
     children: [
       { name: 'Goals', href: '/performance/goals' },
-      { name: 'KPIs', href: '/performance/kpis' },
+      // { name: 'KPIs', href: '/performance/kpis' },
       { name: 'Appraisals', href: '/performance/appraisals' },
       { name: 'Competencies', href: '/performance/competencies' },
     ]

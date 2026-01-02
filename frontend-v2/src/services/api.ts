@@ -100,7 +100,7 @@ export const payrollService = {
   bulkGenerate: (data: { employee_ids: number[]; month: number; year: number }) =>
     api.post('/salary-slips/bulk-generate', data),
   getSlipById: (id: number) => api.get(`/salary-slips/${id}`),
-  downloadSlip: (id: number) => api.get(`/salary-slips/${id}/download`, { responseType: 'blob' }),
+  downloadSlip: (id: number) => api.get(`/payroll/salary-slips/${id}/download`, { responseType: 'blob' }),
   // Updated benefits methods for top-level routes
   getBenefits: (params?: { staff_member_id?: number; benefit_type_id?: number; active?: boolean; paginate?: boolean; page?: number; per_page?: number }) =>
     api.get('/staff-benefits', { params }),
@@ -351,8 +351,12 @@ export const performanceService = {
   getAppraisals: (params?: { staff_member_id?: number; page?: number }) => api.get('/appraisal-records', { params }),
   getAppraisalCycles: () => api.get('/appraisal-cycles'),
   createAppraisalCycle: (data: Record<string, unknown>) => api.post('/appraisal-cycles', data),
+  activateCycle: (id: number) => api.post(`/appraisal-cycles/${id}/activate`),
+  closeCycle: (id: number) => api.post(`/appraisal-cycles/${id}/close`),
+  deleteCycle: (id: number) => api.delete(`/appraisal-cycles/${id}`),
   submitSelfReview: (id: number, data: Record<string, unknown>) => api.post(`/appraisal-records/${id}/self-review`, data),
   submitManagerReview: (id: number, data: Record<string, unknown>) => api.post(`/appraisal-records/${id}/manager-review`, data),
+  getStaffMembers: () => api.get('/staff-members'),
 };
 
 export const assetService = {
