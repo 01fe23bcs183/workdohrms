@@ -8,6 +8,7 @@ import { Badge } from '../../components/ui/badge';
 import { useAuth } from '../../context/AuthContext';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
+import { RadioGroup, RadioGroupItem } from '../../components/ui/radio-group';
 
 
 interface DocumentLocation {
@@ -212,72 +213,77 @@ export default function DocumentConfiguration() {
             </div>
 
             {/* Top Summary Grid - Direct Configuration */}
-            <div className="grid gap-6 md:grid-cols-3">
-                {STORAGE_CARDS.map((card) => {
-                    const Icon = card.icon;
-                    const configuredLocations = getConfiguredLocations(card.id);
+            <RadioGroup
+                value={selectedType || ''}
+                onValueChange={(val) => {
+                    const card = STORAGE_CARDS.find(c => c.type === val);
+                    if (card) handleOptionClick(card);
+                }}
+            >
+                <div className="grid gap-6 md:grid-cols-3">
+                    {STORAGE_CARDS.map((card) => {
+                        const Icon = card.icon;
+                        const configuredLocations = getConfiguredLocations(card.id);
 
-                    return (
-                        <Card
-                            key={card.type}
-                            className="border-0 shadow-md hover:shadow-lg transition-shadow"
-                        >
-                            <CardHeader>
-                                <div className={`w-12 h-12 rounded-lg ${card.color} flex items-center justify-center mb-4`}>
-                                    <Icon className="h-6 w-6 text-white" />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <CardTitle>{card.title}</CardTitle>
-                                    {configuredLocations.length > 0 && (
-                                        <Badge className="bg-solarized-green/10 text-solarized-green">
-                                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                                            {configuredLocations.length} Configured
-                                        </Badge>
-                                    )}
-                                </div>
-                                <CardDescription>{card.description}</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex gap-2">
-                                    <Button
-                                        size="sm"
-                                        className="bg-solarized-blue hover:bg-solarized-blue/90 flex-1"
-                                        onClick={() => handleConfigureStorage(card.id, card.type)}
-                                        disabled={loadingTypes.has(card.type)}
-                                    >
-                                        {loadingTypes.has(card.type) ? 'Configuring...' : 'Configure'}
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="border-solarized-blue text-solarized-blue hover:bg-solarized-blue/10 flex-1"
-                                        onClick={() => handleOptionClick(card)}
-                                    >
-                                        Option
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    );
-                })}
-            </div>
+                        return (
+                            <Card
+                                key={card.type}
+                                className={`border-2 transition-all cursor-pointer ${selectedType === card.type ? 'border-linear-blue shadow-lg' : 'border-transparent shadow-md hover:shadow-lg'}`}
+                                onClick={() => handleOptionClick(card)}
+                            >
+                                <CardHeader className="relative">
+                                    <div className="absolute top-4 right-4">
+                                        <RadioGroupItem value={card.type} id={`radio-${card.type}`} />
+                                    </div>
+                                    <div className={`w-12 h-12 rounded-lg ${card.color} flex items-center justify-center mb-4`}>
+                                        <Icon className="h-6 w-6 text-white" />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle>{card.title}</CardTitle>
+                                        {configuredLocations.length > 0 && (
+                                            <Badge className="bg-solarized-green/10 text-solarized-green">
+                                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                {configuredLocations.length} Configured
+                                            </Badge>
+                                        )}
+                                    </div>
+                                    <CardDescription>{card.description}</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            size="sm"
+                                            className="bg-solarized-blue hover:bg-solarized-blue/90 flex-1"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleConfigureStorage(card.id, card.type);
+                                            }}
+                                            disabled={loadingTypes.has(card.type)}
+                                        >
+                                            {loadingTypes.has(card.type) ? 'Configuring...' : 'Configure'}
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="border-solarized-blue text-solarized-blue hover:bg-solarized-blue/10 flex-1"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleOptionClick(card);
+                                            }}
+                                        >
+                                            Option
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
+                </div>
+            </RadioGroup>
 
             <div className="pt-4" id="detailed-config-section">
                 <Card className="border-0 shadow-md">
-                    <CardContent className="space-y-6 pt-8">
-                        <div className="flex flex-row gap-4 justify-start p-2 bg-solarized-base3/20 rounded-xl overflow-x-auto">
-                            {STORAGE_CARDS.map((storage) => (
-                                <Button
-                                    key={`btn-${storage.type}`}
-                                    variant={selectedType === storage.type ? "default" : "outline"}
-                                    className={`flex-1 min-w-[140px] ${selectedType === storage.type ? "bg-solarized-blue hover:bg-solarized-blue/90" : "border-solarized-blue/20 hover:border-solarized-blue"}`}
-                                    onClick={() => handleSelectType(storage)}
-                                >
-                                    <storage.icon className="mr-2 h-4 w-4" />
-                                    {storage.title}
-                                </Button>
-                            ))}
-                        </div>
+                    <CardContent className="space-y-6 pt-0">
 
                         {selectedType && (
                             <div className="p-6 border border-solarized-base3 rounded-xl bg-white/50 backdrop-blur-sm shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
