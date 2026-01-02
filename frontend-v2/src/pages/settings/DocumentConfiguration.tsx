@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { documentLocationService, documentConfigService } from '../../services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { HardDrive, Cloud, Database, Settings as SettingsIcon, CheckCircle2, Plus } from 'lucide-react';
+import { HardDrive, Cloud, Database, Settings as SettingsIcon, CheckCircle2 } from 'lucide-react';
 import { showAlert, getErrorMessage } from '../../lib/sweetalert';
 import { Badge } from '../../components/ui/badge';
 import { useAuth } from '../../context/AuthContext';
@@ -36,7 +36,6 @@ export default function DocumentConfiguration() {
     // Modal & Form State
     const [selectedType, setSelectedType] = useState<StorageType | null>(null);
     const [currentStorage, setCurrentStorage] = useState<{ type: StorageType; id: number; title: string } | null>(null);
-    const [isFormVisible, setIsFormVisible] = useState(false);
     const [formData, setFormData] = useState<any>({
         root_path: '',
         bucket: '',
@@ -108,7 +107,6 @@ export default function DocumentConfiguration() {
 
     const handleOptionClick = (storage: { type: StorageType; id: number; title: string }) => {
         handleSelectType(storage);
-        setIsFormVisible(true);
         // Scroll to detailed section
         const element = document.getElementById('detailed-config-section');
         if (element) {
@@ -119,7 +117,6 @@ export default function DocumentConfiguration() {
     const handleSelectType = (storage: { type: StorageType; id: number; title: string }) => {
         setCurrentStorage(storage);
         setSelectedType(storage.type);
-        setIsFormVisible(false); // Reset form visibility when switching types
 
         // Find existing config for this type
         const existingLoc = locations.find(loc => loc.location_type === storage.id);
@@ -289,103 +286,91 @@ export default function DocumentConfiguration() {
                                     Configure {currentStorage?.title}
                                 </h3>
 
-                                {!isFormVisible ? (
-                                    <div className="flex justify-center py-8">
+                                <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto">
+                                    {selectedType === 'local' && (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="root_path">Root Path</Label>
+                                            <Input
+                                                id="root_path"
+                                                placeholder="/var/www/storage/app/public"
+                                                value={formData.root_path}
+                                                onChange={(e) => setFormData({ ...formData, root_path: e.target.value })}
+                                                required
+                                            />
+                                            <p className="text-xs text-solarized-base01">The absolute file path on your server where documents will be stored.</p>
+                                        </div>
+                                    )}
+
+                                    {(selectedType === 'wasabi' || selectedType === 'aws') && (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="bucket">Bucket Name</Label>
+                                                    <Input
+                                                        id="bucket"
+                                                        value={formData.bucket}
+                                                        onChange={(e) => setFormData({ ...formData, bucket: e.target.value })}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="region">Region</Label>
+                                                    <Input
+                                                        id="region"
+                                                        value={formData.region}
+                                                        onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="access_key">Access Key</Label>
+                                                <Input
+                                                    id="access_key"
+                                                    value={formData.access_key}
+                                                    onChange={(e) => setFormData({ ...formData, access_key: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="secret_key">Secret Key</Label>
+                                                <Input
+                                                    id="secret_key"
+                                                    type="password"
+                                                    value={formData.secret_key}
+                                                    onChange={(e) => setFormData({ ...formData, secret_key: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {selectedType === 'wasabi' && (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="endpoint">Endpoint URL</Label>
+                                            <Input
+                                                id="endpoint"
+                                                placeholder="https://s3.wasabisys.com"
+                                                value={formData.endpoint}
+                                                onChange={(e) => setFormData({ ...formData, endpoint: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                    )}
+
+                                    <div className="flex gap-3 pt-4 border-t border-solarized-base3/30">
+                                        <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90 flex-1" disabled={currentStorage ? loadingTypes.has(currentStorage.type) : false}>
+                                            {loadingTypes.has(selectedType) ? 'Saving...' : 'Save Configuration'}
+                                        </Button>
                                         <Button
-                                            onClick={() => setIsFormVisible(true)}
-                                            className="bg-solarized-blue hover:bg-solarized-blue/90"
+                                            type="button"
+                                            variant="ghost"
+                                            onClick={() => setSelectedType(null)}
                                         >
-                                            <Plus className="mr-2 h-4 w-4" />
-                                            Open {currentStorage?.title} Configuration Form
+                                            Hide Form
                                         </Button>
                                     </div>
-                                ) : (
-                                    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto">
-                                        {selectedType === 'local' && (
-                                            <div className="space-y-2">
-                                                <Label htmlFor="root_path">Root Path</Label>
-                                                <Input
-                                                    id="root_path"
-                                                    placeholder="/var/www/storage/app/public"
-                                                    value={formData.root_path}
-                                                    onChange={(e) => setFormData({ ...formData, root_path: e.target.value })}
-                                                    required
-                                                />
-                                                <p className="text-xs text-solarized-base01">The absolute file path on your server where documents will be stored.</p>
-                                            </div>
-                                        )}
-
-                                        {(selectedType === 'wasabi' || selectedType === 'aws') && (
-                                            <>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="bucket">Bucket Name</Label>
-                                                        <Input
-                                                            id="bucket"
-                                                            value={formData.bucket}
-                                                            onChange={(e) => setFormData({ ...formData, bucket: e.target.value })}
-                                                            required
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="region">Region</Label>
-                                                        <Input
-                                                            id="region"
-                                                            value={formData.region}
-                                                            onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                                                            required
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="access_key">Access Key</Label>
-                                                    <Input
-                                                        id="access_key"
-                                                        value={formData.access_key}
-                                                        onChange={(e) => setFormData({ ...formData, access_key: e.target.value })}
-                                                        required
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="secret_key">Secret Key</Label>
-                                                    <Input
-                                                        id="secret_key"
-                                                        type="password"
-                                                        value={formData.secret_key}
-                                                        onChange={(e) => setFormData({ ...formData, secret_key: e.target.value })}
-                                                        required
-                                                    />
-                                                </div>
-                                            </>
-                                        )}
-
-                                        {selectedType === 'wasabi' && (
-                                            <div className="space-y-2">
-                                                <Label htmlFor="endpoint">Endpoint URL</Label>
-                                                <Input
-                                                    id="endpoint"
-                                                    placeholder="https://s3.wasabisys.com"
-                                                    value={formData.endpoint}
-                                                    onChange={(e) => setFormData({ ...formData, endpoint: e.target.value })}
-                                                    required
-                                                />
-                                            </div>
-                                        )}
-
-                                        <div className="flex gap-3 pt-4 border-t border-solarized-base3/30">
-                                            <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90 flex-1" disabled={currentStorage ? loadingTypes.has(currentStorage.type) : false}>
-                                                {loadingTypes.has(selectedType) ? 'Saving...' : 'Save Configuration'}
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                onClick={() => setIsFormVisible(false)}
-                                            >
-                                                Hide Form
-                                            </Button>
-                                        </div>
-                                    </form>
-                                )}
+                                </form>
                             </div>
                         )}
                     </CardContent>
