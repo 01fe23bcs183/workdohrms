@@ -101,118 +101,118 @@ export const payrollService = {
     api.post('/salary-slips/bulk-generate', data),
   getSlipById: (id: number) => api.get(`/salary-slips/${id}`),
   downloadSlip: (id: number) => api.get(`/salary-slips/${id}/download`, { responseType: 'blob' }),
-// Updated benefits methods for top-level routes
-getBenefits: (params?: { staff_member_id?: number; benefit_type_id?: number; active?: boolean; paginate?: boolean; page?: number; per_page?: number }) => 
+  // Updated benefits methods for top-level routes
+  getBenefits: (params?: { staff_member_id?: number; benefit_type_id?: number; active?: boolean; paginate?: boolean; page?: number; per_page?: number }) =>
     api.get('/staff-benefits', { params }),
   createBenefit: (data: { staff_member_id: number; benefit_type_id: number; amount: number; description?: string; calculation_type?: string; effective_until?: string; effective_from?: string; is_active?: boolean }) =>
     api.post('/staff-benefits', data),
-   updateBenefit: (id: number, data: Partial<{ 
-    benefit_type_id: number; 
-    description: string; 
-    calculation_type: 'fixed' | 'percentage'; 
-    amount: number; 
-    effective_from?: string | null; 
-    effective_until?: string | null; 
-    is_active?: boolean 
+  updateBenefit: (id: number, data: Partial<{
+    benefit_type_id: number;
+    description: string;
+    calculation_type: 'fixed' | 'percentage';
+    amount: number;
+    effective_from?: string | null;
+    effective_until?: string | null;
+    is_active?: boolean
   }>) => api.put(`/staff-benefits/${id}`, data),
   deleteBenefit: (id: number) => api.delete(`/staff-benefits/${id}`),
-  
+
   // Benefit Types CRUD methods
-  getBenefitTypes: (params?: { 
-    active?: boolean; 
-    taxable?: boolean; 
-    paginate?: boolean; 
-    page?: number; 
-    per_page?: number 
+  getBenefitTypes: (params?: {
+    active?: boolean;
+    taxable?: boolean;
+    paginate?: boolean;
+    page?: number;
+    per_page?: number
   }) => api.get('/benefit-types', { params }),
-  
-  createBenefitType: (data: { 
-    title: string; 
-    notes?: string; 
-    is_taxable?: boolean; 
-    is_active?: boolean 
+
+  createBenefitType: (data: {
+    title: string;
+    notes?: string;
+    is_taxable?: boolean;
+    is_active?: boolean
   }) => api.post('/benefit-types', data),
-  
-  updateBenefitType: (id: number, data: Partial<{ 
-    title: string; 
-    notes?: string; 
-    is_taxable?: boolean; 
-    is_active?: boolean 
+
+  updateBenefitType: (id: number, data: Partial<{
+    title: string;
+    notes?: string;
+    is_taxable?: boolean;
+    is_active?: boolean
   }>) => api.put(`/benefit-types/${id}`, data),
-  
+
   deleteBenefitType: (id: number) => api.delete(`/benefit-types/${id}`),
-  
+
   // Similarly for deductions (if you have staff-deductions route)
- getDeductions: (params?: { 
-    staff_member_id?: number; 
-    withholding_type_id?: number; 
-    active?: boolean; 
-    paginate?: boolean; 
-    page?: number; 
-    per_page?: number 
+  getDeductions: (params?: {
+    staff_member_id?: number;
+    withholding_type_id?: number;
+    active?: boolean;
+    paginate?: boolean;
+    page?: number;
+    per_page?: number
   }) => api.get('/recurring-deductions', { params }),
-  
-  createDeduction: (data: { 
-    staff_member_id: number; 
-    withholding_type_id: number; 
-    description: string; 
-    calculation_type: 'fixed' | 'percentage'; 
-    amount: number; 
-    effective_from?: string; 
-    effective_until?: string; 
-    is_active?: boolean 
+
+  createDeduction: (data: {
+    staff_member_id: number;
+    withholding_type_id: number;
+    description: string;
+    calculation_type: 'fixed' | 'percentage';
+    amount: number;
+    effective_from?: string;
+    effective_until?: string;
+    is_active?: boolean
   }) => api.post('/recurring-deductions', data),
-  
-  updateDeduction: (id: number, data: Partial<{ 
-    withholding_type_id: number; 
-    description: string; 
-    calculation_type: 'fixed' | 'percentage'; 
-    amount: number; 
-    effective_from?: string; 
-    effective_until?: string; 
-    is_active?: boolean 
+
+  updateDeduction: (id: number, data: Partial<{
+    withholding_type_id: number;
+    description: string;
+    calculation_type: 'fixed' | 'percentage';
+    amount: number;
+    effective_from?: string;
+    effective_until?: string;
+    is_active?: boolean
   }>) => api.put(`/recurring-deductions/${id}`, data),
-  
+
   deleteDeduction: (id: number) => api.delete(`/recurring-deductions/${id}`),
-  
+
   // Withholding Types CRUD methods
-  getWithholdingTypes: (params?: { 
-    active?: boolean; 
-    statutory?: boolean; 
-    paginate?: boolean; 
-    page?: number; 
-    per_page?: number 
+  getWithholdingTypes: (params?: {
+    active?: boolean;
+    statutory?: boolean;
+    paginate?: boolean;
+    page?: number;
+    per_page?: number
   }) => api.get('/withholding-types', { params }),
-  
-  createWithholdingType: (data: { 
-    title: string; 
-    notes?: string; 
-    is_statutory?: boolean; 
-    is_active?: boolean 
+
+  createWithholdingType: (data: {
+    title: string;
+    notes?: string;
+    is_statutory?: boolean;
+    is_active?: boolean
   }) => api.post('/withholding-types', data),
-  
-  updateWithholdingType: (id: number, data: Partial<{ 
-    title: string; 
-    notes?: string; 
-    is_statutory?: boolean; 
-    is_active?: boolean 
+
+  updateWithholdingType: (id: number, data: Partial<{
+    title: string;
+    notes?: string;
+    is_statutory?: boolean;
+    is_active?: boolean
   }>) => api.put(`/withholding-types/${id}`, data),
-  
+
   deleteWithholdingType: (id: number) => api.delete(`/withholding-types/${id}`),
-  
- getTaxSlabs: () => api.get('/tax-slabs'),
-calculateTax: (data: Record<string, unknown>) => api.post('/tax-slabs/calculate', data), // Remove 'annual_income' type restriction
-createTaxSlab: (data: Record<string, unknown>) => api.post('/tax-slabs', data),
-updateTaxSlab: (id: number, data: Record<string, unknown>) => api.put(`/tax-slabs/${id}`, data),
-deleteTaxSlab: (id: number) => api.delete(`/tax-slabs/${id}`),
-getTaxSlab: (id: number) => api.get(`/tax-slabs/${id}`),
+
+  getTaxSlabs: () => api.get('/tax-slabs'),
+  calculateTax: (data: Record<string, unknown>) => api.post('/tax-slabs/calculate', data), // Remove 'annual_income' type restriction
+  createTaxSlab: (data: Record<string, unknown>) => api.post('/tax-slabs', data),
+  updateTaxSlab: (id: number, data: Record<string, unknown>) => api.put(`/tax-slabs/${id}`, data),
+  deleteTaxSlab: (id: number) => api.delete(`/tax-slabs/${id}`),
+  getTaxSlab: (id: number) => api.get(`/tax-slabs/${id}`),
 };
 
 export const recruitmentService = {
-    getOfficeLocations: () => api.get('/office-locations'),
+  getOfficeLocations: () => api.get('/office-locations'),
   getDivisions: () => api.get('/divisions'),
-    getJobs: (params?: { 
-    status?: string; 
+  getJobs: (params?: {
+    status?: string;
     page?: number;
     per_page?: number;
     search?: string;
@@ -225,23 +225,23 @@ export const recruitmentService = {
   deleteJob: (id: number) => api.delete(`/jobs/${id}`),
   publishJob: (id: number) => api.post(`/jobs/${id}/publish`),
   closeJob: (id: number) => api.post(`/jobs/${id}/close`),
-   getJobCategories: (params?: { 
+  getJobCategories: (params?: {
     search?: string;
-    paginate?: boolean; 
-    page?: number; 
-    per_page?: number 
+    paginate?: boolean;
+    page?: number;
+    per_page?: number
   }) => api.get('/job-categories', { params }),
-  
-  createJobCategory: (data: { 
-    title: string; 
-    description?: string; 
+
+  createJobCategory: (data: {
+    title: string;
+    description?: string;
   }) => api.post('/job-categories', data),
-  
-  updateJobCategory: (id: number, data: Partial<{ 
-    title: string; 
-    description?: string; 
+
+  updateJobCategory: (id: number, data: Partial<{
+    title: string;
+    description?: string;
   }>) => api.put(`/job-categories/${id}`, data),
-  
+
   deleteJobCategory: (id: number) => api.delete(`/job-categories/${id}`),
   getCandidates: (params?: { job_id?: number; page?: number }) => api.get('/candidates', { params }),
   getCandidate: (id: number) => api.get(`/candidates/${id}`),
@@ -450,10 +450,10 @@ export const documentLocationService = {
 
 export const documentConfigService = {
   createLocal: (data: Record<string, unknown>) => api.post('/document-configs/local', data),
-  // updateLocal: (id: number, data: Record<string, unknown>) => api.put(`/document-configs/local/${id}`, data),
+  updateLocal: (id: number, data: Record<string, unknown>) => api.put(`/document-configs/local/${id}`, data),
   createWasabi: (data: Record<string, unknown>) => api.post('/document-configs/wasabi', data),
-  // updateWasabi: (id: number, data: Record<string, unknown>) => api.put(`/document-configs/wasabi/${id}`, data),
+  updateWasabi: (id: number, data: Record<string, unknown>) => api.put(`/document-configs/wasabi/${id}`, data),
   createAws: (data: Record<string, unknown>) => api.post('/document-configs/aws', data),
-  // updateAws: (id: number, data: Record<string, unknown>) => api.put(`/document-configs/aws/${id}`, data),
-  // getConfig: (locationId: number) => api.get(`/document-configs/${locationId}`),
+  updateAws: (id: number, data: Record<string, unknown>) => api.put(`/document-configs/aws/${id}`, data),
+  getConfig: (locationId: number) => api.get(`/document-configs/${locationId}`),
 };

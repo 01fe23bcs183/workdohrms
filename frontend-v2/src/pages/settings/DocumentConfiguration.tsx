@@ -2,13 +2,12 @@ import { useState, useEffect } from 'react';
 import { documentLocationService, documentConfigService } from '../../services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { HardDrive, Cloud, Database, Settings as SettingsIcon, Plus, CheckCircle2 } from 'lucide-react';
+import { HardDrive, Cloud, Database, Settings as SettingsIcon, CheckCircle2 } from 'lucide-react';
 import { showAlert, getErrorMessage } from '../../lib/sweetalert';
 import { Badge } from '../../components/ui/badge';
 import { useAuth } from '../../context/AuthContext';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { Switch } from '../../components/ui/switch';
 
 
 interface DocumentLocation {
@@ -35,7 +34,6 @@ export default function DocumentConfiguration() {
     const [loadingTypes, setLoadingTypes] = useState<Set<StorageType>>(new Set());
 
     // Modal & Form State
-    const [showDetailed, setShowDetailed] = useState(false);
     const [selectedType, setSelectedType] = useState<StorageType | null>(null);
     const [currentStorage, setCurrentStorage] = useState<{ type: StorageType; id: number; title: string } | null>(null);
     const [formData, setFormData] = useState<any>({
@@ -45,12 +43,24 @@ export default function DocumentConfiguration() {
         access_key: '',
         secret_key: '',
         endpoint: '',
-        is_active: true,
     });
 
     useEffect(() => {
         fetchLocations();
     }, []);
+
+    useEffect(() => {
+        if (locations.length > 0 && !selectedType) {
+            // Find the first location that has a config and select it
+            const firstConfigured = locations.find(loc => loc.id !== undefined); // Adjust criteria if needed
+            if (firstConfigured) {
+                const card = STORAGE_CARDS.find(c => c.id === firstConfigured.location_type);
+                if (card) {
+                    handleSelectType(card);
+                }
+            }
+        }
+    }, [locations, selectedType]);
 
     const fetchLocations = async () => {
         try {
@@ -58,12 +68,12 @@ export default function DocumentConfiguration() {
             const payload = response.data.data;
             let rawLocations: DocumentLocation[] = Array.isArray(payload) ? payload : (payload?.data || []);
 
-            // For each location, fetch its specific config (optional for quick-configured ones)
+            // For each location, fetch its specific config
             const locationsWithConfigs = await Promise.all(
                 rawLocations.map(async (loc) => {
                     try {
-                        // const configResponse = await documentConfigService.getConfig(loc.id);
-                        return { ...loc, config: null };
+                        const configResponse = await documentConfigService.getConfig(loc.id);
+                        return { ...loc, config: configResponse.data.data };
                     } catch (err) {
                         return loc;
                     }
@@ -111,15 +121,28 @@ export default function DocumentConfiguration() {
     const handleSelectType = (storage: { type: StorageType; id: number; title: string }) => {
         setCurrentStorage(storage);
         setSelectedType(storage.type);
-        setFormData({
-            root_path: '',
-            bucket: '',
-            region: '',
-            access_key: '',
-            secret_key: '',
-            endpoint: '',
-            is_active: true,
-        });
+
+        // Find existing config for this type
+        const existingLoc = locations.find(loc => loc.location_type === storage.id);
+        if (existingLoc && existingLoc.config) {
+            setFormData({
+                root_path: existingLoc.config.root_path || '',
+                bucket: existingLoc.config.bucket || '',
+                region: existingLoc.config.region || '',
+                access_key: existingLoc.config.access_key || '',
+                secret_key: existingLoc.config.secret_key || '',
+                endpoint: existingLoc.config.endpoint || '',
+            });
+        } else {
+            setFormData({
+                root_path: '',
+                bucket: '',
+                region: '',
+                access_key: '',
+                secret_key: '',
+                endpoint: '',
+            });
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -130,23 +153,39 @@ export default function DocumentConfiguration() {
         setLoadingTypes(prev => new Set(prev).add(currentStorage.type));
         try {
             let locationId: number;
+            const existingLoc = locations.find(loc => loc.location_type === currentStorage.id);
 
-            // 1. Create Location
-            const locResponse = await documentLocationService.create({
-                location_type: currentStorage.id,
-                org_id: user.org_id,
-                company_id: user.company_id,
-            });
-            locationId = locResponse.data.data.id;
+            if (existingLoc) {
+                locationId = existingLoc.id;
+                const configData = { ...formData, location_id: locationId };
 
-            // 2. Create specific config
-            const configData = { ...formData, location_id: locationId };
-            if (currentStorage.type === 'local') await documentConfigService.createLocal(configData);
-            else if (currentStorage.type === 'wasabi') await documentConfigService.createWasabi(configData);
-            else if (currentStorage.type === 'aws') await documentConfigService.createAws(configData);
+                if (existingLoc.config && existingLoc.config.id) {
+                    const configId = existingLoc.config.id;
+                    if (currentStorage.type === 'local') await documentConfigService.updateLocal(configId, configData);
+                    else if (currentStorage.type === 'wasabi') await documentConfigService.updateWasabi(configId, configData);
+                    else if (currentStorage.type === 'aws') await documentConfigService.updateAws(configId, configData);
+                } else {
+                    if (currentStorage.type === 'local') await documentConfigService.createLocal(configData);
+                    else if (currentStorage.type === 'wasabi') await documentConfigService.createWasabi(configData);
+                    else if (currentStorage.type === 'aws') await documentConfigService.createAws(configData);
+                }
+            } else {
+                // 1. Create Location
+                const locResponse = await documentLocationService.create({
+                    location_type: currentStorage.id,
+                    org_id: user.org_id,
+                    company_id: user.company_id,
+                });
+                locationId = locResponse.data.data.id;
 
-            toast({ title: 'Success', description: 'Detailed configuration saved successfully' });
-            setIsDialogOpen(false);
+                // 2. Create specific config
+                const configData = { ...formData, location_id: locationId };
+                if (currentStorage.type === 'local') await documentConfigService.createLocal(configData);
+                else if (currentStorage.type === 'wasabi') await documentConfigService.createWasabi(configData);
+                else if (currentStorage.type === 'aws') await documentConfigService.createAws(configData);
+            }
+
+            showAlert('success', 'Success!', 'Detailed configuration saved successfully', 2000);
             fetchLocations();
         } catch (error: unknown) {
             console.error('Failed to save config:', error);
@@ -217,146 +256,115 @@ export default function DocumentConfiguration() {
                 })}
             </div>
 
-            {/* Bottom Section - Detailed Configuration */}
             <div className="pt-4">
                 <Card className="border-0 shadow-md">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
-                        <div>
-                            <CardTitle className="text-lg">Detailed Configuration</CardTitle>
-                            <CardDescription>Setup advanced credentials for cloud and local storage</CardDescription>
-                        </div>
-                        {!showDetailed && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-solarized-blue text-solarized-blue hover:bg-solarized-blue hover:text-white"
-                                onClick={() => setShowDetailed(true)}
-                            >
-                                <Plus className="mr-2 h-4 w-4" />
-                                Start Detailed Setup
-                            </Button>
-                        )}
+                    <CardHeader>
+                        <CardTitle className="text-lg">Detailed Configuration</CardTitle>
+                        <CardDescription>Setup advanced credentials for cloud and local storage</CardDescription>
                     </CardHeader>
-                    {showDetailed && (
-                        <CardContent className="space-y-6">
-                            <div className="flex flex-wrap gap-4 justify-center p-2 bg-solarized-base3/20 rounded-xl">
-                                {STORAGE_CARDS.map((storage) => (
-                                    <Button
-                                        key={`btn-${storage.type}`}
-                                        variant={selectedType === storage.type ? "default" : "outline"}
-                                        className={selectedType === storage.type ? "bg-solarized-blue hover:bg-solarized-blue/90" : "border-solarized-blue/20 hover:border-solarized-blue"}
-                                        onClick={() => handleSelectType(storage)}
-                                    >
-                                        <storage.icon className="mr-2 h-4 w-4" />
-                                        {storage.title}
-                                    </Button>
-                                ))}
-                            </div>
+                    <CardContent className="space-y-6">
+                        <div className="flex flex-row gap-4 justify-start p-2 bg-solarized-base3/20 rounded-xl overflow-x-auto">
+                            {STORAGE_CARDS.map((storage) => (
+                                <Button
+                                    key={`btn-${storage.type}`}
+                                    variant={selectedType === storage.type ? "default" : "outline"}
+                                    className={`flex-1 min-w-[140px] ${selectedType === storage.type ? "bg-solarized-blue hover:bg-solarized-blue/90" : "border-solarized-blue/20 hover:border-solarized-blue"}`}
+                                    onClick={() => handleSelectType(storage)}
+                                >
+                                    <storage.icon className="mr-2 h-4 w-4" />
+                                    {storage.title}
+                                </Button>
+                            ))}
+                        </div>
 
-                            {selectedType && (
-                                <div className="p-6 border border-solarized-base3 rounded-xl bg-white/50 backdrop-blur-sm shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
-                                    <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-                                        {selectedType === 'local' ? <HardDrive className="h-5 w-5 text-solarized-blue" /> : selectedType === 'wasabi' ? <Cloud className="h-5 w-5 text-solarized-green" /> : <Database className="h-5 w-5 text-solarized-yellow" />}
-                                        Configure {currentStorage?.title}
-                                    </h3>
+                        {selectedType && (
+                            <div className="p-6 border border-solarized-base3 rounded-xl bg-white/50 backdrop-blur-sm shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+                                <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                                    {selectedType === 'local' ? <HardDrive className="h-5 w-5 text-solarized-blue" /> : selectedType === 'wasabi' ? <Cloud className="h-5 w-5 text-solarized-green" /> : <Database className="h-5 w-5 text-solarized-yellow" />}
+                                    Configure {currentStorage?.title}
+                                </h3>
 
-                                    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto">
-                                        {selectedType === 'local' && (
-                                            <div className="space-y-2">
-                                                <Label htmlFor="root_path">Root Path</Label>
-                                                <Input
-                                                    id="root_path"
-                                                    placeholder="/var/www/storage/app/public"
-                                                    value={formData.root_path}
-                                                    onChange={(e) => setFormData({ ...formData, root_path: e.target.value })}
-                                                    required
-                                                />
-                                                <p className="text-xs text-solarized-base01">The absolute file path on your server where documents will be stored.</p>
-                                            </div>
-                                        )}
+                                <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto">
+                                    {selectedType === 'local' && (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="root_path">Root Path</Label>
+                                            <Input
+                                                id="root_path"
+                                                placeholder="/var/www/storage/app/public"
+                                                value={formData.root_path}
+                                                onChange={(e) => setFormData({ ...formData, root_path: e.target.value })}
+                                                required
+                                            />
+                                            <p className="text-xs text-solarized-base01">The absolute file path on your server where documents will be stored.</p>
+                                        </div>
+                                    )}
 
-                                        {(selectedType === 'wasabi' || selectedType === 'aws') && (
-                                            <>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="bucket">Bucket Name</Label>
-                                                        <Input
-                                                            id="bucket"
-                                                            value={formData.bucket}
-                                                            onChange={(e) => setFormData({ ...formData, bucket: e.target.value })}
-                                                            required
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="region">Region</Label>
-                                                        <Input
-                                                            id="region"
-                                                            value={formData.region}
-                                                            onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                                                            required
-                                                        />
-                                                    </div>
-                                                </div>
+                                    {(selectedType === 'wasabi' || selectedType === 'aws') && (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div className="space-y-2">
-                                                    <Label htmlFor="access_key">Access Key</Label>
+                                                    <Label htmlFor="bucket">Bucket Name</Label>
                                                     <Input
-                                                        id="access_key"
-                                                        value={formData.access_key}
-                                                        onChange={(e) => setFormData({ ...formData, access_key: e.target.value })}
+                                                        id="bucket"
+                                                        value={formData.bucket}
+                                                        onChange={(e) => setFormData({ ...formData, bucket: e.target.value })}
                                                         required
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label htmlFor="secret_key">Secret Key</Label>
+                                                    <Label htmlFor="region">Region</Label>
                                                     <Input
-                                                        id="secret_key"
-                                                        type="password"
-                                                        value={formData.secret_key}
-                                                        onChange={(e) => setFormData({ ...formData, secret_key: e.target.value })}
+                                                        id="region"
+                                                        value={formData.region}
+                                                        onChange={(e) => setFormData({ ...formData, region: e.target.value })}
                                                         required
                                                     />
                                                 </div>
-                                            </>
-                                        )}
-
-                                        {selectedType === 'wasabi' && (
+                                            </div>
                                             <div className="space-y-2">
-                                                <Label htmlFor="endpoint">Endpoint URL</Label>
+                                                <Label htmlFor="access_key">Access Key</Label>
                                                 <Input
-                                                    id="endpoint"
-                                                    placeholder="https://s3.wasabisys.com"
-                                                    value={formData.endpoint}
-                                                    onChange={(e) => setFormData({ ...formData, endpoint: e.target.value })}
+                                                    id="access_key"
+                                                    value={formData.access_key}
+                                                    onChange={(e) => setFormData({ ...formData, access_key: e.target.value })}
                                                     required
                                                 />
                                             </div>
-                                        )}
-
-                                        <div className="flex items-center justify-between p-4 bg-solarized-base3/10 rounded-lg">
-                                            <div className="space-y-0.5">
-                                                <Label htmlFor="is_active">Active Status</Label>
-                                                <p className="text-xs text-solarized-base01">Set this configuration as active immediately</p>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="secret_key">Secret Key</Label>
+                                                <Input
+                                                    id="secret_key"
+                                                    type="password"
+                                                    value={formData.secret_key}
+                                                    onChange={(e) => setFormData({ ...formData, secret_key: e.target.value })}
+                                                    required
+                                                />
                                             </div>
-                                            <Switch
-                                                id="is_active"
-                                                checked={formData.is_active}
-                                                onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                                        </>
+                                    )}
+
+                                    {selectedType === 'wasabi' && (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="endpoint">Endpoint URL</Label>
+                                            <Input
+                                                id="endpoint"
+                                                placeholder="https://s3.wasabisys.com"
+                                                value={formData.endpoint}
+                                                onChange={(e) => setFormData({ ...formData, endpoint: e.target.value })}
+                                                required
                                             />
                                         </div>
+                                    )}
 
-                                        <div className="flex gap-3 pt-4 border-t border-solarized-base3/30">
-                                            <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90 flex-1" disabled={currentStorage ? loadingTypes.has(currentStorage.type) : false}>
-                                                {loadingTypes.has(selectedType) ? 'Saving...' : 'Save Configuration'}
-                                            </Button>
-                                            <Button type="button" variant="ghost" onClick={() => { setSelectedType(null); setCurrentStorage(null); }}>
-                                                Cancel
-                                            </Button>
-                                        </div>
-                                    </form>
-                                </div>
-                            )}
-                        </CardContent>
-                    )}
+                                    <div className="flex gap-3 pt-4 border-t border-solarized-base3/30">
+                                        <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90 flex-1" disabled={currentStorage ? loadingTypes.has(currentStorage.type) : false}>
+                                            {loadingTypes.has(selectedType) ? 'Saving...' : 'Save Configuration'}
+                                        </Button>
+                                    </div>
+                                </form>
+                            </div>
+                        )}
+                    </CardContent>
                 </Card>
             </div>
 
