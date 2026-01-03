@@ -376,12 +376,18 @@ export const assetService = {
 };
 
 export const trainingService = {
-  getTypes: () => api.get('/training-types'),
+  // Training Types
+  getTypes: (params?: { page?: number; per_page?: number; search?: string }) => api.get('/training-types', { params }),
+  getTypeById: (id: number) => api.get(`/training-types/${id}`),
   createType: (data: Record<string, unknown>) => api.post('/training-types', data),
+  updateType: (id: number, data: Record<string, unknown>) => api.put(`/training-types/${id}`, data),
+  deleteType: (id: number) => api.delete(`/training-types/${id}`),
+  // Training Programs
   getPrograms: (params?: { page?: number }) => api.get('/training-programs', { params }),
   createProgram: (data: Record<string, unknown>) => api.post('/training-programs', data),
   updateProgram: (id: number, data: Record<string, unknown>) => api.put(`/training-programs/${id}`, data),
   deleteProgram: (id: number) => api.delete(`/training-programs/${id}`),
+  // Training Sessions
   getSessions: (params?: { page?: number }) => api.get('/training-sessions', { params }),
   createSession: (data: Record<string, unknown>) => api.post('/training-sessions', data),
   enrollInSession: (sessionId: number, data: Record<string, unknown>) => api.post(`/training-sessions/${sessionId}/enroll`, data),
@@ -522,7 +528,7 @@ export const assetTypeService = {
 
 export const documentTypeService = {
   getAll: (params?: { page?: number; search?: string; per_page?: number }) => api.get('/document-types', { params }),
-  getAll: (params?: { page?: number; per_page?: number; search?: string }) => api.get('/document-types', { params }),
+  // getAll: (params?: { page?: number; per_page?: number; search?: string }) => api.get('/document-types', { params }),
   getById: (id: number) => api.get(`/document-types/${id}`),
   create: (data: Record<string, unknown>) => api.post('/document-types', data),
   update: (id: number, data: Record<string, unknown>) => api.put(`/document-types/${id}`, data),

@@ -236,6 +236,29 @@ export default function StaffList() {
     },
   ];
 
+  // ================= CUSTOM STYLES =================
+  const customStyles = {
+    headRow: {
+      style: {
+        backgroundColor: '#f9fafb', // gray-50 (very soft)
+        borderBottomWidth: '1px',
+        borderBottomColor: '#e5e7eb',
+        borderBottomStyle: 'solid' as const,
+        minHeight: '56px',
+      },
+    },
+
+    headCells: {
+      style: {
+        fontSize: '14px',
+        fontWeight: '600',
+        color: '#374151',
+        paddingLeft: '16px',
+        paddingRight: '16px',
+      },
+    },
+  };
+
   // ================= UI =================
   return (
     <div className="space-y-6">
@@ -284,6 +307,7 @@ export default function StaffList() {
               onChangePage={handlePageChange}
               onChangeRowsPerPage={handlePerRowsChange}
               onSort={handleSort}
+              customStyles={customStyles}
               sortServer
               highlightOnHover
               responsive

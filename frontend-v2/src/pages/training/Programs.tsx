@@ -33,11 +33,21 @@ import {
   DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu';
 
+interface TrainingType {
+  id: number;
+  title: string;
+}
+
 interface Program {
   id: number;
-  name: string;
+  title: string;
   description: string;
-  trainer: string;
+  training_type_id: number;
+  training_type?: TrainingType;
+  duration: string | null;
+  cost: number | null;
+  trainer_name: string | null;
+  trainer_type: string | null;
   start_date: string;
   end_date: string;
   max_participants: number;
@@ -54,6 +64,7 @@ interface PaginationMeta {
 
 export default function Programs() {
   const [programs, setPrograms] = useState<Program[]>([]);
+  const [trainingTypes, setTrainingTypes] = useState<TrainingType[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -62,38 +73,32 @@ export default function Programs() {
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
   const [viewingProgram, setViewingProgram] = useState<Program | null>(null);
   const [formData, setFormData] = useState({
-    name: '',
+    title: '',
+    training_type_id: '',
     description: '',
-    trainer: '',
-    start_date: '',
-    end_date: '',
-    max_participants: '',
-    status: 'upcoming',
+    duration: '',
+    cost: '',
+    trainer_name: '',
+    trainer_type: 'internal',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const payload = {
+        title: formData.title,
+        training_type_id: Number(formData.training_type_id),
+        description: formData.description || null,
+        duration: formData.duration || null,
+        cost: formData.cost ? Number(formData.cost) : null,
+        trainer_name: formData.trainer_name || null,
+        trainer_type: formData.trainer_type || null,
+      };
+
       if (editingProgram) {
-        await trainingService.updateProgram(editingProgram.id, {
-          name: formData.name,
-          description: formData.description,
-          trainer: formData.trainer,
-          start_date: formData.start_date,
-          end_date: formData.end_date,
-          max_participants: Number(formData.max_participants),
-          status: formData.status,
-        });
+        await trainingService.updateProgram(editingProgram.id, payload);
       } else {
-        await trainingService.createProgram({
-          name: formData.name,
-          description: formData.description,
-          trainer: formData.trainer,
-          start_date: formData.start_date,
-          end_date: formData.end_date,
-          max_participants: Number(formData.max_participants),
-          status: formData.status,
-        });
+        await trainingService.createProgram(payload);
       }
       setIsDialogOpen(false);
       setEditingProgram(null);
@@ -110,13 +115,13 @@ export default function Programs() {
   const handleEdit = (program: Program) => {
     setEditingProgram(program);
     setFormData({
-      name: program.name,
-      description: program.description,
-      trainer: program.trainer,
-      start_date: program.start_date,
-      end_date: program.end_date,
-      max_participants: String(program.max_participants),
-      status: program.status,
+      title: program.title,
+      training_type_id: String(program.training_type_id),
+      description: program.description || '',
+      duration: program.duration || '',
+      cost: program.cost ? String(program.cost) : '',
+      trainer_name: program.trainer_name || '',
+      trainer_type: program.trainer_type || 'internal',
     });
     setIsDialogOpen(true);
   };
@@ -142,19 +147,30 @@ export default function Programs() {
 
   const resetForm = () => {
     setFormData({
-      name: '',
+      title: '',
+      training_type_id: '',
       description: '',
-      trainer: '',
-      start_date: '',
-      end_date: '',
-      max_participants: '',
-      status: 'upcoming',
+      duration: '',
+      cost: '',
+      trainer_name: '',
+      trainer_type: 'internal',
     });
   };
 
   useEffect(() => {
     fetchPrograms();
+    fetchTrainingTypes();
   }, [page]);
+
+  const fetchTrainingTypes = async () => {
+    try {
+      const response = await trainingService.getTypes();
+      const data = response.data.data || response.data;
+      setTrainingTypes(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to fetch training types:', error);
+    }
+  };
 
   const fetchPrograms = async () => {
     setIsLoading(true);
@@ -222,16 +238,34 @@ export default function Programs() {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit}>
-              <div className="grid gap-4 py-4">
+              <div className="grid gap-4 py-4 max-h-[500px] overflow-y-auto">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Program Name</Label>
+                  <Label htmlFor="title">Program Title *</Label>
                   <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="e.g., Leadership Training"
                     required
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="training_type_id">Training Type *</Label>
+                  <Select
+                    value={formData.training_type_id}
+                    onValueChange={(value) => setFormData({ ...formData, training_type_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select training type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {trainingTypes.map((type) => (
+                        <SelectItem key={type.id} value={String(type.id)}>
+                          {type.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>
@@ -243,67 +277,52 @@ export default function Programs() {
                     rows={3}
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="duration">Duration</Label>
+                    <Input
+                      id="duration"
+                      value={formData.duration}
+                      onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                      placeholder="e.g., 3 days"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cost">Cost</Label>
+                    <Input
+                      id="cost"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.cost}
+                      onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+                      placeholder="e.g., 1000"
+                    />
+                  </div>
+                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="trainer">Trainer</Label>
+                  <Label htmlFor="trainer_name">Trainer Name</Label>
                   <Input
-                    id="trainer"
-                    value={formData.trainer}
-                    onChange={(e) => setFormData({ ...formData, trainer: e.target.value })}
+                    id="trainer_name"
+                    value={formData.trainer_name}
+                    onChange={(e) => setFormData({ ...formData, trainer_name: e.target.value })}
                     placeholder="e.g., John Smith"
-                    required
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="start_date">Start Date</Label>
-                    <Input
-                      id="start_date"
-                      type="date"
-                      value={formData.start_date}
-                      onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="end_date">End Date</Label>
-                    <Input
-                      id="end_date"
-                      type="date"
-                      value={formData.end_date}
-                      onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="max_participants">Max Participants</Label>
-                    <Input
-                      id="max_participants"
-                      type="number"
-                      value={formData.max_participants}
-                      onChange={(e) => setFormData({ ...formData, max_participants: e.target.value })}
-                      placeholder="e.g., 20"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(value) => setFormData({ ...formData, status: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="upcoming">Upcoming</SelectItem>
-                        <SelectItem value="ongoing">Ongoing</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="trainer_type">Trainer Type</Label>
+                  <Select
+                    value={formData.trainer_type}
+                    onValueChange={(value) => setFormData({ ...formData, trainer_type: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select trainer type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="internal">Internal</SelectItem>
+                      <SelectItem value="external">External</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <DialogFooter>
@@ -328,8 +347,12 @@ export default function Programs() {
           {viewingProgram && (
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-solarized-base01">Program Name</p>
-                <p className="font-medium">{viewingProgram.name}</p>
+                <p className="text-sm text-solarized-base01">Program Title</p>
+                <p className="font-medium">{viewingProgram.title}</p>
+              </div>
+              <div>
+                <p className="text-sm text-solarized-base01">Training Type</p>
+                <p>{viewingProgram.training_type?.title || '-'}</p>
               </div>
               <div>
                 <p className="text-sm text-solarized-base01">Description</p>
@@ -337,34 +360,22 @@ export default function Programs() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-solarized-base01">Trainer</p>
-                  <p>{viewingProgram.trainer}</p>
+                  <p className="text-sm text-solarized-base01">Duration</p>
+                  <p>{viewingProgram.duration || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-solarized-base01">Status</p>
-                  <Badge className={getStatusBadge(viewingProgram.status)}>
-                    {viewingProgram.status}
-                  </Badge>
+                  <p className="text-sm text-solarized-base01">Cost</p>
+                  <p>{viewingProgram.cost ? `$${viewingProgram.cost}` : '-'}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-solarized-base01">Start Date</p>
-                  <p>{viewingProgram.start_date}</p>
+                  <p className="text-sm text-solarized-base01">Trainer Name</p>
+                  <p>{viewingProgram.trainer_name || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-solarized-base01">End Date</p>
-                  <p>{viewingProgram.end_date}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-solarized-base01">Max Participants</p>
-                  <p>{viewingProgram.max_participants}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-solarized-base01">Enrolled</p>
-                  <p>{viewingProgram.enrolled_count || 0}</p>
+                  <p className="text-sm text-solarized-base01">Trainer Type</p>
+                  <p className="capitalize">{viewingProgram.trainer_type || '-'}</p>
                 </div>
               </div>
             </div>
@@ -468,8 +479,8 @@ export default function Programs() {
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <CardTitle className="text-lg">{program.name}</CardTitle>
-                      <CardDescription>by {program.trainer}</CardDescription>
+                      <CardTitle className="text-lg">{program.title}</CardTitle>
+                      <CardDescription>{program.training_type?.title || 'Unknown Type'}</CardDescription>
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

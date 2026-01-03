@@ -26,7 +26,7 @@ import CompanyList from './pages/company/CompanyList';
 
 // Assets
 import AssetTypeList from './pages/assets/AssetTypeList';
-
+import AssetAssignmentList from './pages/assets/AssetAssignmentList';
 // Documents
 import DocumentTypeList from './pages/documents/DocumentTypeList';
 import DocumentLocationList from './pages/documents/DocumentLocationList';
@@ -65,6 +65,7 @@ import AssetsList from './pages/assets/AssetsList';
 
 // Training
 import Programs from './pages/training/Programs';
+import TrainingTypeList from './pages/training/TrainingTypeList';
 
 // Contracts
 import Contracts from './pages/contracts/Contracts';
@@ -180,10 +181,14 @@ function App() {
 
             {/* Assets */}
             <Route path="/assets" element={<AssetsList />} />
+            {/* Assets */}
+            <Route path="/assets" element={<AssetsList />} />
+            <Route path="/assets/assignments" element={<AssetAssignmentList />} />
 
             {/* Training */}
             <Route path="/training" element={<Programs />} />
             <Route path="/training/programs" element={<Programs />} />
+            <Route path="/training/types" element={<TrainingTypeList />} />
 
             {/* Contracts */}
             <Route path="/contracts" element={<Contracts />} />

@@ -149,6 +149,7 @@ const navigation: NavItem[] = [
     icon: GraduationCap,
     children: [
       { name: 'Programs', href: '/training/programs' },
+      { name: 'Training Types', href: '/training/types' },
       { name: 'Enrollments', href: '/training/enrollments' },
     ]
   },

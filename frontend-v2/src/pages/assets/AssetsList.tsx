@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
-import { assetService, assetTypeService } from '../../services/api';
-import { showAlert, showConfirmDialog, getErrorMessage } from '../../lib/sweetalert';
-import { Card, CardContent } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Label } from '../../components/ui/label';
-import { Badge } from '../../components/ui/badge';
+import { useState, useEffect } from "react";
+import { assetService, assetTypeService } from "../../services/api";
+import { Card, CardContent } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { Badge } from "../../components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -14,14 +13,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '../../components/ui/dialog';
+} from "../../components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../components/ui/select';
+} from "../../components/ui/select";
 import {
   Table,
   TableBody,
@@ -29,15 +28,25 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../../components/ui/table';
-import { Skeleton } from '../../components/ui/skeleton';
-import { Plus, Search, Package, ChevronLeft, ChevronRight, MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-react';
+} from "../../components/ui/table";
+import { Skeleton } from "../../components/ui/skeleton";
+import {
+  Plus,
+  Search,
+  Package,
+  ChevronLeft,
+  ChevronRight,
+  MoreHorizontal,
+  Eye,
+  Edit,
+  Trash2,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '../../components/ui/dropdown-menu';
+} from "../../components/ui/dropdown-menu";
 
 interface Asset {
   id: number;
@@ -52,7 +61,12 @@ interface Asset {
   location?: string;
   status: string;
   current_value?: number;
-  assigned_to?: { full_name: string };
+  // assigned_to?: { full_name: string };
+    // FIX HERE
+  assigned_employee?: {
+    id: number;
+    full_name: string;
+  };
 }
 
 interface AssetType {
@@ -73,19 +87,19 @@ export default function AssetsList() {
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [viewingAsset, setViewingAsset] = useState<Asset | null>(null);
   const [formData, setFormData] = useState({
-    name: '',
-    asset_type_id: '',
-    serial_number: '',
-    purchase_date: '',
-    purchase_cost: '',
-    condition: '',
-    location: '',
+    name: "",
+    asset_type_id: "",
+    serial_number: "",
+    purchase_date: "",
+    purchase_cost: "",
+    condition: "",
+    location: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -96,7 +110,9 @@ export default function AssetsList() {
         asset_type_id: Number(formData.asset_type_id),
         serial_number: formData.serial_number || null,
         purchase_date: formData.purchase_date || null,
-        purchase_cost: formData.purchase_cost ? Number(formData.purchase_cost) : null,
+        purchase_cost: formData.purchase_cost
+          ? Number(formData.purchase_cost)
+          : null,
         condition: formData.condition || null,
         location: formData.location || null,
       };
@@ -110,24 +126,26 @@ export default function AssetsList() {
       setEditingAsset(null);
       resetForm();
       fetchAssets();
-      showAlert('success', 'Success', editingAsset ? 'Asset updated successfully' : 'Asset created successfully', 2000);
     } catch (error) {
-      console.error('Failed to save asset:', error);
-      const errorMessage = getErrorMessage(error, 'Failed to save asset');
-      showAlert('error', 'Error', errorMessage);
+      console.error("Failed to save asset:", error);
     }
   };
 
   const handleEdit = (asset: Asset) => {
     setEditingAsset(asset);
+
+    const formattedPurchaseDate = asset.purchase_date
+      ? new Date(asset.purchase_date).toISOString().slice(0, 10)
+      : "";
+
     setFormData({
       name: asset.name,
       asset_type_id: String(asset.asset_type_id),
-      serial_number: asset.serial_number || '',
-      purchase_date: asset.purchase_date || '',
-      purchase_cost: asset.purchase_cost ? String(asset.purchase_cost) : '',
-      condition: asset.condition || '',
-      location: asset.location || '',
+      serial_number: asset.serial_number || "",
+      purchase_date: formattedPurchaseDate,
+      purchase_cost: asset.purchase_cost ? String(asset.purchase_cost) : "",
+      condition: asset.condition || "",
+      location: asset.location || "",
     });
     setIsDialogOpen(true);
   };
@@ -138,28 +156,24 @@ export default function AssetsList() {
   };
 
   const handleDelete = async (id: number) => {
-    const result = await showConfirmDialog('Delete Asset', 'Are you sure you want to delete this asset?');
-    if (!result.isConfirmed) return;
+    if (!confirm("Are you sure you want to delete this asset?")) return;
     try {
       await assetService.delete(id);
       fetchAssets();
-      showAlert('success', 'Deleted!', 'Asset deleted successfully', 2000);
     } catch (error) {
-      console.error('Failed to delete asset:', error);
-      const errorMessage = getErrorMessage(error, 'Failed to delete asset');
-      showAlert('error', 'Error', errorMessage);
+      console.error("Failed to delete asset:", error);
     }
   };
 
   const resetForm = () => {
     setFormData({
-      name: '',
-      asset_type_id: '',
-      serial_number: '',
-      purchase_date: '',
-      purchase_cost: '',
-      condition: '',
-      location: '',
+      name: "",
+      asset_type_id: "",
+      serial_number: "",
+      purchase_date: "",
+      purchase_cost: "",
+      condition: "",
+      location: "",
     });
   };
 
@@ -178,8 +192,7 @@ export default function AssetsList() {
         setAssetTypes(payload.data);
       }
     } catch (error) {
-      console.error('Failed to fetch asset types:', error);
-      showAlert('error', 'Error', 'Failed to fetch asset types');
+      console.error("Failed to fetch asset types:", error);
     }
   };
 
@@ -212,9 +225,8 @@ export default function AssetsList() {
         setMeta(null);
       }
     } catch (error) {
-      console.error('Failed to fetch assets:', error);
+      console.error("Failed to fetch assets:", error);
       setAssets([]);
-      showAlert('error', 'Error', 'Failed to fetch assets');
     } finally {
       setIsLoading(false);
     }
@@ -227,20 +239,32 @@ export default function AssetsList() {
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
-      available: 'bg-solarized-green/10 text-solarized-green',
-      assigned: 'bg-solarized-blue/10 text-solarized-blue',
-      maintenance: 'bg-solarized-yellow/10 text-solarized-yellow',
-      retired: 'bg-solarized-base01/10 text-solarized-base01',
-      lost: 'bg-solarized-red/10 text-solarized-red',
+      available: "bg-solarized-green/10 text-solarized-green",
+      assigned: "bg-solarized-blue/10 text-solarized-blue",
+      maintenance: "bg-solarized-yellow/10 text-solarized-yellow",
+      retired: "bg-solarized-base01/10 text-solarized-base01",
+      lost: "bg-solarized-red/10 text-solarized-red",
     };
     return variants[status] || variants.available;
   };
 
+  // const formatCurrency = (amount: number) => {
+  //   return new Intl.NumberFormat('en-US', {
+  //     style: 'currency',
+  //     currency: 'USD',
+  //   }).format(amount || 0);
+  // };
+
+  // removed $ symbol
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount || 0);
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      currencyDisplay: "code",
+    })
+      .format(amount || 0)
+      .replace("USD", "")
+      .trim();
   };
 
   return (
@@ -248,13 +272,18 @@ export default function AssetsList() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-solarized-base02">Assets</h1>
-          <p className="text-solarized-base01">Manage company assets and equipment</p>
+          <p className="text-solarized-base01">
+            Manage company assets and equipment
+          </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button
               className="bg-solarized-blue hover:bg-solarized-blue/90"
-              onClick={() => { setEditingAsset(null); resetForm(); }}
+              onClick={() => {
+                setEditingAsset(null);
+                resetForm();
+              }}
             >
               <Plus className="mr-2 h-4 w-4" />
               Add Asset
@@ -262,9 +291,13 @@ export default function AssetsList() {
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>{editingAsset ? 'Edit Asset' : 'Add Asset'}</DialogTitle>
+              <DialogTitle>
+                {editingAsset ? "Edit Asset" : "Add Asset"}
+              </DialogTitle>
               <DialogDescription>
-                {editingAsset ? 'Update asset details.' : 'Add a new asset to the inventory.'}
+                {editingAsset
+                  ? "Update asset details."
+                  : "Add a new asset to the inventory."}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit}>
@@ -274,7 +307,9 @@ export default function AssetsList() {
                   <Input
                     id="name"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     placeholder="e.g., MacBook Pro"
                     required
                   />
@@ -283,7 +318,9 @@ export default function AssetsList() {
                   <Label htmlFor="asset_type_id">Asset Type *</Label>
                   <Select
                     value={formData.asset_type_id}
-                    onValueChange={(value) => setFormData({ ...formData, asset_type_id: value })}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, asset_type_id: value })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select asset type" />
@@ -302,7 +339,12 @@ export default function AssetsList() {
                   <Input
                     id="serial_number"
                     value={formData.serial_number}
-                    onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        serial_number: e.target.value,
+                      })
+                    }
                     placeholder="e.g., SN123456"
                   />
                 </div>
@@ -313,7 +355,12 @@ export default function AssetsList() {
                       id="purchase_date"
                       type="date"
                       value={formData.purchase_date}
-                      onChange={(e) => setFormData({ ...formData, purchase_date: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          purchase_date: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -324,7 +371,12 @@ export default function AssetsList() {
                       min="0"
                       step="0.01"
                       value={formData.purchase_cost}
-                      onChange={(e) => setFormData({ ...formData, purchase_cost: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          purchase_cost: e.target.value,
+                        })
+                      }
                       placeholder="e.g., 1500"
                     />
                   </div>
@@ -334,7 +386,9 @@ export default function AssetsList() {
                     <Label htmlFor="condition">Condition</Label>
                     <Select
                       value={formData.condition}
-                      onValueChange={(value) => setFormData({ ...formData, condition: value })}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, condition: value })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select condition" />
@@ -352,18 +406,27 @@ export default function AssetsList() {
                     <Input
                       id="location"
                       value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, location: e.target.value })
+                      }
                       placeholder="e.g., Office Floor 2"
                     />
                   </div>
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90">
-                  {editingAsset ? 'Update' : 'Create'}
+                <Button
+                  type="submit"
+                  className="bg-solarized-blue hover:bg-solarized-blue/90"
+                >
+                  {editingAsset ? "Update" : "Create"}
                 </Button>
               </DialogFooter>
             </form>
@@ -392,7 +455,7 @@ export default function AssetsList() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-solarized-base01">Type</p>
-                  <p>{viewingAsset.asset_type?.title || '-'}</p>
+                  <p>{viewingAsset.asset_type?.title || "-"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-solarized-base01">Status</p>
@@ -404,7 +467,16 @@ export default function AssetsList() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-solarized-base01">Purchase Date</p>
-                  <p>{viewingAsset.purchase_date}</p>
+                  <p>
+                    {viewingAsset.purchase_date
+                      ? new Date(viewingAsset.purchase_date)
+                          .toISOString()
+                          .slice(0, 10)
+                          .split("-")
+                          .reverse()
+                          .join("-")
+                      : "-"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-solarized-base01">Purchase Cost</p>
@@ -413,12 +485,15 @@ export default function AssetsList() {
               </div>
               <div>
                 <p className="text-sm text-solarized-base01">Assigned To</p>
-                <p>{viewingAsset.assigned_to?.full_name || 'Not assigned'}</p>
+                <p>{viewingAsset.assigned_employee?.full_name || "Not assigned"}</p>
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsViewDialogOpen(false)}
+            >
               Close
             </Button>
           </DialogFooter>
@@ -434,7 +509,9 @@ export default function AssetsList() {
               </div>
               <div>
                 <p className="text-sm text-solarized-base01">Total Assets</p>
-                <p className="text-xl font-bold text-solarized-base02">{meta?.total || 0}</p>
+                <p className="text-xl font-bold text-solarized-base02">
+                  {meta?.total || 0}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -448,7 +525,7 @@ export default function AssetsList() {
               <div>
                 <p className="text-sm text-solarized-base01">Available</p>
                 <p className="text-xl font-bold text-solarized-base02">
-                  {assets.filter((a) => a.status === 'available').length}
+                  {assets.filter((a) => a.status === "available").length}
                 </p>
               </div>
             </div>
@@ -463,7 +540,7 @@ export default function AssetsList() {
               <div>
                 <p className="text-sm text-solarized-base01">Assigned</p>
                 <p className="text-xl font-bold text-solarized-base02">
-                  {assets.filter((a) => a.status === 'assigned').length}
+                  {assets.filter((a) => a.status === "assigned").length}
                 </p>
               </div>
             </div>
@@ -478,7 +555,7 @@ export default function AssetsList() {
               <div>
                 <p className="text-sm text-solarized-base01">Maintenance</p>
                 <p className="text-xl font-bold text-solarized-base02">
-                  {assets.filter((a) => a.status === 'maintenance').length}
+                  {assets.filter((a) => a.status === "maintenance").length}
                 </p>
               </div>
             </div>
@@ -495,11 +572,14 @@ export default function AssetsList() {
                 placeholder="Search assets..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="pl-10"
               />
             </div>
-            <Button onClick={handleSearch} className="bg-solarized-blue hover:bg-solarized-blue/90">
+            <Button
+              onClick={handleSearch}
+              className="bg-solarized-blue hover:bg-solarized-blue/90"
+            >
               Search
             </Button>
           </div>
@@ -513,8 +593,12 @@ export default function AssetsList() {
           ) : assets.length === 0 ? (
             <div className="text-center py-12">
               <Package className="h-12 w-12 text-solarized-base01 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-solarized-base02">No assets found</h3>
-              <p className="text-solarized-base01 mt-1">Add assets to track company equipment.</p>
+              <h3 className="text-lg font-medium text-solarized-base02">
+                No assets found
+              </h3>
+              <p className="text-solarized-base01 mt-1">
+                Add assets to track company equipment.
+              </p>
               <Button className="mt-4 bg-solarized-blue hover:bg-solarized-blue/90">
                 <Plus className="mr-2 h-4 w-4" />
                 Add Asset
@@ -532,17 +616,25 @@ export default function AssetsList() {
                       <TableHead>Assigned To</TableHead>
                       <TableHead>Purchase Cost</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
+                      <TableHead className="w-[50px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {assets.map((asset) => (
                       <TableRow key={asset.id}>
-                        <TableCell className="font-mono text-sm">{asset.asset_code}</TableCell>
-                        <TableCell className="font-medium">{asset.name}</TableCell>
-                        <TableCell>{asset.asset_type?.title || '-'}</TableCell>
-                        <TableCell>{asset.assigned_to?.full_name || '-'}</TableCell>
-                        <TableCell>{formatCurrency(asset.purchase_cost || 0)}</TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {asset.asset_code}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {asset.name}
+                        </TableCell>
+                        <TableCell>{asset.asset_type?.title || "-"}</TableCell>
+                        <TableCell>
+                          {asset.assigned_employee?.full_name || "-"}
+                        </TableCell>
+                        <TableCell>
+                          {formatCurrency(asset.purchase_cost || 0)}
+                        </TableCell>
                         <TableCell>
                           <Badge className={getStatusBadge(asset.status)}>
                             {asset.status}
@@ -556,15 +648,22 @@ export default function AssetsList() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleView(asset)}>
+                              <DropdownMenuItem
+                                onClick={() => handleView(asset)}
+                              >
                                 <Eye className="mr-2 h-4 w-4" />
                                 View
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEdit(asset)}>
+                              <DropdownMenuItem
+                                onClick={() => handleEdit(asset)}
+                              >
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-solarized-red" onClick={() => handleDelete(asset.id)}>
+                              <DropdownMenuItem
+                                className="text-solarized-red"
+                                onClick={() => handleDelete(asset.id)}
+                              >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete
                               </DropdownMenuItem>
@@ -580,8 +679,9 @@ export default function AssetsList() {
               {meta && meta.last_page > 1 && (
                 <div className="flex items-center justify-between mt-6">
                   <p className="text-sm text-solarized-base01">
-                    Showing {(meta.current_page - 1) * meta.per_page + 1} to{' '}
-                    {Math.min(meta.current_page * meta.per_page, meta.total)} of {meta.total}
+                    Showing {(meta.current_page - 1) * meta.per_page + 1} to{" "}
+                    {Math.min(meta.current_page * meta.per_page, meta.total)} of{" "}
+                    {meta.total}
                   </p>
                   <div className="flex items-center gap-2">
                     <Button
