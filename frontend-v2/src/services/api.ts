@@ -521,7 +521,7 @@ export const assetTypeService = {
 };
 
 export const documentTypeService = {
-  getAll: (params?: { page?: number; search?: string }) => api.get('/document-types', { params }),
+  getAll: (params?: { page?: number; search?: string; per_page?: number }) => api.get('/document-types', { params }),
   getById: (id: number) => api.get(`/document-types/${id}`),
   create: (data: Record<string, unknown>) => api.post('/document-types', data),
   update: (id: number, data: Record<string, unknown>) => api.put(`/document-types/${id}`, data),
@@ -534,6 +534,25 @@ export const documentLocationService = {
   create: (data: Record<string, unknown>) => api.post('/document-locations', data),
   update: (id: number, data: Record<string, unknown>) => api.put(`/document-locations/${id}`, data),
   delete: (id: number) => api.delete(`/document-locations/${id}`),
+};
+
+export const documentService = {
+  upload: (data: FormData) =>
+    api.post('/documents/upload', data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  getAll: (params?: {
+    page?: number;
+    per_page?: number;
+    search?: string;
+    owner_type?: string;
+    owner_id?: number;
+    document_type_id?: number;
+  }) => api.get('/documents', { params }),
+  getById: (id: number) => api.get(`/documents/${id}`),
+  update: (id: number, data: Record<string, unknown>) => api.put(`/documents/${id}`, data),
+  delete: (id: number) => api.delete(`/documents/${id}`),
+  download: (id: number) => api.get(`/documents/${id}/download`),
 };
 
 export const documentConfigService = {
