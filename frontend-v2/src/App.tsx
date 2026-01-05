@@ -101,6 +101,7 @@ import JobApplications from './pages/recruitment/JobApplications';
 
 // Error Pages
 import Unauthorized from './pages/Unauthorized';
+import CompanyNotices from './pages/settings/CompanyNotices';
 
 function App() {
   return (
@@ -215,6 +216,7 @@ function App() {
             <Route path="/settings/divisions" element={<Divisions />} />
             <Route path="/settings/job-titles" element={<JobTitles />} />
             <Route path="/settings/holidays" element={<Holidays />} />
+            <Route path="/settings/company-notices" element={<CompanyNotices />} />
             <Route path="/settings/file-categories" element={<FileCategories />} />
             <Route path="/settings/document-config" element={<DocumentConfiguration />} />
 
