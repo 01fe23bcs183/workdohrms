@@ -86,6 +86,9 @@ import Roles from './pages/admin/Roles';
 import RolePermissions from './pages/admin/RolePermissions';
 import Permissions from './pages/admin/Permissions';
 
+// Error Pages
+import Unauthorized from './pages/Unauthorized';
+
 function App() {
   return (
     <AuthProvider>
@@ -193,6 +196,9 @@ function App() {
             <Route path="/admin/roles/:id/permissions" element={<RolePermissions />} />
             <Route path="/admin/permissions" element={<Permissions />} />
           </Route>
+
+          {/* Unauthorized */}
+          <Route path="/unauthorized" element={<Unauthorized />} />
 
           {/* Catch all - redirect to dashboard */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
