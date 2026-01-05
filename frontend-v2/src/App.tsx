@@ -68,6 +68,8 @@ import Programs from './pages/training/Programs';
 
 // Contracts
 import Contracts from './pages/contracts/Contracts';
+import ContractTypes from './pages/contracts/ContractTypes';
+import ContractRenewals from './pages/contracts/ContractRenewals';
 
 // Meetings
 import Meetings from './pages/meetings/Meetings';
@@ -187,6 +189,8 @@ function App() {
 
             {/* Contracts */}
             <Route path="/contracts" element={<Contracts />} />
+            <Route path="/contracts/types" element={<ContractTypes />} />
+            <Route path="/contracts/renewals" element={<ContractRenewals />} />
 
             {/* Meetings */}
             <Route path="/meetings" element={<Meetings />} />

@@ -156,6 +156,11 @@ const navigation: NavItem[] = [
     name: 'Contracts',
     href: '/contracts',
     icon: FileText,
+    children: [
+      { name: 'All Contracts', href: '/contracts' },
+      { name: 'Contract Types', href: '/contracts/types' },
+      { name: 'Contract Renewals', href: '/contracts/renewals' },
+    ]
   },
   {
     name: 'Meetings',

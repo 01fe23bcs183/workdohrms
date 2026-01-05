@@ -392,13 +392,24 @@ export const trainingService = {
 export const contractService = {
   getAll: (params?: { staff_member_id?: number; status?: string; page?: number }) =>
     api.get('/contracts', { params }),
+  getById: (id: number) => api.get(`/contracts/${id}`),
   getContracts: (params?: { staff_member_id?: number; status?: string; page?: number }) =>
     api.get('/contracts', { params }),
   createContract: (data: Record<string, unknown>) => api.post('/contracts', data),
+  update: (id: number, data: Record<string, unknown>) => api.put(`/contracts/${id}`, data),
   updateContract: (id: number, data: Record<string, unknown>) => api.put(`/contracts/${id}`, data),
   deleteContract: (id: number) => api.delete(`/contracts/${id}`),
   renewContract: (id: number, data: Record<string, unknown>) => api.post(`/contracts/${id}/renew`, data),
   terminateContract: (id: number, data: Record<string, unknown>) => api.post(`/contracts/${id}/terminate`, data),
+};
+
+export const contractTypeService = {
+  getAll: (params?: { page?: number; per_page?: number; search?: string }) =>
+    api.get('/contract-types', { params }),
+  getById: (id: number) => api.get(`/contract-types/${id}`),
+  create: (data: Record<string, unknown>) => api.post('/contract-types', data),
+  update: (id: number, data: Record<string, unknown>) => api.put(`/contract-types/${id}`, data),
+  delete: (id: number) => api.delete(`/contract-types/${id}`),
 };
 
 export const meetingService = {

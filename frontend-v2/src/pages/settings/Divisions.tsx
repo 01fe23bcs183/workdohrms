@@ -59,12 +59,14 @@ export default function Divisions() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [editingDivision, setEditingDivision] = useState<Division | null>(null);
-    const [formData, setFormData] = useState({
-      title: '',
-      notes: '',
-      office_location_id: '',
-    });
+  const [viewingDivision, setViewingDivision] = useState<Division | null>(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    notes: '',
+    office_location_id: '',
+  });
 
   useEffect(() => {
     fetchData();
@@ -111,15 +113,20 @@ export default function Divisions() {
     }
   };
 
-    const handleEdit = (division: Division) => {
-      setEditingDivision(division);
-      setFormData({
-        title: division.title,
-        notes: division.notes || '',
-        office_location_id: division.office_location_id?.toString() || '',
-      });
-      setIsDialogOpen(true);
-    };
+  const handleEdit = (division: Division) => {
+    setEditingDivision(division);
+    setFormData({
+      title: division.title,
+      notes: division.notes || '',
+      office_location_id: division.office_location_id?.toString() || '',
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleView = (division: Division) => {
+    setViewingDivision(division);
+    setIsViewDialogOpen(true);
+  };
 
   const handleDelete = async (id: number) => {
     const result = await showConfirmDialog(
@@ -139,15 +146,15 @@ export default function Divisions() {
     }
   };
 
-    const resetForm = () => {
-      setFormData({ title: '', notes: '', office_location_id: '' });
-    };
+  const resetForm = () => {
+    setFormData({ title: '', notes: '', office_location_id: '' });
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-solarized-base02">Divisions</h1>
+          <h1 className="text-2xl font-bold text-solarized-base02">Departments</h1>
           <p className="text-solarized-base01">Manage company divisions and departments</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -160,28 +167,28 @@ export default function Divisions() {
               }}
             >
               <Plus className="mr-2 h-4 w-4" />
-              Add Division
+              Add Departments
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingDivision ? 'Edit Division' : 'Add New Division'}</DialogTitle>
+              <DialogTitle>{editingDivision ? 'Edit Division' : 'Add New Department'}</DialogTitle>
               <DialogDescription>
-                {editingDivision ? 'Update the division details.' : 'Add a new division.'}
+                {editingDivision ? 'Update the division details.' : 'Add a new department.'}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit}>
               <div className="grid gap-4 py-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="title">Division Name</Label>
-                                  <Input
-                                    id="title"
-                                    value={formData.title}
-                                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    placeholder="e.g., Engineering"
-                                    required
-                                  />
-                                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="title">Department Name</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="e.g., Engineering"
+                    required
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="office_location_id">Office Location</Label>
                   <Select
@@ -191,25 +198,25 @@ export default function Divisions() {
                     <SelectTrigger>
                       <SelectValue placeholder="Select location" />
                     </SelectTrigger>
-                                        <SelectContent>
-                                          {locations.map((loc) => (
-                                            <SelectItem key={loc.id} value={loc.id.toString()}>
-                                              {loc.title}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
+                    <SelectContent>
+                      {locations.map((loc) => (
+                        <SelectItem key={loc.id} value={loc.id.toString()}>
+                          {loc.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="notes">Notes</Label>
-                                  <Textarea
-                                    id="notes"
-                                    value={formData.notes}
-                                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                    placeholder="Division notes"
-                                    rows={3}
-                                  />
-                                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notes</Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder="Department notes"
+                    rows={3}
+                  />
+                </div>
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -240,21 +247,21 @@ export default function Divisions() {
             </div>
           ) : (
             <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Office Location</TableHead>
-                                <TableHead>Notes</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="w-[50px]"></TableHead>
-                              </TableRow>
-                            </TableHeader>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Office Location</TableHead>
+                  <TableHead>Notes</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
+                </TableRow>
+              </TableHeader>
               <TableBody>
-                                {divisions.map((division) => (
-                                  <TableRow key={division.id}>
-                                    <TableCell className="font-medium">{division.title}</TableCell>
-                                    <TableCell>{division.office_location?.title || '-'}</TableCell>
-                                    <TableCell className="max-w-[200px] truncate">{division.notes || '-'}</TableCell>
+                {divisions.map((division) => (
+                  <TableRow key={division.id}>
+                    <TableCell className="font-medium">{division.title}</TableCell>
+                    <TableCell>{division.office_location?.title || '-'}</TableCell>
+                    <TableCell className="max-w-[200px] truncate">{division.notes || '-'}</TableCell>
                     <TableCell>
                       <Badge
                         className={
@@ -274,6 +281,10 @@ export default function Divisions() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleView(division)}>
+                            <Building2 className="mr-2 h-4 w-4" />
+                            View
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleEdit(division)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
@@ -295,6 +306,53 @@ export default function Divisions() {
           )}
         </CardContent>
       </Card>
+
+      {/* View Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Department Details</DialogTitle>
+            <DialogDescription>View department information</DialogDescription>
+          </DialogHeader>
+          {viewingDivision && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-solarized-base01">Department Name</Label>
+                <p className="font-medium text-solarized-base02">{viewingDivision.title}</p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-solarized-base01">Office Location</Label>
+                <p className="font-medium text-solarized-base02">
+                  {viewingDivision.office_location?.title || '-'}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-solarized-base01">Notes</Label>
+                <p className="text-solarized-base02">{viewingDivision.notes || '-'}</p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-solarized-base01">Status</Label>
+                <div>
+                  <Badge
+                    className={
+                      viewingDivision.is_active
+                        ? 'bg-solarized-green/10 text-solarized-green'
+                        : 'bg-solarized-base01/10 text-solarized-base01'
+                    }
+                  >
+                    {viewingDivision.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

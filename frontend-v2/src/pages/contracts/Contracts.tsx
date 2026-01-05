@@ -78,9 +78,25 @@ export default function Contracts() {
   const [page, setPage] = useState(1);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isAddOpen, setIsAddOpen] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [editSalary, setEditSalary] = useState('');
   const [editStatus, setEditStatus] = useState('');
+  const [editStartDate, setEditStartDate] = useState('');
+  const [editEndDate, setEditEndDate] = useState('');
+
+  // Add Contract Form
+  const [staffMembers, setStaffMembers] = useState<any[]>([]);
+  const [contractTypes, setContractTypes] = useState<any[]>([]);
+  const [newContract, setNewContract] = useState({
+    staff_member_id: '',
+    contract_type_id: '',
+    start_date: '',
+    end_date: '',
+    salary: '',
+    duration_months: 12,
+    terms: '',
+  });
 
 
   useEffect(() => {
@@ -92,17 +108,23 @@ export default function Contracts() {
     try {
       const response = await contractService.getAll({ page });
 
-      const payload = response.data.data;
+      // Direct array from response.data.data
+      const contractsData = response.data.data;
+      const metaData = response.data.meta;
 
-      // paginator response
-      if (payload && Array.isArray(payload.data)) {
-        setContracts(payload.data);
-        setMeta({
-          current_page: payload.current_page,
-          last_page: payload.last_page,
-          per_page: payload.per_page,
-          total: payload.total,
-        });
+      // Check if we have valid array data
+      if (contractsData && Array.isArray(contractsData)) {
+        setContracts(contractsData);
+
+        // Set meta from the meta object
+        if (metaData) {
+          setMeta({
+            current_page: metaData.current_page,
+            last_page: metaData.total_pages, // Note: API uses 'total_pages'
+            per_page: metaData.per_page,
+            total: metaData.total,
+          });
+        }
       } else {
         setContracts([]);
         setMeta(null);
@@ -121,23 +143,89 @@ export default function Contracts() {
   ========================= */
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
+      draft: 'bg-solarized-base01/10 text-solarized-base01',
       active: 'bg-solarized-green/10 text-solarized-green',
-      pending: 'bg-solarized-yellow/10 text-solarized-yellow',
       expired: 'bg-solarized-red/10 text-solarized-red',
       terminated: 'bg-solarized-base01/10 text-solarized-base01',
     };
-    return variants[status] || variants.pending;
+    return variants[status] || variants.draft;
   };
   const handleView = (contract: Contract) => {
     setSelectedContract(contract);
     setIsViewOpen(true);
   };
 
- const handleEdit = (c: Contract) => {
+  const handleEdit = (c: Contract) => {
     setSelectedContract(c);
     setEditSalary(c.salary);
     setEditStatus(c.status);
+    // Format dates to YYYY-MM-DD for input[type="date"]
+    setEditStartDate(c.start_date ? c.start_date.split('T')[0] : '');
+    setEditEndDate(c.end_date ? c.end_date.split('T')[0] : '');
     setIsEditOpen(true);
+  };
+
+  const fetchDropdownData = async () => {
+    try {
+      // Fetch staff members
+      const staffResponse = await fetch('http://127.0.0.1:8000/api/staff-members', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Accept': 'application/json',
+        },
+      });
+      const staffData = await staffResponse.json();
+      setStaffMembers(staffData.data || []);
+
+      // Fetch contract types
+      const typesResponse = await fetch('http://127.0.0.1:8000/api/contract-types', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Accept': 'application/json',
+        },
+      });
+      const typesData = await typesResponse.json();
+      setContractTypes(typesData.data || []);
+    } catch (error) {
+      console.error('Failed to fetch dropdown data:', error);
+    }
+  };
+
+  const handleAddClick = () => {
+    fetchDropdownData();
+    setNewContract({
+      staff_member_id: '',
+      contract_type_id: '',
+      start_date: '',
+      end_date: '',
+      salary: '',
+      duration_months: 12,
+      terms: '',
+    });
+    setIsAddOpen(true);
+  };
+
+  const handleCreateContract = async () => {
+    try {
+      // Prepare the data matching backend expectations
+      const contractData = {
+        staff_member_id: parseInt(newContract.staff_member_id),
+        contract_type_id: newContract.contract_type_id ? parseInt(newContract.contract_type_id) : null,
+        start_date: newContract.start_date,
+        end_date: newContract.end_date,
+        salary: newContract.salary ? parseFloat(newContract.salary) : null,
+        terms: newContract.terms || null,
+      };
+
+      await contractService.createContract(contractData);
+      showAlert('success', 'Success', 'Contract created successfully');
+      setIsAddOpen(false);
+      fetchContracts();
+    } catch (error: any) {
+      console.error('Failed to create contract:', error);
+      const message = error.response?.data?.message || 'Failed to create contract';
+      showAlert('error', 'Error', message);
+    }
   };
 
 
@@ -171,9 +259,9 @@ export default function Contracts() {
             Manage employee contracts and agreements
           </p>
         </div>
-        <Button className="bg-solarized-blue hover:bg-solarized-blue/90">
+        <Button className="bg-solarized-blue hover:bg-solarized-blue/90" onClick={handleAddClick}>
           <Plus className="mr-2 h-4 w-4" />
-          New Contract
+          Add Contract
         </Button>
       </div>
 
@@ -253,6 +341,7 @@ export default function Contracts() {
                     <TableHead>End Date</TableHead>
                     <TableHead>Salary</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
                     <TableHead />
                   </TableRow>
                 </TableHeader>
@@ -404,27 +493,250 @@ export default function Contracts() {
         </DialogContent>
       </Dialog>
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Contract</DialogTitle>
           </DialogHeader>
 
           {selectedContract && (
-            <p className="text-sm">
-              Editing contract <strong>{selectedContract.reference_number}</strong>
-            </p>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-solarized-base01 mb-1">
+                  Contract Reference
+                </p>
+                <p className="font-mono font-medium">
+                  {selectedContract.reference_number}
+                </p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-solarized-base02">
+                  Employee
+                </label>
+                <p className="mt-1 text-sm">
+                  {selectedContract.staff_member?.full_name || 'N/A'}
+                </p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-solarized-base02">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  value={editStartDate}
+                  onChange={(e) => setEditStartDate(e.target.value)}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-solarized-blue"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-solarized-base02">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  value={editEndDate}
+                  onChange={(e) => setEditEndDate(e.target.value)}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-solarized-blue"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-solarized-base02">
+                  Salary
+                </label>
+                <input
+                  type="number"
+                  value={editSalary}
+                  onChange={(e) => setEditSalary(e.target.value)}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-solarized-blue"
+                  placeholder="Enter salary"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-solarized-base02">
+                  Status
+                </label>
+                <select
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value)}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-solarized-blue"
+                >
+                  <option value="draft">Draft</option>
+                  <option value="active">Active</option>
+                  <option value="expired">Expired</option>
+                  <option value="terminated">Terminated</option>
+                </select>
+              </div>
+            </div>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Close
+              Cancel
+            </Button>
+            <Button
+              className="bg-solarized-blue hover:bg-solarized-blue/90"
+              onClick={async () => {
+                if (!selectedContract) return;
+
+                try {
+                  await contractService.update(selectedContract.id, {
+                    start_date: editStartDate,
+                    end_date: editEndDate,
+                    salary: editSalary,
+                    status: editStatus,
+                  });
+
+                  showAlert('success', 'Success', 'Contract updated successfully');
+                  setIsEditOpen(false);
+                  fetchContracts();
+                } catch (error) {
+                  console.error('Failed to update contract:', error);
+                  showAlert('error', 'Error', 'Failed to update contract');
+                }
+              }}
+            >
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
+      {/* ADD CONTRACT DIALOG */}
+      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Contract</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-solarized-base02">
+                Employee *
+              </label>
+              <select
+                value={newContract.staff_member_id}
+                onChange={(e) => setNewContract({ ...newContract, staff_member_id: e.target.value })}
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-solarized-blue"
+                required
+              >
+                <option value="">Select Employee</option>
+                {staffMembers.map((staff: any) => (
+                  <option key={staff.id} value={staff.id}>
+                    {staff.full_name} ({staff.staff_code})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-solarized-base02">
+                Contract Type
+              </label>
+              <select
+                value={newContract.contract_type_id}
+                onChange={(e) => setNewContract({ ...newContract, contract_type_id: e.target.value })}
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-solarized-blue"
+              >
+                <option value="">Select Contract Type</option>
+                {contractTypes.map((type: any) => (
+                  <option key={type.id} value={type.id}>
+                    {type.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Start Date + End Date - Side by Side */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-solarized-base02">
+                  Start Date *
+                </label>
+                <input
+                  type="date"
+                  value={newContract.start_date}
+                  onChange={(e) => setNewContract({ ...newContract, start_date: e.target.value })}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-solarized-blue"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-solarized-base02">
+                  End Date *
+                </label>
+                <input
+                  type="date"
+                  value={newContract.end_date}
+                  onChange={(e) => setNewContract({ ...newContract, end_date: e.target.value })}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-solarized-blue"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Salary + Duration - Side by Side */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-solarized-base02">
+                  Salary
+                </label>
+                <input
+                  type="number"
+                  value={newContract.salary}
+                  onChange={(e) => setNewContract({ ...newContract, salary: e.target.value })}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-solarized-blue"
+                  placeholder="Enter amount"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-solarized-base02">
+                  Duration (Months)
+                </label>
+                <input
+                  type="number"
+                  value={newContract.duration_months}
+                  onChange={(e) => setNewContract({ ...newContract, duration_months: parseInt(e.target.value) || 0 })}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-solarized-blue"
+                  placeholder="e.g., 12"
+                  min="1"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-solarized-base02">
+                Terms & Conditions
+              </label>
+              <textarea
+                value={newContract.terms}
+                onChange={(e) => setNewContract({ ...newContract, terms: e.target.value })}
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-solarized-blue"
+                rows={3}
+                placeholder="Enter contract terms..."
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsAddOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-solarized-blue hover:bg-solarized-blue/90"
+              onClick={handleCreateContract}
+              // disabled={!newContract.staff_member_id || !newContract.start_date || !newContract.end_date}
+            >
+              Create Contract
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
 
-    </div>
+    </div >
   );
 }
