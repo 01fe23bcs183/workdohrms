@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { performanceService } from '../../services/api';
+import { performanceService, staffService } from '../../services/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -132,6 +132,7 @@ export default function Goals() {
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [isLoadingStaff, setIsLoadingStaff] = useState(false);
 
   // Dialog states
   const [isGoalDialogOpen, setIsGoalDialogOpen] = useState(false);
@@ -168,6 +169,7 @@ export default function Goals() {
 
   useEffect(() => {
     fetchGoals();
+    fetchAllStaffMembers();
   }, [page]);
 
   const fetchGoals = async () => {
@@ -220,33 +222,35 @@ export default function Goals() {
     }
   };
 
-  const fetchStaffMembers = async () => {
+  const fetchAllStaffMembers = async () => {
+    setIsLoadingStaff(true);
     try {
-      // Extract unique staff members from goals
-      const uniqueStaffMembers: StaffMember[] = [];
-      const seenIds = new Set<number>();
+      const response = await staffService.getAll({ per_page: 100 }); // Adjust per_page as needed
 
-      goals.forEach(goal => {
-        if (goal.staff_member && goal.staff_member_id && !seenIds.has(goal.staff_member_id)) {
-          uniqueStaffMembers.push({
-            id: goal.staff_member_id,
-            full_name: goal.staff_member.full_name
-          });
-          seenIds.add(goal.staff_member_id);
+      // Handle different response structures
+      if (response.data.success && response.data.data) {
+        if (Array.isArray(response.data.data)) {
+          setStaffMembers(response.data.data);
+        } else if (response.data.data.data && Array.isArray(response.data.data.data)) {
+          setStaffMembers(response.data.data.data);
+        } else {
+          setStaffMembers([]);
         }
-      });
-
-      setStaffMembers(uniqueStaffMembers);
+      } else if (Array.isArray(response.data)) {
+        setStaffMembers(response.data);
+      } else if (response.data.data && Array.isArray(response.data.data)) {
+        setStaffMembers(response.data.data);
+      } else {
+        setStaffMembers([]);
+      }
     } catch (error) {
-      console.error('Failed to extract staff members:', error);
+      console.error('Failed to fetch staff members:', error);
+      showAlert('error', 'Error', 'Failed to load staff members');
+      setStaffMembers([]);
+    } finally {
+      setIsLoadingStaff(false);
     }
   };
-
-  useEffect(() => {
-    if (goals.length > 0) {
-      fetchStaffMembers();
-    }
-  }, [goals]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -506,14 +510,20 @@ export default function Goals() {
                       required
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select staff member" />
+                        <SelectValue placeholder={
+                          isLoadingStaff ? "Loading staff members..." : "Select staff member"
+                        } />
                       </SelectTrigger>
                       <SelectContent>
-                        {staffMembers.map((staff) => (
-                          <SelectItem key={staff.id} value={staff.id.toString()}>
-                            {staff.full_name}
-                          </SelectItem>
-                        ))}
+                        {staffMembers.length === 0 && !isLoadingStaff ? (
+                          <SelectItem value="" disabled>No staff members found</SelectItem>
+                        ) : (
+                          staffMembers.map((staff) => (
+                            <SelectItem key={staff.id} value={staff.id.toString()}>
+                              {staff.full_name}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
