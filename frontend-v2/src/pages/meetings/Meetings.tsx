@@ -76,11 +76,6 @@ interface Meeting {
     location: string;
   };
 
-  attendees?: {
-    staff_member?: {
-      full_name: string;
-    };
-  }[];
 }
 
 interface PaginationMeta {
@@ -515,65 +510,7 @@ export default function Meetings() {
                 />
               </div>
 
-              <div className="space-y-3">
-                <Label>Select Attendees</Label>
-                <div className="space-y-2">
-                  <Select
-                    onValueChange={(v) => {
-                      const id = Number(v);
-                      if (!formData.attendee_ids.includes(id)) {
-                        setFormData({ ...formData, attendee_ids: [...formData.attendee_ids, id] });
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Add an attendee..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {staffMembers
-                        .filter(s => !formData.attendee_ids.includes(s.id))
-                        .map((staff) => (
-                          <SelectItem key={staff.id} value={staff.id.toString()}>
-                            {staff.full_name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {formData.attendee_ids.map((id) => {
-                      const staff = staffMembers.find(s => s.id === id);
-                      if (!staff) return null;
-                      return (
-                        <Badge
-                          key={id}
-                          variant="secondary"
-                          className="pl-2 pr-1 py-1 flex items-center gap-1 bg-solarized-base3 text-solarized-base01 border-solarized-base2"
-                        >
-                          {staff.full_name}
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-4 w-4 rounded-full p-0 hover:bg-solarized-base2"
-                            onClick={() => {
-                              setFormData({
-                                ...formData,
-                                attendee_ids: formData.attendee_ids.filter(aid => aid !== id)
-                              });
-                            }}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </Badge>
-                      );
-                    })}
-                    {formData.attendee_ids.length === 0 && (
-                      <p className="text-xs text-solarized-base2 italic">No attendees selected yet.</p>
-                    )}
-                  </div>
-                </div>
-              </div>
+           
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>

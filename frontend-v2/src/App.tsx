@@ -57,7 +57,9 @@ import Candidates from './pages/recruitment/Candidates';
 import Interviews from './pages/recruitment/Interviews';
 
 // Performance
-import Goals from './pages/performance/Goals';
+import ParticipantForm from './pages/training/ParticipantForm';
+// import SessionForm from './pages/training/SessionForm';
+// import Performance from './pages/performance/Performance';
 import Appraisals from './pages/performance/Appraisals';
 
 // Assets
@@ -66,6 +68,8 @@ import AssetsList from './pages/assets/AssetsList';
 // Training
 import Programs from './pages/training/Programs';
 import TrainingTypeList from './pages/training/TrainingTypeList';
+import Sessions from './pages/training/Sessions';
+import Participants from './pages/training/Participants';
 
 // Contracts
 import Contracts from './pages/contracts/Contracts';
@@ -74,8 +78,19 @@ import ContractRenewals from './pages/contracts/ContractRenewals';
 
 // Meetings
 import Meetings from './pages/meetings/Meetings';
+
+import MeetingCalendar from './pages/meetings/MeetingCalendar';
 import MeetingTypes from './pages/meetings/MeetingTypes';
 import MeetingRooms from './pages/meetings/MeetingRooms';
+import MeetingMinutesPage from './pages/meetings/MeetingMinutesPage';
+import MeetingActionItemsPage from './pages/meetings/MeetingActionItemsPage';
+
+
+// ... (existing imports)
+
+// ... inside App component ...
+
+{/* Meetings */ }
 
 // Reports
 import AttendanceReport from './pages/reports/AttendanceReport';
@@ -183,8 +198,7 @@ function App() {
             <Route path="/recruitment/applications" element={<JobApplications />} />
 
             {/* Performance */}
-            <Route path="/performance" element={<Goals />} />
-            <Route path="/performance/goals" element={<Goals />} />
+
             <Route path="/performance/appraisals" element={<Appraisals />} />
 
             {/* Assets */}
@@ -197,14 +211,22 @@ function App() {
             <Route path="/training" element={<Programs />} />
             <Route path="/training/programs" element={<Programs />} />
             <Route path="/training/types" element={<TrainingTypeList />} />
+            <Route path="/training/sessions" element={<Sessions />} />
+            <Route path="/training/participants" element={<Participants />} />
+            <Route path="/training/participants/create" element={<ParticipantForm />} />
+            <Route path="/training/participants/:id/edit" element={<ParticipantForm />} />
 
             {/* Contracts */}
             <Route path="/contracts" element={<Contracts />} />
             <Route path="/contracts/types" element={<ContractTypes />} />
             <Route path="/contracts/renewals" element={<ContractRenewals />} />
 
+
             {/* Meetings */}
-            <Route path="/meetings" element={<Meetings />} />
+            <Route path="/meeting" element={<Meetings />} />
+            <Route path="/meetings/calendar" element={<MeetingCalendar />} />
+            <Route path="/meetings/minutes" element={<MeetingMinutesPage />} />
+            <Route path="/meetings/action-items" element={<MeetingActionItemsPage />} />
             <Route path="/meetings/types" element={<MeetingTypes />} />
             <Route path="/meetings/rooms" element={<MeetingRooms />} />
 
