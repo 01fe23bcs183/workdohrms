@@ -227,7 +227,6 @@ class AccessSeeder extends Seeder
             'view_locations', 'create_locations', 'edit_locations',
             'view_divisions', 'create_divisions', 'edit_divisions',
             'view_job_titles', 'create_job_titles', 'edit_job_titles',
-            'view_organizations', 'create_organizations', 'edit_organizations',
             'view_companies', 'create_companies', 'edit_companies',
             'view_roles', 'assign_roles', 'view_users', 'edit_users',
             'view_recognition', 'create_recognition', 'edit_recognition',
