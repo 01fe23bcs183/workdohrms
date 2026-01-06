@@ -404,13 +404,24 @@ export const trainingService = {
 export const contractService = {
   getAll: (params?: { staff_member_id?: number; status?: string; page?: number }) =>
     api.get('/contracts', { params }),
+  getById: (id: number) => api.get(`/contracts/${id}`),
   getContracts: (params?: { staff_member_id?: number; status?: string; page?: number }) =>
     api.get('/contracts', { params }),
   createContract: (data: Record<string, unknown>) => api.post('/contracts', data),
+  update: (id: number, data: Record<string, unknown>) => api.put(`/contracts/${id}`, data),
   updateContract: (id: number, data: Record<string, unknown>) => api.put(`/contracts/${id}`, data),
   deleteContract: (id: number) => api.delete(`/contracts/${id}`),
   renewContract: (id: number, data: Record<string, unknown>) => api.post(`/contracts/${id}/renew`, data),
   terminateContract: (id: number, data: Record<string, unknown>) => api.post(`/contracts/${id}/terminate`, data),
+};
+
+export const contractTypeService = {
+  getAll: (params?: { page?: number; per_page?: number; search?: string }) =>
+    api.get('/contract-types', { params }),
+  getById: (id: number) => api.get(`/contract-types/${id}`),
+  create: (data: Record<string, unknown>) => api.post('/contract-types', data),
+  update: (id: number, data: Record<string, unknown>) => api.put(`/contract-types/${id}`, data),
+  delete: (id: number) => api.delete(`/contract-types/${id}`),
 };
 
 export const meetingTypeService = {
@@ -478,8 +489,12 @@ export const settingsService = {
   createHoliday: (data: Record<string, unknown>) => api.post('/company-holidays', data),
   updateHoliday: (id: number, data: Record<string, unknown>) => api.put(`/company-holidays/${id}`, data),
   deleteHoliday: (id: number) => api.delete(`/company-holidays/${id}`),
-  getNotices: () => api.get('/company-notices'),
-  createNotice: (data: Record<string, unknown>) => api.post('/company-notices', data),
+  getAll: (params?: any) => api.get('/company-notices', { params }),
+  getById: (id: number) => api.get(`/company-notices/${id}`),
+  create: (data: any) => api.post('/company-notices', data),
+  update: (id: number, data: any) => api.put(`/company-notices/${id}`, data),
+  delete: (id: number) => api.delete(`/company-notices/${id}`),
+  markAsRead: (id: number) => api.post(`/company-notices/${id}/read`),
   getFileCategories: () => api.get('/file-categories', { params: { paginate: false } }),
   createFileCategory: (data: Record<string, unknown>) => api.post('/file-categories', data),
   updateFileCategory: (id: number, data: Record<string, unknown>) => api.put(`/file-categories/${id}`, data),

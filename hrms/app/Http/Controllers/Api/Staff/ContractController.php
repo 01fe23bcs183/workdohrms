@@ -58,9 +58,27 @@ class ContractController extends Controller
 
     public function update(Request $request, Contract $contract)
     {
-        $contract->update($request->all());
+        $validator = Validator::make($request->all(), [
+            'salary' => 'nullable|numeric|min:0',
+            'status' => 'nullable|in:draft,active,expired,terminated',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after:start_date',
+            'terms' => 'nullable|string',
+        ]);
 
-        return $this->success($contract, 'Updated');
+        if ($validator->fails()) {
+            return $this->validationError($validator->errors());
+        }
+
+        $contract->update($request->only([
+            'salary',
+            'status',
+            'start_date',
+            'end_date',
+            'terms',
+        ]));
+
+        return $this->success($contract->load(['staffMember', 'contractType']), 'Contract updated successfully');
     }
 
     public function destroy(Contract $contract)

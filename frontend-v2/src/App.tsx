@@ -73,6 +73,8 @@ import Participants from './pages/training/Participants';
 
 // Contracts
 import Contracts from './pages/contracts/Contracts';
+import ContractTypes from './pages/contracts/ContractTypes';
+import ContractRenewals from './pages/contracts/ContractRenewals';
 
 // Meetings
 import Meetings from './pages/meetings/Meetings';
@@ -111,6 +113,7 @@ import JobApplications from './pages/recruitment/JobApplications';
 
 // Error Pages
 import Unauthorized from './pages/Unauthorized';
+import CompanyNotices from './pages/settings/CompanyNotices';
 
 function App() {
   return (
@@ -210,6 +213,8 @@ function App() {
 
             {/* Contracts */}
             <Route path="/contracts" element={<Contracts />} />
+            <Route path="/contracts/types" element={<ContractTypes />} />
+            <Route path="/contracts/renewals" element={<ContractRenewals />} />
 
     
             <Route path="/meetings/types" element={<MeetingTypes />} />
@@ -228,6 +233,7 @@ function App() {
             <Route path="/settings/divisions" element={<Divisions />} />
             <Route path="/settings/job-titles" element={<JobTitles />} />
             <Route path="/settings/holidays" element={<Holidays />} />
+            <Route path="/settings/company-notices" element={<CompanyNotices />} />
             <Route path="/settings/file-categories" element={<FileCategories />} />
             <Route path="/settings/document-config" element={<DocumentConfiguration />} />
 

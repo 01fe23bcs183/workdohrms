@@ -170,6 +170,11 @@ const navigation: NavItem[] = [
     href: '/contracts',
     icon: FileText,
     permission: 'view_staff_contracts',
+    children: [
+      { name: 'All Contracts', href: '/contracts' },
+      { name: 'Contract Types', href: '/contracts/types' },
+      { name: 'Contract Renewals', href: '/contracts/renewals' },
+    ]
   },
   {
     name: 'Meetings',
@@ -206,7 +211,7 @@ const navigation: NavItem[] = [
       { name: 'Job Titles', href: '/settings/job-titles', permission: 'view_settings' },
       { name: 'Holidays', href: '/settings/holidays', permission: 'view_settings' },
       { name: 'File Categories', href: '/settings/file-categories', permission: 'view_settings' },
-      { name: 'Notices', href: '/settings/notices', permission: 'view_settings' },
+      { name: 'Notices', href: '/settings/company-notices', permission: 'view_settings' },
       { name: 'Document Configuration', href: '/settings/document-config', permission: 'view_settings' },
     ]
   },
