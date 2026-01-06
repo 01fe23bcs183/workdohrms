@@ -76,11 +76,77 @@ class UserRoleController extends Controller
         return $targetUserLevel > $userLevel;
     }
 
+    /**
+     * Check if the current user is an admin (hierarchy level 1).
+     */
+    protected function isAdmin(): bool
+    {
+        return $this->getUserHierarchyLevel() === 1;
+    }
+
+    /**
+     * Apply tenant scoping to a query based on the current user's org_id and company_id.
+     * Admin users can see all users; other users can only see users in their org/company.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    protected function applyTenantScope($query)
+    {
+        // Admin users can see all users
+        if ($this->isAdmin()) {
+            return $query;
+        }
+
+        $currentUser = auth()->user();
+
+        // Apply org_id filter if the current user has one
+        if ($currentUser->org_id) {
+            $query->where('org_id', $currentUser->org_id);
+        }
+
+        // Apply company_id filter if the current user has one
+        if ($currentUser->company_id) {
+            $query->where('company_id', $currentUser->company_id);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Check if the current user can access a target user based on tenant scoping.
+     * Admin users can access any user; other users can only access users in their org/company.
+     */
+    protected function canAccessUser(User $targetUser): bool
+    {
+        // Admin users can access any user
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        $currentUser = auth()->user();
+
+        // Check org_id match if current user has one
+        if ($currentUser->org_id && $targetUser->org_id !== $currentUser->org_id) {
+            return false;
+        }
+
+        // Check company_id match if current user has one
+        if ($currentUser->company_id && $targetUser->company_id !== $currentUser->company_id) {
+            return false;
+        }
+
+        return true;
+    }
+
     public function index(Request $request): JsonResponse
     {
         $query = User::with(['roles' => function ($q) {
             $q->orderBy('hierarchy_level');
         }]);
+
+        // Tenant scoping: filter users by org_id/company_id
+        $this->applyTenantScope($query);
 
         if ($request->has('search')) {
             $query->where(function ($q) use ($request) {
@@ -124,6 +190,11 @@ class UserRoleController extends Controller
             $q->orderBy('hierarchy_level');
         }])->findOrFail($id);
 
+        // Tenant scoping: check if current user can access this user
+        if (! $this->canAccessUser($user)) {
+            return $this->error('You cannot access users outside your organization/company', 403);
+        }
+
         $primaryRole = $user->roles->sortBy('hierarchy_level')->first();
         $user->primary_role = $primaryRole ? $primaryRole->name : null;
         $user->primary_role_icon = $primaryRole ? $primaryRole->icon : null;
@@ -139,12 +210,22 @@ class UserRoleController extends Controller
             $q->orderBy('hierarchy_level');
         }])->findOrFail($id);
 
+        // Tenant scoping: check if current user can access this user
+        if (! $this->canAccessUser($user)) {
+            return $this->error('You cannot access users outside your organization/company', 403);
+        }
+
         return $this->success($user->roles, 'User roles retrieved successfully');
     }
 
     public function assignRoles(Request $request, int $id): JsonResponse
     {
         $user = User::findOrFail($id);
+
+        // Tenant scoping: check if current user can access this user
+        if (! $this->canAccessUser($user)) {
+            return $this->error('You cannot manage users outside your organization/company', 403);
+        }
 
         // Hierarchy enforcement: prevent managing users with higher priority roles
         if (! $this->canManageUser($user)) {
@@ -200,6 +281,11 @@ class UserRoleController extends Controller
     {
         $user = User::findOrFail($id);
 
+        // Tenant scoping: check if current user can access this user
+        if (! $this->canAccessUser($user)) {
+            return $this->error('You cannot manage users outside your organization/company', 403);
+        }
+
         // Hierarchy enforcement: prevent managing users with higher priority roles
         if (! $this->canManageUser($user)) {
             return $this->error('You cannot manage roles for a user with higher priority than your own role', 403);
@@ -237,6 +323,11 @@ class UserRoleController extends Controller
     public function removeRole(Request $request, int $id): JsonResponse
     {
         $user = User::findOrFail($id);
+
+        // Tenant scoping: check if current user can access this user
+        if (! $this->canAccessUser($user)) {
+            return $this->error('You cannot manage users outside your organization/company', 403);
+        }
 
         // Hierarchy enforcement: prevent managing users with higher priority roles
         if (! $this->canManageUser($user)) {
