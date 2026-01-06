@@ -110,6 +110,7 @@ import Users from './pages/admin/Users';
 import Roles from './pages/admin/Roles';
 import RolePermissions from './pages/admin/RolePermissions';
 import Permissions from './pages/admin/Permissions';
+import RoleGovernance from './pages/admin/RoleGovernance';
 import BenefitTypes from './pages/payroll/BenefitTypes';
 import WithholdingTypes from './pages/payroll/WithHoldingType';
 import JobCategories from './pages/recruitment/JobCategory';
@@ -252,6 +253,7 @@ function App() {
             <Route path="/admin/roles" element={<Roles />} />
             <Route path="/admin/roles/:id/permissions" element={<RolePermissions />} />
             <Route path="/admin/permissions" element={<Permissions />} />
+            <Route path="/admin/role-governance" element={<RoleGovernance />} />
           </Route>
 
           {/* Unauthorized */}

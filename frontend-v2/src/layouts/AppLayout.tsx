@@ -226,6 +226,7 @@ const navigation: NavItem[] = [
     children: [
       { name: 'Users', href: '/admin/users', permission: 'view_roles' },
       { name: 'Roles', href: '/admin/roles', permission: 'view_roles' },
+      { name: 'Role Governance', href: '/admin/role-governance', permission: 'view_roles' },
       { name: 'Permissions', href: '/admin/permissions', permission: 'view_roles' },
     ]
   },
