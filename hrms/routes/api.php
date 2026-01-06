@@ -205,9 +205,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // PROMPT SET 7: Leave Management
     // ============================================
     Route::apiResource('time-off-categories', TimeOffCategoryController::class);
+    Route::get('/leave/my-requests', [TimeOffRequestController::class, 'myRequests']);
     Route::apiResource('time-off-requests', TimeOffRequestController::class);
     Route::post('/time-off-requests/{timeOffRequest}/process', [TimeOffRequestController::class, 'processApproval']);
     Route::get('/time-off-balance', [TimeOffRequestController::class, 'getBalance']);
+    Route::get('/leave/my-balance', [TimeOffRequestController::class, 'myBalance']);
 
     // ============================================
     // PROMPT SET 8: Attendance Management
