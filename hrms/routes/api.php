@@ -144,14 +144,33 @@ Route::middleware('auth:sanctum')->group(function () {
     // ============================================
     // PROMPT SET 2: Organization Structure
     // ============================================
-    Route::apiResource('office-locations', OfficeLocationController::class);
-    Route::apiResource('divisions', DivisionController::class);
-    Route::apiResource('job-titles', JobTitleController::class);
+    // Office Locations
+    Route::get('/office-locations', [OfficeLocationController::class, 'index'])->middleware('permission:view_locations');
+    Route::post('/office-locations', [OfficeLocationController::class, 'store'])->middleware('permission:create_locations');
+    Route::get('/office-locations/{office_location}', [OfficeLocationController::class, 'show'])->middleware('permission:view_locations');
+    Route::put('/office-locations/{office_location}', [OfficeLocationController::class, 'update'])->middleware('permission:edit_locations');
+    Route::delete('/office-locations/{office_location}', [OfficeLocationController::class, 'destroy'])->middleware('permission:delete_locations');
+
+    // Divisions
+    Route::get('/divisions', [DivisionController::class, 'index'])->middleware('permission:view_divisions');
+    Route::post('/divisions', [DivisionController::class, 'store'])->middleware('permission:create_divisions');
+    Route::get('/divisions/{division}', [DivisionController::class, 'show'])->middleware('permission:view_divisions');
+    Route::put('/divisions/{division}', [DivisionController::class, 'update'])->middleware('permission:edit_divisions');
+    Route::delete('/divisions/{division}', [DivisionController::class, 'destroy'])->middleware('permission:delete_divisions');
+
+    // Job Titles
+    Route::get('/job-titles', [JobTitleController::class, 'index'])->middleware('permission:view_job_titles');
+    Route::post('/job-titles', [JobTitleController::class, 'store'])->middleware('permission:create_job_titles');
+    Route::get('/job-titles/{job_title}', [JobTitleController::class, 'show'])->middleware('permission:view_job_titles');
+    Route::put('/job-titles/{job_title}', [JobTitleController::class, 'update'])->middleware('permission:edit_job_titles');
+    Route::delete('/job-titles/{job_title}', [JobTitleController::class, 'destroy'])->middleware('permission:delete_job_titles');
+
+    // File Categories
     Route::apiResource('file-categories', FileCategoryController::class);
 
     // AJAX endpoints for cascading dropdowns
-    Route::post('/fetch-divisions', [DivisionController::class, 'fetchByLocation']);
-    Route::post('/fetch-job-titles', [JobTitleController::class, 'fetchByDivision']);
+    Route::post('/fetch-divisions', [DivisionController::class, 'fetchByLocation'])->middleware('permission:view_divisions');
+    Route::post('/fetch-job-titles', [JobTitleController::class, 'fetchByDivision'])->middleware('permission:view_job_titles');
 
     // ============================================
     // PROMPT SET 3: Staff Member Management
@@ -204,60 +223,157 @@ Route::middleware('auth:sanctum')->group(function () {
     // ============================================
     // PROMPT SET 7: Leave Management
     // ============================================
-    Route::apiResource('time-off-categories', TimeOffCategoryController::class);
-    Route::apiResource('time-off-requests', TimeOffRequestController::class);
-    Route::post('/time-off-requests/{timeOffRequest}/process', [TimeOffRequestController::class, 'processApproval']);
-    Route::get('/time-off-balance', [TimeOffRequestController::class, 'getBalance']);
+    // Time Off Categories
+    Route::get('/time-off-categories', [TimeOffCategoryController::class, 'index'])->middleware('permission:view_time_off');
+    Route::post('/time-off-categories', [TimeOffCategoryController::class, 'store'])->middleware('permission:create_time_off');
+    Route::get('/time-off-categories/{time_off_category}', [TimeOffCategoryController::class, 'show'])->middleware('permission:view_time_off');
+    Route::put('/time-off-categories/{time_off_category}', [TimeOffCategoryController::class, 'update'])->middleware('permission:edit_time_off');
+    Route::delete('/time-off-categories/{time_off_category}', [TimeOffCategoryController::class, 'destroy'])->middleware('permission:delete_time_off');
+
+    // Time Off Requests
+    Route::get('/time-off-requests', [TimeOffRequestController::class, 'index'])->middleware('permission:view_time_off');
+    Route::post('/time-off-requests', [TimeOffRequestController::class, 'store'])->middleware('permission:create_time_off');
+    Route::get('/time-off-requests/{time_off_request}', [TimeOffRequestController::class, 'show'])->middleware('permission:view_time_off');
+    Route::put('/time-off-requests/{time_off_request}', [TimeOffRequestController::class, 'update'])->middleware('permission:edit_time_off');
+    Route::delete('/time-off-requests/{time_off_request}', [TimeOffRequestController::class, 'destroy'])->middleware('permission:delete_time_off');
+    Route::post('/time-off-requests/{timeOffRequest}/process', [TimeOffRequestController::class, 'processApproval'])->middleware('permission:approve_time_off');
+    Route::get('/time-off-balance', [TimeOffRequestController::class, 'getBalance'])->middleware('permission:view_time_off');
 
     // ============================================
     // PROMPT SET 8: Attendance Management
     // ============================================
-    Route::apiResource('work-logs', WorkLogController::class);
-    Route::post('/clock-in', [WorkLogController::class, 'clockIn']);
-    Route::post('/clock-out', [WorkLogController::class, 'clockOut']);
-    Route::post('/work-logs/bulk', [WorkLogController::class, 'bulkStore']);
-    Route::get('/attendance-summary', [WorkLogController::class, 'summary']);
+    Route::get('/work-logs', [WorkLogController::class, 'index'])->middleware('permission:view_attendance');
+    Route::post('/work-logs', [WorkLogController::class, 'store'])->middleware('permission:create_attendance');
+    Route::get('/work-logs/{work_log}', [WorkLogController::class, 'show'])->middleware('permission:view_attendance');
+    Route::put('/work-logs/{work_log}', [WorkLogController::class, 'update'])->middleware('permission:edit_attendance');
+    Route::delete('/work-logs/{work_log}', [WorkLogController::class, 'destroy'])->middleware('permission:delete_attendance');
+    Route::post('/clock-in', [WorkLogController::class, 'clockIn'])->middleware('permission:create_attendance');
+    Route::post('/clock-out', [WorkLogController::class, 'clockOut'])->middleware('permission:create_attendance');
+    Route::post('/work-logs/bulk', [WorkLogController::class, 'bulkStore'])->middleware('permission:bulk_attendance');
+    Route::get('/attendance-summary', [WorkLogController::class, 'summary'])->middleware('permission:view_attendance');
 
     // ============================================
     // PROMPT SET 9: Payroll Setup
     // ============================================
-    Route::apiResource('compensation-categories', CompensationCategoryController::class);
-    Route::apiResource('benefit-types', BenefitTypeController::class);
-    Route::apiResource('advance-types', AdvanceTypeController::class);
-    Route::apiResource('withholding-types', WithholdingTypeController::class);
+    // Compensation Categories
+    Route::get('/compensation-categories', [CompensationCategoryController::class, 'index'])->middleware('permission:view_compensation');
+    Route::post('/compensation-categories', [CompensationCategoryController::class, 'store'])->middleware('permission:create_compensation');
+    Route::get('/compensation-categories/{compensation_category}', [CompensationCategoryController::class, 'show'])->middleware('permission:view_compensation');
+    Route::put('/compensation-categories/{compensation_category}', [CompensationCategoryController::class, 'update'])->middleware('permission:edit_compensation');
+    Route::delete('/compensation-categories/{compensation_category}', [CompensationCategoryController::class, 'destroy'])->middleware('permission:delete_compensation');
+
+    // Benefit Types
+    Route::get('/benefit-types', [BenefitTypeController::class, 'index'])->middleware('permission:view_compensation');
+    Route::post('/benefit-types', [BenefitTypeController::class, 'store'])->middleware('permission:create_compensation');
+    Route::get('/benefit-types/{benefit_type}', [BenefitTypeController::class, 'show'])->middleware('permission:view_compensation');
+    Route::put('/benefit-types/{benefit_type}', [BenefitTypeController::class, 'update'])->middleware('permission:edit_compensation');
+    Route::delete('/benefit-types/{benefit_type}', [BenefitTypeController::class, 'destroy'])->middleware('permission:delete_compensation');
+
+    // Advance Types
+    Route::get('/advance-types', [AdvanceTypeController::class, 'index'])->middleware('permission:view_compensation');
+    Route::post('/advance-types', [AdvanceTypeController::class, 'store'])->middleware('permission:create_compensation');
+    Route::get('/advance-types/{advance_type}', [AdvanceTypeController::class, 'show'])->middleware('permission:view_compensation');
+    Route::put('/advance-types/{advance_type}', [AdvanceTypeController::class, 'update'])->middleware('permission:edit_compensation');
+    Route::delete('/advance-types/{advance_type}', [AdvanceTypeController::class, 'destroy'])->middleware('permission:delete_compensation');
+
+    // Withholding Types
+    Route::get('/withholding-types', [WithholdingTypeController::class, 'index'])->middleware('permission:view_compensation');
+    Route::post('/withholding-types', [WithholdingTypeController::class, 'store'])->middleware('permission:create_compensation');
+    Route::get('/withholding-types/{withholding_type}', [WithholdingTypeController::class, 'show'])->middleware('permission:view_compensation');
+    Route::put('/withholding-types/{withholding_type}', [WithholdingTypeController::class, 'update'])->middleware('permission:edit_compensation');
+    Route::delete('/withholding-types/{withholding_type}', [WithholdingTypeController::class, 'destroy'])->middleware('permission:delete_compensation');
 
     // ============================================
     // PROMPT SET 10: Salary Components
     // ============================================
-    Route::apiResource('staff-benefits', StaffBenefitController::class);
-    Route::apiResource('incentive-records', IncentiveRecordController::class);
-    Route::apiResource('salary-advances', SalaryAdvanceController::class);
-    Route::post('/salary-advances/{salaryAdvance}/payment', [SalaryAdvanceController::class, 'recordPayment']);
-    Route::apiResource('recurring-deductions', RecurringDeductionController::class);
+    // Staff Benefits
+    Route::get('/staff-benefits', [StaffBenefitController::class, 'index'])->middleware('permission:view_compensation');
+    Route::post('/staff-benefits', [StaffBenefitController::class, 'store'])->middleware('permission:create_compensation');
+    Route::get('/staff-benefits/{staff_benefit}', [StaffBenefitController::class, 'show'])->middleware('permission:view_compensation');
+    Route::put('/staff-benefits/{staff_benefit}', [StaffBenefitController::class, 'update'])->middleware('permission:edit_compensation');
+    Route::delete('/staff-benefits/{staff_benefit}', [StaffBenefitController::class, 'destroy'])->middleware('permission:delete_compensation');
+
+    // Incentive Records
+    Route::get('/incentive-records', [IncentiveRecordController::class, 'index'])->middleware('permission:view_compensation');
+    Route::post('/incentive-records', [IncentiveRecordController::class, 'store'])->middleware('permission:create_compensation');
+    Route::get('/incentive-records/{incentive_record}', [IncentiveRecordController::class, 'show'])->middleware('permission:view_compensation');
+    Route::put('/incentive-records/{incentive_record}', [IncentiveRecordController::class, 'update'])->middleware('permission:edit_compensation');
+    Route::delete('/incentive-records/{incentive_record}', [IncentiveRecordController::class, 'destroy'])->middleware('permission:delete_compensation');
+
+    // Salary Advances
+    Route::get('/salary-advances', [SalaryAdvanceController::class, 'index'])->middleware('permission:view_compensation');
+    Route::post('/salary-advances', [SalaryAdvanceController::class, 'store'])->middleware('permission:create_compensation');
+    Route::get('/salary-advances/{salary_advance}', [SalaryAdvanceController::class, 'show'])->middleware('permission:view_compensation');
+    Route::put('/salary-advances/{salary_advance}', [SalaryAdvanceController::class, 'update'])->middleware('permission:edit_compensation');
+    Route::delete('/salary-advances/{salary_advance}', [SalaryAdvanceController::class, 'destroy'])->middleware('permission:delete_compensation');
+    Route::post('/salary-advances/{salaryAdvance}/payment', [SalaryAdvanceController::class, 'recordPayment'])->middleware('permission:edit_compensation');
+
+    // Recurring Deductions
+    Route::get('/recurring-deductions', [RecurringDeductionController::class, 'index'])->middleware('permission:view_compensation');
+    Route::post('/recurring-deductions', [RecurringDeductionController::class, 'store'])->middleware('permission:create_compensation');
+    Route::get('/recurring-deductions/{recurring_deduction}', [RecurringDeductionController::class, 'show'])->middleware('permission:view_compensation');
+    Route::put('/recurring-deductions/{recurring_deduction}', [RecurringDeductionController::class, 'update'])->middleware('permission:edit_compensation');
+    Route::delete('/recurring-deductions/{recurring_deduction}', [RecurringDeductionController::class, 'destroy'])->middleware('permission:delete_compensation');
 
     // ============================================
     // PROMPT SET 11: Payroll Processing
     // ============================================
-    Route::apiResource('bonus-payments', BonusPaymentController::class);
-    Route::apiResource('extra-hours-records', ExtraHoursRecordController::class);
-    Route::apiResource('employer-contributions', EmployerContributionController::class);
+    // Bonus Payments
+    Route::get('/bonus-payments', [BonusPaymentController::class, 'index'])->middleware('permission:view_compensation');
+    Route::post('/bonus-payments', [BonusPaymentController::class, 'store'])->middleware('permission:create_compensation');
+    Route::get('/bonus-payments/{bonus_payment}', [BonusPaymentController::class, 'show'])->middleware('permission:view_compensation');
+    Route::put('/bonus-payments/{bonus_payment}', [BonusPaymentController::class, 'update'])->middleware('permission:edit_compensation');
+    Route::delete('/bonus-payments/{bonus_payment}', [BonusPaymentController::class, 'destroy'])->middleware('permission:delete_compensation');
+
+    // Extra Hours Records
+    Route::get('/extra-hours-records', [ExtraHoursRecordController::class, 'index'])->middleware('permission:view_compensation');
+    Route::post('/extra-hours-records', [ExtraHoursRecordController::class, 'store'])->middleware('permission:create_compensation');
+    Route::get('/extra-hours-records/{extra_hours_record}', [ExtraHoursRecordController::class, 'show'])->middleware('permission:view_compensation');
+    Route::put('/extra-hours-records/{extra_hours_record}', [ExtraHoursRecordController::class, 'update'])->middleware('permission:edit_compensation');
+    Route::delete('/extra-hours-records/{extra_hours_record}', [ExtraHoursRecordController::class, 'destroy'])->middleware('permission:delete_compensation');
+
+    // Employer Contributions
+    Route::get('/employer-contributions', [EmployerContributionController::class, 'index'])->middleware('permission:view_compensation');
+    Route::post('/employer-contributions', [EmployerContributionController::class, 'store'])->middleware('permission:create_compensation');
+    Route::get('/employer-contributions/{employer_contribution}', [EmployerContributionController::class, 'show'])->middleware('permission:view_compensation');
+    Route::put('/employer-contributions/{employer_contribution}', [EmployerContributionController::class, 'update'])->middleware('permission:edit_compensation');
+    Route::delete('/employer-contributions/{employer_contribution}', [EmployerContributionController::class, 'destroy'])->middleware('permission:delete_compensation');
 
     // ============================================
     // PROMPT SET 12: Payslip Generation
     // ============================================
-    Route::apiResource('salary-slips', SalarySlipController::class)->except(['store', 'update']);
-    Route::post('/salary-slips/generate', [SalarySlipController::class, 'generate']);
-    Route::post('/salary-slips/bulk-generate', [SalarySlipController::class, 'bulkGenerate']);
-    Route::post('/salary-slips/{salarySlip}/mark-paid', [SalarySlipController::class, 'markPaid']);
-    Route::get('payroll/salary-slips/{id}/download', [SalarySlipController::class, 'download']);
+    Route::get('/salary-slips', [SalarySlipController::class, 'index'])->middleware('permission:view_payslips');
+    Route::get('/salary-slips/{salary_slip}', [SalarySlipController::class, 'show'])->middleware('permission:view_payslips');
+    Route::delete('/salary-slips/{salary_slip}', [SalarySlipController::class, 'destroy'])->middleware('permission:generate_payslips');
+    Route::post('/salary-slips/generate', [SalarySlipController::class, 'generate'])->middleware('permission:generate_payslips');
+    Route::post('/salary-slips/bulk-generate', [SalarySlipController::class, 'bulkGenerate'])->middleware('permission:generate_payslips');
+    Route::post('/salary-slips/{salarySlip}/mark-paid', [SalarySlipController::class, 'markPaid'])->middleware('permission:generate_payslips');
+    Route::get('payroll/salary-slips/{id}/download', [SalarySlipController::class, 'download'])->middleware('permission:view_payslips');
 
     // ============================================
     // PROMPT SET 13: Tax Management
     // ============================================
-    Route::apiResource('tax-slabs', TaxSlabController::class);
-    Route::post('/tax-slabs/calculate', [TaxSlabController::class, 'calculate']);
-    Route::apiResource('tax-exemptions', TaxExemptionController::class);
-    Route::apiResource('minimum-tax-limits', MinimumTaxLimitController::class);
+    // Tax Slabs
+    Route::get('/tax-slabs', [TaxSlabController::class, 'index'])->middleware('permission:view_compensation');
+    Route::post('/tax-slabs', [TaxSlabController::class, 'store'])->middleware('permission:create_compensation');
+    Route::get('/tax-slabs/{tax_slab}', [TaxSlabController::class, 'show'])->middleware('permission:view_compensation');
+    Route::put('/tax-slabs/{tax_slab}', [TaxSlabController::class, 'update'])->middleware('permission:edit_compensation');
+    Route::delete('/tax-slabs/{tax_slab}', [TaxSlabController::class, 'destroy'])->middleware('permission:delete_compensation');
+    Route::post('/tax-slabs/calculate', [TaxSlabController::class, 'calculate'])->middleware('permission:view_compensation');
+
+    // Tax Exemptions
+    Route::get('/tax-exemptions', [TaxExemptionController::class, 'index'])->middleware('permission:view_compensation');
+    Route::post('/tax-exemptions', [TaxExemptionController::class, 'store'])->middleware('permission:create_compensation');
+    Route::get('/tax-exemptions/{tax_exemption}', [TaxExemptionController::class, 'show'])->middleware('permission:view_compensation');
+    Route::put('/tax-exemptions/{tax_exemption}', [TaxExemptionController::class, 'update'])->middleware('permission:edit_compensation');
+    Route::delete('/tax-exemptions/{tax_exemption}', [TaxExemptionController::class, 'destroy'])->middleware('permission:delete_compensation');
+
+    // Minimum Tax Limits
+    Route::get('/minimum-tax-limits', [MinimumTaxLimitController::class, 'index'])->middleware('permission:view_compensation');
+    Route::post('/minimum-tax-limits', [MinimumTaxLimitController::class, 'store'])->middleware('permission:create_compensation');
+    Route::get('/minimum-tax-limits/{minimum_tax_limit}', [MinimumTaxLimitController::class, 'show'])->middleware('permission:view_compensation');
+    Route::put('/minimum-tax-limits/{minimum_tax_limit}', [MinimumTaxLimitController::class, 'update'])->middleware('permission:edit_compensation');
+    Route::delete('/minimum-tax-limits/{minimum_tax_limit}', [MinimumTaxLimitController::class, 'destroy'])->middleware('permission:delete_compensation');
 
     // ============================================
     // PROMPT SET 14: Events & Calendar
@@ -300,13 +416,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // ============================================
     // PROMPT SET 18: Reports & Dashboard
     // ============================================
-    Route::prefix('reports')->group(function () {
+    Route::prefix('reports')->middleware('permission:view_reports')->group(function () {
         Route::get('/attendance', [ReportController::class, 'attendanceReport']);
         Route::get('/leave', [ReportController::class, 'leaveReport']);
         Route::get('/payroll', [ReportController::class, 'payrollReport']);
         Route::get('/headcount', [ReportController::class, 'headcountReport']);
     });
-    Route::get('/dashboard', [ReportController::class, 'dashboard']);
+    Route::get('/dashboard', [ReportController::class, 'dashboard'])->middleware('permission:view_reports');
 
     // ============================================
     // PROMPT SET 19: DataTables (Server-Side)
@@ -330,7 +446,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{dataImport}', [DataImportController::class, 'show']);
     });
 
-    Route::prefix('exports')->group(function () {
+    Route::prefix('exports')->middleware('permission:export_reports')->group(function () {
         Route::get('/staff-members', [DataExportController::class, 'exportStaffMembers']);
         Route::get('/attendance', [DataExportController::class, 'exportAttendance']);
         Route::get('/leaves', [DataExportController::class, 'exportLeaves']);
@@ -382,40 +498,66 @@ Route::middleware('auth:sanctum')->group(function () {
     // ============================================
     // PROMPT SET 25: Recruitment - Jobs
     // ============================================
-    Route::apiResource('job-categories', JobCategoryController::class);
-    Route::apiResource('job-stages', JobStageController::class);
-    Route::post('/job-stages/reorder', [JobStageController::class, 'reorder']);
-    Route::apiResource('jobs', JobController::class);
-    Route::post('/jobs/{job}/publish', [JobController::class, 'publish']);
-    Route::post('/jobs/{job}/close', [JobController::class, 'close']);
-    Route::get('/jobs/{job}/questions', [JobController::class, 'questions']);
-    Route::post('/jobs/{job}/questions', [JobController::class, 'addQuestion']);
+    // Job Categories
+    Route::get('/job-categories', [JobCategoryController::class, 'index'])->middleware('permission:view_recruitment');
+    Route::post('/job-categories', [JobCategoryController::class, 'store'])->middleware('permission:create_recruitment');
+    Route::get('/job-categories/{job_category}', [JobCategoryController::class, 'show'])->middleware('permission:view_recruitment');
+    Route::put('/job-categories/{job_category}', [JobCategoryController::class, 'update'])->middleware('permission:edit_recruitment');
+    Route::delete('/job-categories/{job_category}', [JobCategoryController::class, 'destroy'])->middleware('permission:delete_recruitment');
+
+    // Job Stages
+    Route::get('/job-stages', [JobStageController::class, 'index'])->middleware('permission:view_recruitment');
+    Route::post('/job-stages', [JobStageController::class, 'store'])->middleware('permission:create_recruitment');
+    Route::get('/job-stages/{job_stage}', [JobStageController::class, 'show'])->middleware('permission:view_recruitment');
+    Route::put('/job-stages/{job_stage}', [JobStageController::class, 'update'])->middleware('permission:edit_recruitment');
+    Route::delete('/job-stages/{job_stage}', [JobStageController::class, 'destroy'])->middleware('permission:delete_recruitment');
+    Route::post('/job-stages/reorder', [JobStageController::class, 'reorder'])->middleware('permission:edit_recruitment');
+
+    // Jobs
+    Route::get('/jobs', [JobController::class, 'index'])->middleware('permission:view_recruitment');
+    Route::post('/jobs', [JobController::class, 'store'])->middleware('permission:create_recruitment');
+    Route::get('/jobs/{job}', [JobController::class, 'show'])->middleware('permission:view_recruitment');
+    Route::put('/jobs/{job}', [JobController::class, 'update'])->middleware('permission:edit_recruitment');
+    Route::delete('/jobs/{job}', [JobController::class, 'destroy'])->middleware('permission:delete_recruitment');
+    Route::post('/jobs/{job}/publish', [JobController::class, 'publish'])->middleware('permission:edit_recruitment');
+    Route::post('/jobs/{job}/close', [JobController::class, 'close'])->middleware('permission:edit_recruitment');
+    Route::get('/jobs/{job}/questions', [JobController::class, 'questions'])->middleware('permission:view_recruitment');
+    Route::post('/jobs/{job}/questions', [JobController::class, 'addQuestion'])->middleware('permission:edit_recruitment');
 
     // ============================================
     // PROMPT SET 26: Recruitment - Candidates
     // ============================================
-    Route::apiResource('candidates', CandidateController::class);
-    Route::post('/candidates/{candidate}/archive', [CandidateController::class, 'archive']);
-    Route::post('/candidates/{candidate}/convert-to-employee', [CandidateController::class, 'convertToEmployee']);
+    Route::get('/candidates', [CandidateController::class, 'index'])->middleware('permission:view_recruitment');
+    Route::post('/candidates', [CandidateController::class, 'store'])->middleware('permission:manage_candidates');
+    Route::get('/candidates/{candidate}', [CandidateController::class, 'show'])->middleware('permission:view_recruitment');
+    Route::put('/candidates/{candidate}', [CandidateController::class, 'update'])->middleware('permission:manage_candidates');
+    Route::delete('/candidates/{candidate}', [CandidateController::class, 'destroy'])->middleware('permission:manage_candidates');
+    Route::post('/candidates/{candidate}/archive', [CandidateController::class, 'archive'])->middleware('permission:manage_candidates');
+    Route::post('/candidates/{candidate}/convert-to-employee', [CandidateController::class, 'convertToEmployee'])->middleware('permission:manage_candidates');
 
     // ============================================
     // PROMPT SET 27: Recruitment - Applications & Interviews
     // ============================================
-    Route::get('/job-applications', [JobApplicationController::class, 'index']);
-    Route::post('/jobs/{job}/applications', [JobApplicationController::class, 'store']);
-    Route::get('/job-applications/{jobApplication}', [JobApplicationController::class, 'show']);
-    Route::post('/job-applications/{jobApplication}/move-stage', [JobApplicationController::class, 'moveStage']);
-    Route::post('/job-applications/{jobApplication}/rate', [JobApplicationController::class, 'rate']);
-    Route::post('/job-applications/{jobApplication}/notes', [JobApplicationController::class, 'addNote']);
-    Route::post('/job-applications/{jobApplication}/shortlist', [JobApplicationController::class, 'shortlist']);
-    Route::post('/job-applications/{jobApplication}/reject', [JobApplicationController::class, 'reject']);
-    Route::post('/job-applications/{jobApplication}/hire', [JobApplicationController::class, 'hire']);
+    Route::get('/job-applications', [JobApplicationController::class, 'index'])->middleware('permission:view_recruitment');
+    Route::post('/jobs/{job}/applications', [JobApplicationController::class, 'store'])->middleware('permission:manage_candidates');
+    Route::get('/job-applications/{jobApplication}', [JobApplicationController::class, 'show'])->middleware('permission:view_recruitment');
+    Route::post('/job-applications/{jobApplication}/move-stage', [JobApplicationController::class, 'moveStage'])->middleware('permission:manage_candidates');
+    Route::post('/job-applications/{jobApplication}/rate', [JobApplicationController::class, 'rate'])->middleware('permission:manage_candidates');
+    Route::post('/job-applications/{jobApplication}/notes', [JobApplicationController::class, 'addNote'])->middleware('permission:manage_candidates');
+    Route::post('/job-applications/{jobApplication}/shortlist', [JobApplicationController::class, 'shortlist'])->middleware('permission:manage_candidates');
+    Route::post('/job-applications/{jobApplication}/reject', [JobApplicationController::class, 'reject'])->middleware('permission:manage_candidates');
+    Route::post('/job-applications/{jobApplication}/hire', [JobApplicationController::class, 'hire'])->middleware('permission:manage_candidates');
 
-    Route::apiResource('interview-schedules', InterviewScheduleController::class);
-    Route::post('/interview-schedules/{interviewSchedule}/feedback', [InterviewScheduleController::class, 'feedback']);
-    Route::post('/interview-schedules/{interviewSchedule}/reschedule', [InterviewScheduleController::class, 'reschedule']);
-    Route::get('/interviews/calendar', [InterviewScheduleController::class, 'calendar']);
-    Route::get('/interviews/today', [InterviewScheduleController::class, 'today']);
+    // Interview Schedules
+    Route::get('/interview-schedules', [InterviewScheduleController::class, 'index'])->middleware('permission:view_recruitment');
+    Route::post('/interview-schedules', [InterviewScheduleController::class, 'store'])->middleware('permission:manage_candidates');
+    Route::get('/interview-schedules/{interview_schedule}', [InterviewScheduleController::class, 'show'])->middleware('permission:view_recruitment');
+    Route::put('/interview-schedules/{interview_schedule}', [InterviewScheduleController::class, 'update'])->middleware('permission:manage_candidates');
+    Route::delete('/interview-schedules/{interview_schedule}', [InterviewScheduleController::class, 'destroy'])->middleware('permission:manage_candidates');
+    Route::post('/interview-schedules/{interviewSchedule}/feedback', [InterviewScheduleController::class, 'feedback'])->middleware('permission:manage_candidates');
+    Route::post('/interview-schedules/{interviewSchedule}/reschedule', [InterviewScheduleController::class, 'reschedule'])->middleware('permission:manage_candidates');
+    Route::get('/interviews/calendar', [InterviewScheduleController::class, 'calendar'])->middleware('permission:view_recruitment');
+    Route::get('/interviews/today', [InterviewScheduleController::class, 'today'])->middleware('permission:view_recruitment');
 
     // ============================================
     // PROMPT SET 28: Onboarding
@@ -549,18 +691,18 @@ Route::middleware('auth:sanctum')->group(function () {
     // ORGANIZATIONS & COMPANIES
     // ============================================
     // Organizations
-    Route::get('/organizations', [OrganizationController::class, 'index'])->middleware('permission:manage_settings');
-    Route::post('/organizations', [OrganizationController::class, 'store'])->middleware('permission:manage_settings');
-    Route::get('/organizations/{organization}', [OrganizationController::class, 'show'])->middleware('permission:manage_settings');
-    Route::put('/organizations/{organization}', [OrganizationController::class, 'update'])->middleware('permission:manage_settings');
-    Route::delete('/organizations/{organization}', [OrganizationController::class, 'destroy'])->middleware('permission:manage_settings');
+    Route::get('/organizations', [OrganizationController::class, 'index'])->middleware('permission:view_organizations');
+    Route::post('/organizations', [OrganizationController::class, 'store'])->middleware('permission:create_organizations');
+    Route::get('/organizations/{organization}', [OrganizationController::class, 'show'])->middleware('permission:view_organizations');
+    Route::put('/organizations/{organization}', [OrganizationController::class, 'update'])->middleware('permission:edit_organizations');
+    Route::delete('/organizations/{organization}', [OrganizationController::class, 'destroy'])->middleware('permission:delete_organizations');
 
     // Companies
-    Route::get('/companies', [CompanyController::class, 'index'])->middleware('permission:manage_settings');
-    Route::post('/companies', [CompanyController::class, 'store'])->middleware('permission:manage_settings');
-    Route::get('/companies/{company}', [CompanyController::class, 'show'])->middleware('permission:manage_settings');
-    Route::put('/companies/{company}', [CompanyController::class, 'update'])->middleware('permission:manage_settings');
-    Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->middleware('permission:manage_settings');
+    Route::get('/companies', [CompanyController::class, 'index'])->middleware('permission:view_companies');
+    Route::post('/companies', [CompanyController::class, 'store'])->middleware('permission:create_companies');
+    Route::get('/companies/{company}', [CompanyController::class, 'show'])->middleware('permission:view_companies');
+    Route::put('/companies/{company}', [CompanyController::class, 'update'])->middleware('permission:edit_companies');
+    Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->middleware('permission:delete_companies');
 
     // Document Locations
     Route::get('/document-locations', [DocumentLocationController::class, 'index']);
@@ -585,7 +727,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // AWS
     Route::post('/document-configs/aws', [DocumentConfigController::class, 'storeAws']);
     Route::put('/document-configs/aws/{id}', [DocumentConfigController::class, 'updateAws']);
-    
+
     // Show Config
     Route::get('/document-configs/local/{locationId}', [DocumentConfigController::class, 'showLocal']);
     Route::get('/document-configs/wasabi/{locationId}', [DocumentConfigController::class, 'showWasabi']);
