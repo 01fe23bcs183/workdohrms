@@ -8,10 +8,73 @@ use App\Models\User;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Spatie\Permission\Models\Role;
 
 class UserRoleController extends Controller
 {
     use ApiResponse;
+
+    /**
+     * Get the current user's highest priority hierarchy level (lowest number = highest priority).
+     * Admin users (hierarchy_level = 1) have the highest priority.
+     */
+    protected function getUserHierarchyLevel(): int
+    {
+        $user = auth()->user();
+        $userRoles = $user->roles;
+
+        if ($userRoles->isEmpty()) {
+            return 99; // Lowest priority if no roles
+        }
+
+        return $userRoles->min('hierarchy_level') ?? 99;
+    }
+
+    /**
+     * Check if the current user can assign/remove a specific role based on hierarchy.
+     * Users can only assign/remove roles with equal or lower priority (higher hierarchy_level).
+     */
+    protected function canAssignRole(string $roleName): bool
+    {
+        $userLevel = $this->getUserHierarchyLevel();
+
+        // Admin (level 1) can assign any role
+        if ($userLevel === 1) {
+            return true;
+        }
+
+        $role = Role::where('name', $roleName)->first();
+        if (! $role) {
+            return false;
+        }
+
+        // Users can only assign roles with lower priority (higher hierarchy_level)
+        return $role->hierarchy_level > $userLevel;
+    }
+
+    /**
+     * Check if the current user can manage a target user based on hierarchy.
+     * Users can only manage users whose highest role is lower priority than their own.
+     */
+    protected function canManageUser(User $targetUser): bool
+    {
+        $userLevel = $this->getUserHierarchyLevel();
+
+        // Admin (level 1) can manage any user
+        if ($userLevel === 1) {
+            return true;
+        }
+
+        $targetUserRoles = $targetUser->roles;
+        if ($targetUserRoles->isEmpty()) {
+            return true; // Can manage users with no roles
+        }
+
+        $targetUserLevel = $targetUserRoles->min('hierarchy_level') ?? 99;
+
+        // Users can only manage users with lower priority (higher hierarchy_level)
+        return $targetUserLevel > $userLevel;
+    }
 
     public function index(Request $request): JsonResponse
     {
@@ -83,10 +146,30 @@ class UserRoleController extends Controller
     {
         $user = User::findOrFail($id);
 
+        // Hierarchy enforcement: prevent managing users with higher priority roles
+        if (! $this->canManageUser($user)) {
+            return $this->error('You cannot manage roles for a user with higher priority than your own role', 403);
+        }
+
         $validated = $request->validate([
             'roles' => 'required|array',
             'roles.*' => 'string|exists:roles,name',
         ]);
+
+        // Hierarchy enforcement: check each role being assigned
+        $unauthorizedRoles = [];
+        foreach ($validated['roles'] as $roleName) {
+            if (! $this->canAssignRole($roleName)) {
+                $unauthorizedRoles[] = $roleName;
+            }
+        }
+
+        if (! empty($unauthorizedRoles)) {
+            return $this->error(
+                'You cannot assign roles with higher priority than your own: '.implode(', ', $unauthorizedRoles),
+                403
+            );
+        }
 
         $oldRoles = $user->roles->pluck('name')->toArray();
 
@@ -117,9 +200,19 @@ class UserRoleController extends Controller
     {
         $user = User::findOrFail($id);
 
+        // Hierarchy enforcement: prevent managing users with higher priority roles
+        if (! $this->canManageUser($user)) {
+            return $this->error('You cannot manage roles for a user with higher priority than your own role', 403);
+        }
+
         $validated = $request->validate([
             'role' => 'required|string|exists:roles,name',
         ]);
+
+        // Hierarchy enforcement: check if user can assign this role
+        if (! $this->canAssignRole($validated['role'])) {
+            return $this->error('You cannot assign a role with higher priority than your own role', 403);
+        }
 
         $oldRoles = $user->roles->pluck('name')->toArray();
 
@@ -145,9 +238,19 @@ class UserRoleController extends Controller
     {
         $user = User::findOrFail($id);
 
+        // Hierarchy enforcement: prevent managing users with higher priority roles
+        if (! $this->canManageUser($user)) {
+            return $this->error('You cannot manage roles for a user with higher priority than your own role', 403);
+        }
+
         $validated = $request->validate([
             'role' => 'required|string|exists:roles,name',
         ]);
+
+        // Hierarchy enforcement: check if user can remove this role
+        if (! $this->canAssignRole($validated['role'])) {
+            return $this->error('You cannot remove a role with higher priority than your own role', 403);
+        }
 
         $oldRoles = $user->roles->pluck('name')->toArray();
 
