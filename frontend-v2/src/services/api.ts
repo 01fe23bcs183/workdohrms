@@ -70,9 +70,9 @@ export const staffService = {
 
 export const attendanceService = {
   clockIn: (data: Record<string, unknown>) => api.post('/attendance/clock-in', data),
-  
+
   clockOut: (data: Record<string, unknown>) => api.post('/attendance/clock-out', data),
-  
+
   getCurrentStatus: () => api.get('/attendance/current-status'),
   getWorkLogs: (params?: { staff_member_id?: number; start_date?: string; end_date?: string; page?: number }) =>
     api.get('/work-logs', { params }),
@@ -87,7 +87,7 @@ export const leaveService = {
   getCategories: () => api.get('/time-off-categories'),
   createCategory: (data: Record<string, unknown>) => api.post('/time-off-categories', data),
   updateCategory: (id: number, data: Record<string, unknown>) => api.put(`/time-off-categories/${id}`, data),
-    getMyRequests: (params?: { page?: number; per_page?: number }) => api.get('/leave/my-requests', { params }),
+  getMyRequests: (params?: { page?: number; per_page?: number }) => api.get('/leave/my-requests', { params }),
   deleteCategory: (id: number) => api.delete(`/time-off-categories/${id}`),
   getRequests: (params?: { status?: string; page?: number }) => api.get('/time-off-requests', { params }),
   createRequest: (data: Record<string, unknown>) => api.post('/time-off-requests', data),
@@ -189,7 +189,10 @@ export const payrollService = {
     statutory?: boolean;
     paginate?: boolean;
     page?: number;
-    per_page?: number
+    per_page?: number;
+    search?: string;
+    order_by?: string;
+    order?: string;
   }) => api.get('/withholding-types', { params }),
 
   createWithholdingType: (data: {
@@ -227,6 +230,8 @@ export const recruitmentService = {
     search?: string;
     job_category_id?: number;
     office_location_id?: number;
+    order_by?: string;
+    order?: string;
   }) => api.get('/jobs', { params }),
   createJob: (data: Record<string, unknown>) => api.post('/jobs', data),
   getJobById: (id: number) => api.get(`/jobs/${id}`),
@@ -292,6 +297,9 @@ export const recruitmentService = {
     paginate?: boolean;
     page?: number;
     per_page?: number;
+    search?: string;
+    order_by?: string;
+    order?: string;
   }) => api.get('/job-stages', { params }),
 
   createJobStage: (data: {
@@ -320,6 +328,8 @@ export const recruitmentService = {
     paginate?: boolean;
     page?: number;
     per_page?: number;
+    order_by?: string;
+    order?: string;
   }) => api.get('/job-applications', { params }),
 
   createJobApplication: (jobId: number, data: {
