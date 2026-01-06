@@ -530,6 +530,9 @@ export const roleService = {
   delete: (id: number) => api.delete(`/roles/${id}`),
   getPermissions: (id: number) => api.get(`/roles/${id}/permissions`),
   syncPermissions: (id: number, data: { permissions: string[] }) => api.post(`/roles/${id}/permissions`, data),
+  getInventory: () => api.get('/roles/inventory'),
+  getHealthMetrics: () => api.get('/roles/health-metrics'),
+  getAuditLogs: (params?: { page?: number; per_page?: number }) => api.get('/roles/audit-logs', { params }),
 };
 
 export const permissionService = {

@@ -252,4 +252,143 @@ class RoleController extends Controller
 
         return $this->success($role->permissions, 'Role permissions retrieved successfully');
     }
+
+    /**
+     * Get role inventory with detailed metrics for governance dashboard.
+     * Shows all roles with users_count, permissions_count, is_system, hierarchy_level, and timestamps.
+     */
+    public function inventory(): JsonResponse
+    {
+        $roles = Role::query()
+            ->withCount(['permissions'])
+            ->orderBy('hierarchy_level')
+            ->orderBy('name')
+            ->get();
+
+        $roles->each(function ($role) {
+            $role->users_count = \App\Models\User::role($role->name)->count();
+        });
+
+        $inventory = $roles->map(function ($role) {
+            return [
+                'id' => $role->id,
+                'name' => $role->name,
+                'description' => $role->description,
+                'icon' => $role->icon,
+                'hierarchy_level' => $role->hierarchy_level,
+                'is_system' => $role->is_system,
+                'users_count' => $role->users_count,
+                'permissions_count' => $role->permissions_count,
+                'created_at' => $role->created_at,
+                'updated_at' => $role->updated_at,
+            ];
+        });
+
+        return $this->success($inventory, 'Role inventory retrieved successfully');
+    }
+
+    /**
+     * Get role health metrics for governance dashboard.
+     * Shows unused roles, overprivileged roles, and orphan permissions.
+     */
+    public function healthMetrics(): JsonResponse
+    {
+        $roles = Role::query()
+            ->withCount(['permissions'])
+            ->get();
+
+        $roles->each(function ($role) {
+            $role->users_count = \App\Models\User::role($role->name)->count();
+        });
+
+        // Unused roles: roles with 0 users assigned (excluding system roles)
+        $unusedRoles = $roles->filter(function ($role) {
+            return $role->users_count === 0 && ! $role->is_system;
+        })->map(function ($role) {
+            return [
+                'id' => $role->id,
+                'name' => $role->name,
+                'permissions_count' => $role->permissions_count,
+                'created_at' => $role->created_at,
+            ];
+        })->values();
+
+        // Overprivileged roles: non-admin roles with more than 50 permissions
+        $overprivilegedThreshold = 50;
+        $overprivilegedRoles = $roles->filter(function ($role) use ($overprivilegedThreshold) {
+            return $role->hierarchy_level > 1 && $role->permissions_count > $overprivilegedThreshold;
+        })->map(function ($role) {
+            return [
+                'id' => $role->id,
+                'name' => $role->name,
+                'hierarchy_level' => $role->hierarchy_level,
+                'permissions_count' => $role->permissions_count,
+                'users_count' => $role->users_count,
+            ];
+        })->values();
+
+        // Get all permissions
+        $allPermissions = \Spatie\Permission\Models\Permission::all();
+
+        // Orphan permissions: permissions not assigned to any role
+        $orphanPermissions = $allPermissions->filter(function ($permission) {
+            return $permission->roles->isEmpty();
+        })->map(function ($permission) {
+            return [
+                'id' => $permission->id,
+                'name' => $permission->name,
+                'created_at' => $permission->created_at,
+            ];
+        })->values();
+
+        // Role distribution by hierarchy level
+        $roleDistribution = $roles->groupBy('hierarchy_level')->map(function ($group, $level) {
+            return [
+                'hierarchy_level' => $level,
+                'count' => $group->count(),
+                'total_users' => $group->sum('users_count'),
+            ];
+        })->values();
+
+        // Summary statistics
+        $summary = [
+            'total_roles' => $roles->count(),
+            'system_roles' => $roles->where('is_system', true)->count(),
+            'custom_roles' => $roles->where('is_system', false)->count(),
+            'total_permissions' => $allPermissions->count(),
+            'unused_roles_count' => $unusedRoles->count(),
+            'overprivileged_roles_count' => $overprivilegedRoles->count(),
+            'orphan_permissions_count' => $orphanPermissions->count(),
+        ];
+
+        return $this->success([
+            'summary' => $summary,
+            'unused_roles' => $unusedRoles,
+            'overprivileged_roles' => $overprivilegedRoles,
+            'orphan_permissions' => $orphanPermissions,
+            'role_distribution' => $roleDistribution,
+        ], 'Role health metrics retrieved successfully');
+    }
+
+    /**
+     * Get recent role audit logs for governance dashboard.
+     */
+    public function auditLogs(Request $request): JsonResponse
+    {
+        $perPage = $request->get('per_page', 20);
+
+        $logs = RoleAuditLog::with(['user'])
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+
+        return $this->success([
+            'data' => $logs->items(),
+            'meta' => [
+                'current_page' => $logs->currentPage(),
+                'last_page' => $logs->lastPage(),
+                'per_page' => $logs->perPage(),
+                'total' => $logs->total(),
+            ],
+        ], 'Role audit logs retrieved successfully');
+    }
 }

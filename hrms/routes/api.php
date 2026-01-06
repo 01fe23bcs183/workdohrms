@@ -740,6 +740,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('roles')->group(function () {
         Route::get('/', [RoleController::class, 'index'])->middleware('permission:view_roles');
         Route::post('/', [RoleController::class, 'store'])->middleware('permission:create_roles');
+        Route::get('/inventory', [RoleController::class, 'inventory'])->middleware('permission:view_roles');
+        Route::get('/health-metrics', [RoleController::class, 'healthMetrics'])->middleware('permission:view_roles');
+        Route::get('/audit-logs', [RoleController::class, 'auditLogs'])->middleware('permission:view_roles');
         Route::get('/{id}', [RoleController::class, 'show'])->middleware('permission:view_roles');
         Route::put('/{id}', [RoleController::class, 'update'])->middleware('permission:edit_roles');
         Route::delete('/{id}', [RoleController::class, 'destroy'])->middleware('permission:delete_roles');
