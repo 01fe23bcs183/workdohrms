@@ -25,7 +25,7 @@ class CheckPermission
         }
 
         // Admin users have all permissions
-        if ($user->hasAnyRole(['admin', 'administrator'])) {
+        if ($user->hasRole('admin')) {
             return $next($request);
         }
 

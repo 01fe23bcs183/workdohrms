@@ -31,7 +31,7 @@ class TimeOffRequestController extends Controller
      */
     protected function isAdminUser($user): bool
     {
-        return $user->hasAnyRole(['admin', 'administrator', 'organisation', 'company', 'hr']);
+        return $user->hasAnyRole(['admin', 'organisation', 'company', 'hr']);
     }
 
     /**
@@ -40,6 +40,7 @@ class TimeOffRequestController extends Controller
     protected function getStaffMemberId($user): ?int
     {
         $staffMember = StaffMember::where('user_id', $user->id)->first();
+
         return $staffMember ? $staffMember->id : null;
     }
 
@@ -66,10 +67,10 @@ class TimeOffRequestController extends Controller
             $user = $request->user();
 
             // Check user role and adjust parameters
-            if (!$this->isAdminUser($user)) {
+            if (! $this->isAdminUser($user)) {
                 // For non-admin users, they can only see their own leaves
                 $staffMemberId = $this->getStaffMemberId($user);
-                
+
                 if ($staffMemberId) {
                     $params['staff_member_id'] = $staffMemberId;
                 } else {
@@ -82,7 +83,7 @@ class TimeOffRequestController extends Controller
 
             return $this->success($result, 'Leave requests retrieved successfully');
         } catch (\Exception $e) {
-            return $this->serverError('Failed to retrieve leave requests: ' . $e->getMessage());
+            return $this->serverError('Failed to retrieve leave requests: '.$e->getMessage());
         }
     }
 
@@ -93,11 +94,11 @@ class TimeOffRequestController extends Controller
     {
         try {
             $user = $request->user();
-            
+
             // For non-admin users, they can only apply for themselves
-            if (!$this->isAdminUser($user)) {
+            if (! $this->isAdminUser($user)) {
                 $staffMemberId = $this->getStaffMemberId($user);
-                if (!$staffMemberId) {
+                if (! $staffMemberId) {
                     return $this->error('Staff member not found', 404);
                 }
                 // Force the staff_member_id to be the current user's staff member ID
@@ -128,7 +129,7 @@ class TimeOffRequestController extends Controller
         } catch (ValidationException $e) {
             return $this->validationError($e->errors());
         } catch (\Exception $e) {
-            return $this->serverError('Failed to create leave request: ' . $e->getMessage());
+            return $this->serverError('Failed to create leave request: '.$e->getMessage());
         }
     }
 
@@ -141,21 +142,21 @@ class TimeOffRequestController extends Controller
             $user = $request->user();
             $leaveRequest = $this->service->findById($id);
 
-            if (!$leaveRequest) {
+            if (! $leaveRequest) {
                 return $this->notFound('Leave request not found');
             }
 
             // Check if non-admin user is trying to access someone else's leave request
-            if (!$this->isAdminUser($user)) {
+            if (! $this->isAdminUser($user)) {
                 $staffMemberId = $this->getStaffMemberId($user);
-                if (!$staffMemberId || $leaveRequest->staff_member_id != $staffMemberId) {
+                if (! $staffMemberId || $leaveRequest->staff_member_id != $staffMemberId) {
                     return $this->error('Unauthorized to view this leave request', 403);
                 }
             }
 
             return $this->success($leaveRequest, 'Leave request retrieved successfully');
         } catch (\Exception $e) {
-            return $this->serverError('Failed to retrieve leave request: ' . $e->getMessage());
+            return $this->serverError('Failed to retrieve leave request: '.$e->getMessage());
         }
     }
 
@@ -168,17 +169,17 @@ class TimeOffRequestController extends Controller
             $user = $request->user();
             $leaveRequest = $this->service->findById($id);
 
-            if (!$leaveRequest) {
+            if (! $leaveRequest) {
                 return $this->notFound('Leave request not found');
             }
 
             // Check permissions
-            if (!$this->isAdminUser($user)) {
+            if (! $this->isAdminUser($user)) {
                 $staffMemberId = $this->getStaffMemberId($user);
-                if (!$staffMemberId || $leaveRequest->staff_member_id != $staffMemberId) {
+                if (! $staffMemberId || $leaveRequest->staff_member_id != $staffMemberId) {
                     return $this->error('Unauthorized to update this leave request', 403);
                 }
-                
+
                 // Staff can only update their own pending requests
                 if ($leaveRequest->approval_status !== 'pending') {
                     return $this->error('Only pending leave requests can be updated', 422);
@@ -200,7 +201,7 @@ class TimeOffRequestController extends Controller
         } catch (ValidationException $e) {
             return $this->validationError($e->errors());
         } catch (\Exception $e) {
-            return $this->serverError('Failed to update leave request: ' . $e->getMessage());
+            return $this->serverError('Failed to update leave request: '.$e->getMessage());
         }
     }
 
@@ -213,17 +214,17 @@ class TimeOffRequestController extends Controller
             $user = $request->user();
             $leaveRequest = $this->service->findById($id);
 
-            if (!$leaveRequest) {
+            if (! $leaveRequest) {
                 return $this->notFound('Leave request not found');
             }
 
             // Check permissions
-            if (!$this->isAdminUser($user)) {
+            if (! $this->isAdminUser($user)) {
                 $staffMemberId = $this->getStaffMemberId($user);
-                if (!$staffMemberId || $leaveRequest->staff_member_id != $staffMemberId) {
+                if (! $staffMemberId || $leaveRequest->staff_member_id != $staffMemberId) {
                     return $this->error('Unauthorized to delete this leave request', 403);
                 }
-                
+
                 // Staff can only delete their own pending requests
                 if ($leaveRequest->approval_status !== 'pending') {
                     return $this->error('Only pending leave requests can be deleted', 422);
@@ -236,7 +237,7 @@ class TimeOffRequestController extends Controller
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return $this->notFound('Leave request not found');
         } catch (\Exception $e) {
-            return $this->serverError('Failed to delete leave request: ' . $e->getMessage());
+            return $this->serverError('Failed to delete leave request: '.$e->getMessage());
         }
     }
 
@@ -247,9 +248,9 @@ class TimeOffRequestController extends Controller
     {
         try {
             $user = $request->user();
-            
+
             // Only admin users can approve leave requests
-            if (!$this->isAdminUser($user)) {
+            if (! $this->isAdminUser($user)) {
                 return $this->error('Unauthorized to approve leave requests', 403);
             }
 
@@ -262,7 +263,7 @@ class TimeOffRequestController extends Controller
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return $this->notFound('Leave request not found');
         } catch (\Exception $e) {
-            return $this->serverError('Failed to approve leave request: ' . $e->getMessage());
+            return $this->serverError('Failed to approve leave request: '.$e->getMessage());
         }
     }
 
@@ -273,9 +274,9 @@ class TimeOffRequestController extends Controller
     {
         try {
             $user = $request->user();
-            
+
             // Only admin users can reject leave requests
-            if (!$this->isAdminUser($user)) {
+            if (! $this->isAdminUser($user)) {
                 return $this->error('Unauthorized to reject leave requests', 403);
             }
 
@@ -293,7 +294,7 @@ class TimeOffRequestController extends Controller
         } catch (ValidationException $e) {
             return $this->validationError($e->errors());
         } catch (\Exception $e) {
-            return $this->serverError('Failed to reject leave request: ' . $e->getMessage());
+            return $this->serverError('Failed to reject leave request: '.$e->getMessage());
         }
     }
 
@@ -306,19 +307,19 @@ class TimeOffRequestController extends Controller
             $user = $request->user();
             $leaveRequest = $this->service->findById($id);
 
-            if (!$leaveRequest) {
+            if (! $leaveRequest) {
                 return $this->notFound('Leave request not found');
             }
 
             // Check permissions
-            if (!$this->isAdminUser($user)) {
+            if (! $this->isAdminUser($user)) {
                 $staffMemberId = $this->getStaffMemberId($user);
-                if (!$staffMemberId || $leaveRequest->staff_member_id != $staffMemberId) {
+                if (! $staffMemberId || $leaveRequest->staff_member_id != $staffMemberId) {
                     return $this->error('Unauthorized to cancel this leave request', 403);
                 }
-                
+
                 // Staff can only cancel their own pending or approved requests
-                if (!in_array($leaveRequest->approval_status, ['pending', 'approved'])) {
+                if (! in_array($leaveRequest->approval_status, ['pending', 'approved'])) {
                     return $this->error('Only pending or approved leave requests can be cancelled', 422);
                 }
             }
@@ -329,7 +330,7 @@ class TimeOffRequestController extends Controller
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return $this->notFound('Leave request not found');
         } catch (\Exception $e) {
-            return $this->serverError('Failed to cancel leave request: ' . $e->getMessage());
+            return $this->serverError('Failed to cancel leave request: '.$e->getMessage());
         }
     }
 
@@ -347,7 +348,7 @@ class TimeOffRequestController extends Controller
             } else {
                 // Staff member can only view their own statistics
                 $staffMemberId = $this->getStaffMemberId($user);
-                if (!$staffMemberId) {
+                if (! $staffMemberId) {
                     return $this->error('Staff member not found', 404);
                 }
             }
@@ -356,7 +357,7 @@ class TimeOffRequestController extends Controller
 
             return $this->success($stats, 'Leave statistics retrieved successfully');
         } catch (\Exception $e) {
-            return $this->serverError('Failed to retrieve leave statistics: ' . $e->getMessage());
+            return $this->serverError('Failed to retrieve leave statistics: '.$e->getMessage());
         }
     }
 
@@ -371,7 +372,7 @@ class TimeOffRequestController extends Controller
 
             return $this->collection($employees, 'Employees on leave retrieved successfully');
         } catch (\Exception $e) {
-            return $this->serverError('Failed to retrieve employees on leave: ' . $e->getMessage());
+            return $this->serverError('Failed to retrieve employees on leave: '.$e->getMessage());
         }
     }
 
@@ -382,9 +383,9 @@ class TimeOffRequestController extends Controller
     {
         try {
             $user = $request->user();
-            
+
             // Only admin users can process approvals
-            if (!$this->isAdminUser($user)) {
+            if (! $this->isAdminUser($user)) {
                 return $this->error('Unauthorized to process leave request approvals', 403);
             }
 
@@ -405,9 +406,11 @@ class TimeOffRequestController extends Controller
 
             if ($isApproved) {
                 $leaveRequest = $this->service->approve($id, $approverId, $remarks);
+
                 return $this->success($leaveRequest, 'Leave request approved successfully');
             } else {
                 $leaveRequest = $this->service->reject($id, $approverId, $remarks);
+
                 return $this->success($leaveRequest, 'Leave request declined');
             }
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -415,7 +418,7 @@ class TimeOffRequestController extends Controller
         } catch (ValidationException $e) {
             return $this->validationError($e->errors());
         } catch (\Exception $e) {
-            return $this->serverError('Failed to process leave request: ' . $e->getMessage());
+            return $this->serverError('Failed to process leave request: '.$e->getMessage());
         }
     }
 
@@ -431,13 +434,13 @@ class TimeOffRequestController extends Controller
             if ($this->isAdminUser($user)) {
                 // Admin can view any staff member's balance
                 $staffMemberId = $request->input('staff_member_id');
-                if (!$staffMemberId) {
+                if (! $staffMemberId) {
                     return $this->error('Staff member ID is required', 422);
                 }
             } else {
                 // Staff member can only view their own balance
                 $staffMemberId = $this->getStaffMemberId($user);
-                if (!$staffMemberId) {
+                if (! $staffMemberId) {
                     return $this->error('Staff member not found', 404);
                 }
             }
@@ -446,7 +449,7 @@ class TimeOffRequestController extends Controller
 
             return $this->success($balance, 'Leave balance retrieved successfully');
         } catch (\Exception $e) {
-            return $this->serverError('Failed to retrieve leave balance: ' . $e->getMessage());
+            return $this->serverError('Failed to retrieve leave balance: '.$e->getMessage());
         }
     }
 }

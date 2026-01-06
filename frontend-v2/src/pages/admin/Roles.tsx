@@ -147,10 +147,11 @@ export default function Roles() {
 
   const getRoleBadgeColor = (role: string) => {
     const colors: Record<string, string> = {
-      administrator: 'bg-solarized-red/10 text-solarized-red',
-      hr_officer: 'bg-solarized-blue/10 text-solarized-blue',
-      manager: 'bg-solarized-yellow/10 text-solarized-yellow',
-      staff_member: 'bg-solarized-green/10 text-solarized-green',
+      admin: 'bg-solarized-red/10 text-solarized-red',
+      organisation: 'bg-solarized-orange/10 text-solarized-orange',
+      company: 'bg-solarized-yellow/10 text-solarized-yellow',
+      hr: 'bg-solarized-blue/10 text-solarized-blue',
+      staff: 'bg-solarized-green/10 text-solarized-green',
     };
     return colors[role] || 'bg-solarized-violet/10 text-solarized-violet';
   };

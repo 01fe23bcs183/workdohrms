@@ -285,30 +285,6 @@ class AccessSeeder extends Seeder
             'view_announcements',
         ]);
 
-        // Create legacy role aliases for backward compatibility
-        $legacyRoleAliases = [
-            'administrator' => ['canonical' => 'admin', 'hierarchy_level' => 1, 'description' => 'Legacy alias of admin role'],
-            'hr_officer' => ['canonical' => 'hr', 'hierarchy_level' => 4, 'description' => 'Legacy alias of hr role'],
-            'manager' => ['canonical' => 'company', 'hierarchy_level' => 3, 'description' => 'Legacy alias of company role'],
-            'staff_member' => ['canonical' => 'staff', 'hierarchy_level' => 5, 'description' => 'Legacy alias of staff role'],
-        ];
-
-        foreach ($legacyRoleAliases as $legacyName => $config) {
-            $canonicalRole = Role::findByName($config['canonical']);
-            if ($canonicalRole) {
-                $legacyRole = Role::firstOrCreate(
-                    ['name' => $legacyName, 'guard_name' => 'web'],
-                    [
-                        'is_system' => true,
-                        'hierarchy_level' => $config['hierarchy_level'],
-                        'description' => $config['description'],
-                        'icon' => $canonicalRole->icon,
-                    ]
-                );
-                $legacyRole->syncPermissions($canonicalRole->permissions);
-            }
-        }
-
         $this->command->info('Roles, resources, and permissions seeded successfully!');
     }
 }
