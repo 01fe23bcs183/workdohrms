@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { meetingService } from '../../services/api';
+import { meetingRoomService } from '../../services/api';
 import { showAlert, getErrorMessage } from '../../lib/sweetalert';
 import {
     Card,
@@ -79,7 +79,7 @@ export default function MeetingRooms() {
     const fetchRooms = async () => {
         setIsLoading(true);
         try {
-            const response = await meetingService.getRooms();
+            const response = await meetingRoomService.getAll();
             if (response.data.success) {
                 setRooms(response.data.data);
             }
@@ -95,10 +95,10 @@ export default function MeetingRooms() {
         e.preventDefault();
         try {
             if (editingRoom) {
-                await meetingService.updateRoom(editingRoom.id, formData);
+                await meetingRoomService.update(editingRoom.id, formData);
                 showAlert('success', 'Updated', 'Meeting room updated successfully');
             } else {
-                await meetingService.createRoom(formData);
+                await meetingRoomService.create(formData);
                 showAlert('success', 'Created', 'Meeting room created successfully');
             }
             setIsDialogOpen(false);
@@ -113,7 +113,7 @@ export default function MeetingRooms() {
     const handleDelete = async (id: number) => {
         if (!confirm('Are you sure you want to delete this meeting room?')) return;
         try {
-            await meetingService.deleteRoom(id);
+            await meetingRoomService.delete(id);
             showAlert('success', 'Deleted', 'Meeting room deleted successfully');
             fetchRooms();
         } catch (error) {

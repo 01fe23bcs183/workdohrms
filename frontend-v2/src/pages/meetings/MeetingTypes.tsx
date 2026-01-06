@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { meetingService } from '../../services/api';
+import { meetingTypeService } from '../../services/api';
 import { showAlert, getErrorMessage } from '../../lib/sweetalert';
 import {
     Card,
     CardContent,
     CardHeader,
     CardTitle,
-    CardDescription,
 } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
@@ -60,7 +59,7 @@ export default function MeetingTypes() {
     const fetchTypes = async () => {
         setIsLoading(true);
         try {
-            const response = await meetingService.getTypes();
+            const response = await meetingTypeService.getAll();
             if (response.data.success) {
                 setTypes(response.data.data);
             }
@@ -76,10 +75,10 @@ export default function MeetingTypes() {
         e.preventDefault();
         try {
             if (editingType) {
-                await meetingService.updateType(editingType.id, formData);
+                await meetingTypeService.update(editingType.id, formData);
                 showAlert('success', 'Updated', 'Meeting type updated successfully');
             } else {
-                await meetingService.createType(formData);
+                await meetingTypeService.create(formData);
                 showAlert('success', 'Created', 'Meeting type created successfully');
             }
             setIsDialogOpen(false);
@@ -94,7 +93,7 @@ export default function MeetingTypes() {
     const handleDelete = async (id: number) => {
         if (!confirm('Are you sure you want to delete this meeting type?')) return;
         try {
-            await meetingService.deleteType(id);
+            await meetingTypeService.delete(id);
             showAlert('success', 'Deleted', 'Meeting type deleted successfully');
             fetchTypes();
         } catch (error) {

@@ -181,8 +181,11 @@ const navigation: NavItem[] = [
     href: '/meetings',
     icon: Video,
     children: [
-      { name: 'My Meetings', href: '/meetings/my' },
-      { name: 'All Meetings', href: '/meetings' },
+      // { name: 'All Meetings', href: '/meetings' },
+      { name: 'Meeting', href: '/meeting' },
+      { name: 'Meeting Calendar', href: '/meetings/calendar' },
+      { name: 'Meeting Minutes', href: '/meetings/minutes' },
+      { name: 'Meeting Action Items', href: '/meetings/action-items' },
       { name: 'Meeting Types', href: '/meetings/types' },
       { name: 'Meeting Rooms', href: '/meetings/rooms' },
     ]

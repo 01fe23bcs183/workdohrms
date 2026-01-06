@@ -78,8 +78,13 @@ import ContractRenewals from './pages/contracts/ContractRenewals';
 
 // Meetings
 import Meetings from './pages/meetings/Meetings';
+
+import MeetingCalendar from './pages/meetings/MeetingCalendar';
 import MeetingTypes from './pages/meetings/MeetingTypes';
 import MeetingRooms from './pages/meetings/MeetingRooms';
+import MeetingMinutesPage from './pages/meetings/MeetingMinutesPage';
+import MeetingActionItemsPage from './pages/meetings/MeetingActionItemsPage';
+
 
 // ... (existing imports)
 
@@ -216,9 +221,13 @@ function App() {
             <Route path="/contracts/types" element={<ContractTypes />} />
             <Route path="/contracts/renewals" element={<ContractRenewals />} />
 
-    
-            <Route path="/meetings/types" element={<MeetingTypes />} />
 
+            {/* Meetings */}
+            <Route path="/meeting" element={<Meetings />} />
+            <Route path="/meetings/calendar" element={<MeetingCalendar />} />
+            <Route path="/meetings/minutes" element={<MeetingMinutesPage />} />
+            <Route path="/meetings/action-items" element={<MeetingActionItemsPage />} />
+            <Route path="/meetings/types" element={<MeetingTypes />} />
             <Route path="/meetings/rooms" element={<MeetingRooms />} />
 
             {/* Reports */}

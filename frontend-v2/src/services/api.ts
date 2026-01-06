@@ -58,6 +58,7 @@ export const staffService = {
   create: (data: Record<string, unknown>) => api.post('/staff-members', data),
   update: (id: number, data: Record<string, unknown>) => api.put(`/staff-members/${id}`, data),
   delete: (id: number) => api.delete(`/staff-members/${id}`),
+  dropdown: () => api.get('/staff-members-dropdown'),
   getFiles: (id: number) => api.get(`/staff-members/${id}/files`),
   uploadFile: (id: number, data: FormData) =>
     api.post(`/staff-members/${id}/files`, data, {
@@ -438,19 +439,27 @@ export const meetingRoomService = {
   update: (id: number, data: Record<string, unknown>) => api.put(`/meeting-rooms/${id}`, data),
   delete: (id: number) => api.delete(`/meeting-rooms/${id}`),
 };
-
 export const meetingService = {
+  getTypes: () => api.get('/meeting-types'),
+  createType: (data: Record<string, unknown>) => api.post('/meeting-types', data),
+  updateType: (id: number, data: Record<string, unknown>) => api.put(`/meeting-types/${id}`, data),
+  deleteType: (id: number) => api.delete(`/meeting-types/${id}`),
+  getRooms: () => api.get('/meeting-rooms'),
+  getAvailableRooms: () => api.get('/meeting-rooms-available'),
+  createRoom: (data: Record<string, unknown>) => api.post('/meeting-rooms', data),
+  updateRoom: (id: number, data: Record<string, unknown>) => api.put(`/meeting-rooms/${id}`, data),
+  deleteRoom: (id: number) => api.delete(`/meeting-rooms/${id}`),
   getAll: (params?: { page?: number }) => api.get('/meetings', { params }),
-  create: (data: Record<string, unknown>) => api.post('/meetings', data),
-  update: (id: number, data: Record<string, unknown>) => api.put(`/meetings/${id}`, data),
-  delete: (id: number) => api.delete(`/meetings/${id}`),
-  getById: (id: number) => api.get(`/meetings/${id}`),
+  getMeetings: (params?: { page?: number }) => api.get('/meetings', { params }),
+  getById: (id: number | string) => api.get(`/meetings/${id}`),
+  createMeeting: (data: Record<string, unknown>) => api.post('/meetings', data),
+  updateMeeting: (id: number, data: Record<string, unknown>) => api.put(`/meetings/${id}`, data),
+  deleteMeeting: (id: number) => api.delete(`/meetings/${id}`),
   addAttendees: (meetingId: number, data: Record<string, unknown>) => api.post(`/meetings/${meetingId}/attendees`, data),
   startMeeting: (meetingId: number) => api.post(`/meetings/${meetingId}/start`),
   completeMeeting: (meetingId: number) => api.post(`/meetings/${meetingId}/complete`),
   addMinutes: (meetingId: number, data: Record<string, unknown>) => api.post(`/meetings/${meetingId}/minutes`, data),
   addActionItem: (meetingId: number, data: Record<string, unknown>) => api.post(`/meetings/${meetingId}/action-items`, data),
-  completeActionItem: (actionItemId: number) => api.post(`/meeting-action-items/${actionItemId}/complete`),
   getCalendar: () => api.get('/meetings-calendar'),
   getMyMeetings: () => api.get('/my-meetings'),
 };
