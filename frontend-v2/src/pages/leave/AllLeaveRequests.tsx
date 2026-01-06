@@ -33,6 +33,10 @@ import {
   Filter,
   Download,
   MoreVertical,
+  Edit,
+  Trash2,
+  Ban,
+  View,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -108,12 +112,15 @@ export default function AllLeaveRequests() {
 
   // Dialogs
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
-  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [viewingRequest, setViewingRequest] = useState<LeaveRequest | null>(null);
+  const [editingRequest, setEditingRequest] = useState<LeaveRequest | null>(null);
   const [actionRequest, setActionRequest] = useState<LeaveRequest | null>(null);
-  const [approvalRemarks, setApprovalRemarks] = useState('');
-  const [rejectionReason, setRejectionReason] = useState('');
+  const [editReason, setEditReason] = useState('');
+  const [editStartDate, setEditStartDate] = useState('');
+  const [editEndDate, setEditEndDate] = useState('');
 
   // Load user data from localStorage
   useEffect(() => {
@@ -131,15 +138,6 @@ export default function AllLeaveRequests() {
             adminRoles.includes(role.toLowerCase())
           );
           setIsAdminUser(hasAdminRole);
-          
-          // If user is not admin, redirect to my-leaves or show message
-          if (!hasAdminRole) {
-            showAlert('warning', 'Access Denied', 'You can only view your own leave requests. Redirecting...');
-            // In a real app, you would redirect to /my-leaves
-            setTimeout(() => {
-              window.location.href = '/leave/my-requests';
-            }, 2000);
-          }
         }
       } catch (error) {
         console.error('Failed to parse user data from localStorage:', error);
@@ -174,8 +172,6 @@ export default function AllLeaveRequests() {
   // ================= FETCH REQUESTS =================
   const fetchRequests = useCallback(
     async (currentPage: number = 1) => {
-      if (!isAdminUser) return;
-      
       setIsLoading(true);
       try {
         const params: Record<string, unknown> = {
@@ -189,7 +185,11 @@ export default function AllLeaveRequests() {
         if (endDateFilter) params.end_date = endDateFilter;
         if (searchFilter) params.search = searchFilter;
 
-        const response = await leaveService.getRequests(params);
+        // Use appropriate endpoint based on user role
+        const response = isAdminUser 
+          ? await leaveService.getRequests(params)
+          : await leaveService.getMyRequests(params);
+          
         const { data, meta } = response.data;
 
         if (Array.isArray(data)) {
@@ -215,7 +215,7 @@ export default function AllLeaveRequests() {
     fetchRequests(page);
   }, [page, fetchRequests]);
 
-    // ================= PAGINATION =================
+  // ================= PAGINATION =================
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
   };
@@ -231,73 +231,81 @@ export default function AllLeaveRequests() {
     setIsViewDialogOpen(true);
   };
 
-//   const handleApproveClick = (request: LeaveRequest) => {
-//     setActionRequest(request);
-//     setApprovalRemarks('');
-//     setIsApproveDialogOpen(true);
-//   };
+  const handleEditClick = (request: LeaveRequest) => {
+    setEditingRequest(request);
+    setEditReason(request.reason || '');
+    setEditStartDate(request.start_date.split('T')[0]);
+    setEditEndDate(request.end_date.split('T')[0]);
+    setIsEditDialogOpen(true);
+  };
 
-//   const handleRejectClick = (request: LeaveRequest) => {
-//     setActionRequest(request);
-//     setRejectionReason('');
-//     setIsRejectDialogOpen(true);
-//   };
+  const handleCancelClick = (request: LeaveRequest) => {
+    setActionRequest(request);
+    setIsCancelDialogOpen(true);
+  };
 
-//   const handleApprove = async () => {
-//     if (!actionRequest) return;
+  const handleDeleteClick = (request: LeaveRequest) => {
+    setActionRequest(request);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editingRequest) return;
     
-//     try {
-//       const response = await leaveService.approve(actionRequest.id, { 
-//         approval_remarks: approvalRemarks 
-//       });
+    try {
+      const response = await leaveService.updateRequest(editingRequest.id, {
+        reason: editReason,
+        start_date: editStartDate,
+        end_date: editEndDate,
+      });
       
-//       if (response.data.success) {
-//         showAlert('success', 'Success', 'Leave request approved successfully');
-//         fetchRequests(page);
-//         setIsApproveDialogOpen(false);
-//         setActionRequest(null);
-//         setApprovalRemarks('');
-//       }
-//     } catch (error) {
-//       console.error('Failed to approve leave request:', error);
-//       showAlert('error', 'Error', 'Failed to approve leave request');
-//     }
-//   };
+      if (response.data.success) {
+        showAlert('success', 'Success', 'Leave request updated successfully');
+        fetchRequests(page);
+        setIsEditDialogOpen(false);
+        setEditingRequest(null);
+      }
+    } catch (error) {
+      console.error('Failed to update leave request:', error);
+      showAlert('error', 'Error', 'Failed to update leave request');
+    }
+  };
 
-//   const handleReject = async () => {
-//     if (!actionRequest) return;
+  const handleCancel = async () => {
+    if (!actionRequest) return;
     
-//     try {
-//       const response = await leaveService.reject(actionRequest.id, { 
-//         reason: rejectionReason 
-//       });
+    try {
+      const response = await leaveService.cancelRequest(actionRequest.id);
       
-//       if (response.data.success) {
-//         showAlert('success', 'Success', 'Leave request rejected');
-//         fetchRequests(page);
-//         setIsRejectDialogOpen(false);
-//         setActionRequest(null);
-//         setRejectionReason('');
-//       }
-//     } catch (error) {
-//       console.error('Failed to reject leave request:', error);
-//       showAlert('error', 'Error', 'Failed to reject leave request');
-//     }
-//   };
+      if (response.data.success) {
+        showAlert('success', 'Success', 'Leave request cancelled');
+        fetchRequests(page);
+        setIsCancelDialogOpen(false);
+        setActionRequest(null);
+      }
+    } catch (error) {
+      console.error('Failed to cancel leave request:', error);
+      showAlert('error', 'Error', 'Failed to cancel leave request');
+    }
+  };
 
-//   const handleCancel = async (requestId: number) => {
-//     try {
-//       const response = await leaveService.cancel(requestId);
+  const handleDelete = async () => {
+    if (!actionRequest) return;
+    
+    try {
+      const response = await leaveService.deleteRequest(actionRequest.id);
       
-//       if (response.data.success) {
-//         showAlert('success', 'Success', 'Leave request cancelled');
-//         fetchRequests(page);
-//       }
-//     } catch (error) {
-//       console.error('Failed to cancel leave request:', error);
-//       showAlert('error', 'Error', 'Failed to cancel leave request');
-//     }
-//   };
+      if (response.data.success) {
+        showAlert('success', 'Success', 'Leave request deleted');
+        fetchRequests(page);
+        setIsDeleteDialogOpen(false);
+        setActionRequest(null);
+      }
+    } catch (error) {
+      console.error('Failed to delete leave request:', error);
+      showAlert('error', 'Error', 'Failed to delete leave request');
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
@@ -343,18 +351,18 @@ export default function AllLeaveRequests() {
 
   // ================= TABLE COLUMNS =================
   const columns: TableColumn<LeaveRequest>[] = [
-    {
-      name: 'Employee',
-      cell: (row) => (
-        <div>
-          <p className="font-medium">{row.staff_member?.full_name || 'Unknown'}</p>
-          {row.staff_member?.staff_code && (
-            <p className="text-xs text-solarized-base01">{row.staff_member.staff_code}</p>
-          )}
-        </div>
-      ),
-      minWidth: '150px',
-    },
+    // ...(isAdminUser ? [{
+    //   name: 'Employee',
+    //   cell: (row) => (
+    //     <div>
+    //       <p className="font-medium">{row.staff_member?.full_name || 'Unknown'}</p>
+    //       {row.staff_member?.staff_code && (
+    //         <p className="text-xs text-solarized-base01">{row.staff_member.staff_code}</p>
+    //       )}
+    //     </div>
+    //   ),
+    //   minWidth: '150px',
+    // }] : []),
     {
       name: 'Leave Type',
       cell: (row) => (
@@ -403,186 +411,181 @@ export default function AllLeaveRequests() {
       name: 'Actions',
       cell: (row) => (
         <div className="flex items-center gap-2">
-          <Button
+          {/* <Button
             variant="ghost"
             size="icon"
             onClick={() => handleView(row)}
             title="View Details"
           >
             <Eye className="h-4 w-4" />
-          </Button>
+          </Button> */}
           
-          {/* <DropdownMenu>
+          <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => handleView(row)}>
-                View Details
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              
+                <Eye className="mr-2 h-4 w-4" />
+                View
+              </DropdownMenuItem>       
               {row.approval_status === 'pending' && (
-                <>
-                  <DropdownMenuItem onClick={() => handleApproveClick(row)}>
-                    <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                    Approve
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleRejectClick(row)}>
-                    <XCircle className="mr-2 h-4 w-4 text-red-500" />
-                    Reject
-                  </DropdownMenuItem>
-                </>
+                <DropdownMenuItem onClick={() => handleEditClick(row)}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
               )}
               
               {(row.approval_status === 'pending' || row.approval_status === 'approved') && (
-                <DropdownMenuItem onClick={() => handleCancel(row.id)}>
-                  Cancel Request
+                <DropdownMenuItem onClick={() => handleCancelClick(row)}>
+                  <Ban className="mr-2 h-4 w-4" />
+                  Cancel
+                </DropdownMenuItem>
+              )}
+              
+              {row.approval_status === 'pending' && (
+                <DropdownMenuItem 
+                  onClick={() => handleDeleteClick(row)}
+                  className="text-red-600"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
-          </DropdownMenu> */}
+          </DropdownMenu>
         </div>
       ),
       ignoreRowClick: true,
-      width: '100px',
+      width: '120px',
     },
   ];
-
-  if (!isAdminUser) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <User className="h-12 w-12 text-solarized-base01 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold">Access Restricted</h2>
-          <p className="text-solarized-base01 mt-2">
-            You don't have permission to view all leave requests.
-          </p>
-          <Button className="mt-4" asChild>
-            <a href="/leave/my-requests">Go to My Leave Requests</a>
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-solarized-base02">All Leave Requests</h1>
-          <p className="text-solarized-base01">Manage and approve leave requests from staff members</p>
+          <h1 className="text-2xl font-bold text-solarized-base02">
+            {isAdminUser ? 'All Leave Requests' : 'My Leave Requests'}
+          </h1>
+          <p className="text-solarized-base01">
+            {isAdminUser 
+              ? 'Manage leave requests from staff members' 
+              : 'View and manage your leave requests'}
+          </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-        </div>
+        {!isAdminUser && (
+          <a href="/leave/apply">
+            <Button className="bg-solarized-blue hover:bg-solarized-blue/90">
+              Apply Leave
+            </Button>
+          </a>
+        )}
       </div>
 
-      {/* FILTERS */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="employee">Employee</Label>
-              <Select value={staffFilter} onValueChange={setStaffFilter} disabled={isLoadingStaff}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Employees" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Employees</SelectItem>
-                  {staffMembers.map((staff) => (
-                    <SelectItem key={staff.id} value={staff.id.toString()}>
-                      {staff.full_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      {/* FILTERS - Only show for admin */}
+      {isAdminUser && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filters
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="employee">Employee</Label>
+                <Select value={staffFilter} onValueChange={setStaffFilter} disabled={isLoadingStaff}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Employees" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Employees</SelectItem>
+                    {staffMembers.map((staff) => (
+                      <SelectItem key={staff.id} value={staff.id.toString()}>
+                        {staff.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="declined">Declined</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="start_date">Start Date</Label>
+                <Input
+                  id="start_date"
+                  type="date"
+                  value={startDateFilter}
+                  onChange={(e) => setStartDateFilter(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="end_date">End Date</Label>
+                <Input
+                  id="end_date"
+                  type="date"
+                  value={endDateFilter}
+                  onChange={(e) => setEndDateFilter(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="search">Search</Label>
+                <Input
+                  id="search"
+                  placeholder="Search..."
+                  value={searchFilter}
+                  onChange={(e) => setSearchFilter(e.target.value)}
+                />
+              </div>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="declined">Declined</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setStatusFilter('all');
+                  setStaffFilter('all');
+                  setStartDateFilter('');
+                  setEndDateFilter('');
+                  setSearchFilter('');
+                  setPage(1);
+                }}
+              >
+                Clear Filters
+              </Button>
+              <Button
+                onClick={() => fetchRequests(1)}
+                disabled={isLoading}
+                className="bg-solarized-blue hover:bg-solarized-blue/90"
+              >
+                Apply Filters
+              </Button>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="start_date">Start Date</Label>
-              <Input
-                id="start_date"
-                type="date"
-                value={startDateFilter}
-                onChange={(e) => setStartDateFilter(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="end_date">End Date</Label>
-              <Input
-                id="end_date"
-                type="date"
-                value={endDateFilter}
-                onChange={(e) => setEndDateFilter(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="search">Search</Label>
-              <Input
-                id="search"
-                placeholder="Search..."
-                value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-              />
-            </div>
-          </div>
-          
-          <div className="flex justify-end gap-2 mt-4">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setStatusFilter('all');
-                setStaffFilter('all');
-                setStartDateFilter('');
-                setEndDateFilter('');
-                setSearchFilter('');
-                setPage(1);
-              }}
-            >
-              Clear Filters
-            </Button>
-            <Button
-              onClick={() => fetchRequests(1)}
-              disabled={isLoading}
-              className="bg-solarized-blue hover:bg-solarized-blue/90"
-            >
-              Apply Filters
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* STATS SUMMARY */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -645,8 +648,24 @@ export default function AllLeaveRequests() {
       <Card>
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <CardTitle className="text-lg">All Leave Requests</CardTitle>
+            <CardTitle className="text-lg">
+              {isAdminUser ? 'All Leave Requests' : 'My Leave History'}
+            </CardTitle>
             <div className="flex items-center gap-4">
+              {!isAdminUser && (
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Requests</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="approved">Approved</SelectItem>
+                    <SelectItem value="declined">Declined</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
               <Button
                 variant="outline"
                 onClick={() => fetchRequests(1)}
@@ -700,7 +719,7 @@ export default function AllLeaveRequests() {
 
           {viewingRequest && (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              {isAdminUser && (
                 <div>
                   <p className="text-sm text-solarized-base01">Employee</p>
                   <p className="font-medium">
@@ -712,12 +731,35 @@ export default function AllLeaveRequests() {
                     </p>
                   )}
                 </div>
-                <div>
-                  <p className="text-sm text-solarized-base01">Leave Type</p>
-                  <p className="font-medium">
-                    {viewingRequest.category?.title || '-'}
-                  </p>
-                </div>
+              )}
+              
+              <div className="grid grid-cols-2 gap-4">
+                {isAdminUser && (
+                  <div>
+                    <p className="text-sm text-solarized-base01">Leave Type</p>
+                    <p className="font-medium">
+                      {viewingRequest.category?.title || '-'}
+                    </p>
+                  </div>
+                )}
+                {!isAdminUser && (
+                  <>
+                    <div>
+                      <p className="text-sm text-solarized-base01">Leave Type</p>
+                      <p className="font-medium">
+                        {viewingRequest.category?.title || '-'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-solarized-base01">Status</p>
+                      <div className="flex items-center gap-2">
+                        <Badge className={getStatusBadge(viewingRequest.approval_status)}>
+                          {viewingRequest.approval_status}
+                        </Badge>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -736,14 +778,16 @@ export default function AllLeaveRequests() {
                   <p className="text-sm text-solarized-base01">Total Days</p>
                   <p className="text-lg font-semibold">{viewingRequest.total_days} day(s)</p>
                 </div>
-                <div>
-                  <p className="text-sm text-solarized-base01">Status</p>
-                  <div className="flex items-center gap-2">
-                    <Badge className={getStatusBadge(viewingRequest.approval_status)}>
-                      {viewingRequest.approval_status}
-                    </Badge>
+                {isAdminUser && (
+                  <div>
+                    <p className="text-sm text-solarized-base01">Status</p>
+                    <div className="flex items-center gap-2">
+                      <Badge className={getStatusBadge(viewingRequest.approval_status)}>
+                        {viewingRequest.approval_status}
+                      </Badge>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <div>
@@ -789,127 +833,148 @@ export default function AllLeaveRequests() {
             <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
               Close
             </Button>
-            {/* {viewingRequest?.approval_status === 'pending' && (
-              <>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    setIsViewDialogOpen(false);
-                    handleRejectClick(viewingRequest);
-                  }}
-                >
-                  Reject
-                </Button>
-                <Button
-                  variant="default"
-                  className="bg-solarized-green hover:bg-solarized-green/90"
-                  onClick={() => {
-                    setIsViewDialogOpen(false);
-                    handleApproveClick(viewingRequest);
-                  }}
-                >
-                  Approve
-                </Button>
-              </>
-            )} */}
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* APPROVE DIALOG */}
-      {/* <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
+      {/* EDIT DIALOG */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Approve Leave Request</DialogTitle>
+            <DialogTitle>Edit Leave Request</DialogTitle>
             <DialogDescription>
-              Approve leave request for {actionRequest?.staff_member?.full_name}
+              Update your leave request details
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
             <div>
-              <Label htmlFor="approval-remarks">Approval Remarks (Optional)</Label>
+              <Label htmlFor="edit-start-date">Start Date *</Label>
+              <Input
+                id="edit-start-date"
+                type="date"
+                value={editStartDate}
+                onChange={(e) => setEditStartDate(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-end-date">End Date *</Label>
+              <Input
+                id="edit-end-date"
+                type="date"
+                value={editEndDate}
+                onChange={(e) => setEditEndDate(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-reason">Reason (Optional)</Label>
               <Textarea
-                id="approval-remarks"
-                placeholder="Add any remarks or notes for approval..."
-                value={approvalRemarks}
-                onChange={(e) => setApprovalRemarks(e.target.value)}
+                id="edit-reason"
+                placeholder="Update your reason for leave..."
+                value={editReason}
+                onChange={(e) => setEditReason(e.target.value)}
                 rows={3}
               />
             </div>
             
-            <div className="bg-solarized-base3 p-3 rounded-lg">
-              <p className="text-sm text-solarized-base01">Request Details:</p>
-              <p className="font-medium">{actionRequest?.category?.title} - {actionRequest?.total_days} day(s)</p>
-              <p className="text-sm">
-                {actionRequest?.start_date ? formatDate(actionRequest.start_date) : ''} to {actionRequest?.end_date ? formatDate(actionRequest.end_date) : ''}
-              </p>
-            </div>
+            {editingRequest && (
+              <div className="bg-solarized-base3 p-3 rounded-lg">
+                <p className="text-sm text-solarized-base01">Original Request:</p>
+                <p className="font-medium">{editingRequest?.category?.title} - {editingRequest?.total_days} day(s)</p>
+                <p className="text-sm">
+                  {formatDate(editingRequest.start_date)} to {formatDate(editingRequest.end_date)}
+                </p>
+              </div>
+            )}
           </div>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsApproveDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
             <Button
-              className="bg-solarized-green hover:bg-solarized-green/90"
-              onClick={handleApprove}
+              className="bg-solarized-blue hover:bg-solarized-blue/90"
+              onClick={handleEdit}
             >
-              Approve Request
+              Update Request
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog> */}
+      </Dialog>
 
-      {/* REJECT DIALOG */}
-      {/* <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+      {/* CANCEL DIALOG */}
+      <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reject Leave Request</DialogTitle>
+            <DialogTitle>Cancel Leave Request</DialogTitle>
             <DialogDescription>
-              Reject leave request for {actionRequest?.staff_member?.full_name}
+              Are you sure you want to cancel this leave request?
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="rejection-reason">Rejection Reason *</Label>
-              <Textarea
-                id="rejection-reason"
-                placeholder="Please provide a reason for rejection..."
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                rows={3}
-                required
-              />
-              <p className="text-xs text-solarized-base01 mt-1">
-                Required: Please provide a reason for rejecting this leave request.
-              </p>
-            </div>
-            
+          {actionRequest && (
             <div className="bg-solarized-base3 p-3 rounded-lg">
-              <p className="text-sm text-solarized-base01">Request Details:</p>
               <p className="font-medium">{actionRequest?.category?.title} - {actionRequest?.total_days} day(s)</p>
               <p className="text-sm">
-                {actionRequest?.start_date ? formatDate(actionRequest.start_date) : ''} to {actionRequest?.end_date ? formatDate(actionRequest.end_date) : ''}
+                {formatDate(actionRequest.start_date)} to {formatDate(actionRequest.end_date)}
               </p>
+              <p className="text-sm mt-2">Status: <Badge className={getStatusBadge(actionRequest.approval_status)}>
+                {actionRequest.approval_status}
+              </Badge></p>
             </div>
-          </div>
+          )}
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsRejectDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsCancelDialogOpen(false)}>
+              No, Keep It
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCancel}
+            >
+              Yes, Cancel Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DELETE DIALOG */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Leave Request</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this leave request? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {actionRequest && (
+            <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
+              <p className="font-medium text-red-800">{actionRequest?.category?.title} - {actionRequest?.total_days} day(s)</p>
+              <p className="text-sm text-red-600">
+                {formatDate(actionRequest.start_date)} to {formatDate(actionRequest.end_date)}
+              </p>
+              <p className="text-sm mt-2 text-red-600">Status: <span className="font-medium">{actionRequest.approval_status}</span></p>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               Cancel
             </Button>
             <Button
               variant="destructive"
-              onClick={handleReject}
-              disabled={!rejectionReason.trim()}
+              onClick={handleDelete}
             >
-              Reject Request
+              Yes, Delete Permanently
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog> */}
+      </Dialog>
     </div>
   );
 }
