@@ -1,21 +1,160 @@
 import { useState, useEffect } from 'react';
-import { attendanceService } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
+import { attendanceService, staffService } from '../../services/api';
 import { showAlert, getErrorMessage } from '../../lib/sweetalert';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Alert, AlertDescription } from '../../components/ui/alert';
-import { Clock, LogIn, LogOut, CheckCircle, AlertCircle, Calendar } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Clock, LogIn, LogOut, CheckCircle, AlertCircle, Calendar, User, Users } from 'lucide-react';
+
+interface StaffMember {
+  id: number;
+  full_name: string;
+  staff_code: string;
+}
+
+interface UserData {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  role_display: string;
+  roles: string[];
+  permissions: string[];
+  primary_role: string;
+  primary_role_icon: string;
+  primary_role_hierarchy: number;
+  staff_member_id: number | null;
+}
+
+interface CurrentStatus {
+  status: string;
+  clock_in: string | null;
+  clock_out: string | null;
+  total_hours: number | null;
+}
 
 export default function ClockInOut() {
-  const { user } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [clockedIn, setClockedIn] = useState(false);
-  const [clockInTime, setClockInTime] = useState<string | null>(null);
+  const [currentStatus, setCurrentStatus] = useState<CurrentStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false);
+  const [isLoadingStaff, setIsLoadingStaff] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserData | null>(null);
+  const [isAdminUser, setIsAdminUser] = useState(false);
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
+  const [selectedStaff, setSelectedStaff] = useState<string>('');
+  const [ipAddress, setIpAddress] = useState<string>('');
+  const [location, setLocation] = useState<string>('');
 
+  // Load user data from localStorage on component mount
+  useEffect(() => {
+    const loadUserData = () => {
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const userData: UserData = JSON.parse(userStr);
+          setCurrentUser(userData);
+          
+          // Check if user has admin role (admin, administrator, organisation, company, hr)
+          const adminRoles = ['admin', 'administrator', 'organisation', 'company', 'hr'];
+          const userRoles = userData.roles || [userData.role];
+          const hasAdminRole = userRoles.some(role => 
+            adminRoles.includes(role.toLowerCase())
+          );
+          setIsAdminUser(hasAdminRole);
+          
+          // If it's a staff user (non-admin), set their staff ID as selected
+          if (!hasAdminRole && userData.staff_member_id) {
+            setSelectedStaff(userData.staff_member_id.toString());
+          }
+        }
+      } catch (error) {
+        console.error('Failed to parse user data from localStorage:', error);
+      }
+    };
+    
+    loadUserData();
+    
+    // Get client IP address (simplified - in real app, you'd get this from backend)
+    fetch('https://api.ipify.org?format=json')
+      .then(response => response.json())
+      .then(data => setIpAddress(data.ip))
+      .catch(() => setIpAddress('Unknown'));
+  }, []);
+
+  // Fetch staff list for admin users
+  useEffect(() => {
+    const fetchStaffMembers = async () => {
+      if (!isAdminUser) return;
+      
+      setIsLoadingStaff(true);
+      try {
+        const response = await staffService.getAll({ per_page: 100 });
+        setStaffMembers(response.data.data || []);
+        
+        // Auto-select first staff member if none selected
+        if (response.data.data?.length > 0 && !selectedStaff) {
+          setSelectedStaff(response.data.data[0].id.toString());
+        }
+      } catch (error) {
+        console.error('Failed to fetch staff members:', error);
+        showAlert('error', 'Error', 'Failed to load staff members');
+      } finally {
+        setIsLoadingStaff(false);
+      }
+    };
+    
+    if (isAdminUser) {
+      fetchStaffMembers();
+    }
+  }, [isAdminUser]);
+
+  // Fetch current status
+  useEffect(() => {
+    const fetchCurrentStatus = async () => {
+      if (!selectedStaff) return;
+      
+      setIsLoadingStatus(true);
+      try {
+        // Prepare params based on user role
+        const params: Record<string, unknown> = {};
+        
+        // Only include staff_member_id for admin users if they selected someone else
+        if (isAdminUser && selectedStaff) {
+          params.staff_member_id = Number(selectedStaff);
+        }
+        
+        const response = await attendanceService.getCurrentStatus(params);
+        setCurrentStatus(response.data.data);
+      } catch (error) {
+        console.error('Failed to fetch current status:', error);
+        // Set default status
+        setCurrentStatus({
+          status: 'not_clocked_in',
+          clock_in: null,
+          clock_out: null,
+          total_hours: null,
+        });
+      } finally {
+        setIsLoadingStatus(false);
+      }
+    };
+    
+    fetchCurrentStatus();
+  }, [selectedStaff, isAdminUser]);
+
+  // Update current time every second
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -41,13 +180,36 @@ export default function ClockInOut() {
     });
   };
 
+  const formatTimeString = (timeString: string | null) => {
+    if (!timeString) return '--:--';
+    try {
+      const date = new Date(timeString);
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      });
+    } catch (error) {
+      return timeString;
+    }
+  };
+
   const handleClockIn = async () => {
     setIsLoading(true);
     setMessage(null);
     try {
-      await attendanceService.clockIn();
-      setClockedIn(true);
-      setClockInTime(formatTime(new Date()));
+      const data: Record<string, unknown> = {
+        ip_address: ipAddress,
+        location: location || 'Office',
+      };
+      
+      // For admin users, include staff_member_id if selected
+      if (isAdminUser && selectedStaff) {
+        data.staff_member_id = Number(selectedStaff);
+      }
+      
+      const response = await attendanceService.clockIn(data);
+      setCurrentStatus(response.data.data);
       setMessage({ type: 'success', text: 'Successfully clocked in!' });
       showAlert('success', 'Success!', 'Successfully clocked in!', 2000);
     } catch (err: unknown) {
@@ -63,9 +225,18 @@ export default function ClockInOut() {
     setIsLoading(true);
     setMessage(null);
     try {
-      await attendanceService.clockOut();
-      setClockedIn(false);
-      setClockInTime(null);
+      const data: Record<string, unknown> = {
+        ip_address: ipAddress,
+        location: location || 'Office',
+      };
+      
+      // For admin users, include staff_member_id if selected
+      if (isAdminUser && selectedStaff) {
+        data.staff_member_id = Number(selectedStaff);
+      }
+      
+      const response = await attendanceService.clockOut(data);
+      setCurrentStatus(response.data.data);
       setMessage({ type: 'success', text: 'Successfully clocked out!' });
       showAlert('success', 'Success!', 'Successfully clocked out!', 2000);
     } catch (err: unknown) {
@@ -77,12 +248,100 @@ export default function ClockInOut() {
     }
   };
 
+  // Get current staff member name
+  const getCurrentStaffName = () => {
+    if (!selectedStaff) return '';
+    
+    // For non-admin users, show their own name
+    if (!isAdminUser) {
+      return currentUser?.name || 'You';
+    }
+    
+    // For admin users, find the selected staff from the list
+    const staffMember = staffMembers.find(s => s.id.toString() === selectedStaff);
+    return staffMember?.full_name || 'Selected Staff';
+  };
+
+  // Get current staff member code
+  const getCurrentStaffCode = () => {
+    if (!selectedStaff) return '';
+    
+    if (!isAdminUser) {
+      return currentUser?.staff_member_id ? `ID: ${currentUser.staff_member_id}` : '';
+    }
+    
+    const staffMember = staffMembers.find(s => s.id.toString() === selectedStaff);
+    return staffMember?.staff_code ? `Code: ${staffMember.staff_code}` : '';
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-solarized-base02">Clock In / Out</h1>
-        <p className="text-solarized-base01">Record your attendance for today</p>
+        <p className="text-solarized-base01">
+          {isAdminUser 
+            ? 'Record attendance for staff members' 
+            : 'Record your attendance for today'}
+        </p>
       </div>
+
+      {/* Staff Selection for Admin Users */}
+      {isAdminUser && (
+        <Card className="border-0 shadow-md">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Select Staff Member
+            </CardTitle>
+            <CardDescription>
+              Choose a staff member to clock in/out for them
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="staff_member">Employee</Label>
+                <Select 
+                  value={selectedStaff} 
+                  onValueChange={setSelectedStaff}
+                  disabled={isLoadingStaff}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={
+                      isLoadingStaff ? "Loading staff members..." : "Select employee"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {staffMembers.map((staff) => (
+                      <SelectItem key={staff.id} value={staff.id.toString()}>
+                        {staff.full_name} {staff.staff_code ? `(${staff.staff_code})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="location">Location (Optional)</Label>
+                <Input
+                  id="location"
+                  placeholder="e.g., Main Office, Home Office"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                />
+              </div>
+            </div>
+            {selectedStaff && (
+              <div className="mt-4 p-3 bg-solarized-base3 rounded-lg">
+                <p className="text-sm text-solarized-base01">Selected Staff:</p>
+                <p className="font-medium text-lg">{getCurrentStaffName()}</p>
+                {getCurrentStaffCode() && (
+                  <p className="text-sm text-solarized-base01">{getCurrentStaffCode()}</p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="border-0 shadow-md">
@@ -97,28 +356,62 @@ export default function ClockInOut() {
               <Calendar className="h-4 w-4" />
               {formatDate(currentTime)}
             </div>
+            {ipAddress && (
+              <div className="mt-2 text-sm text-solarized-base01">
+                IP Address: {ipAddress}
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card className="border-0 shadow-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-lg">Your Status</CardTitle>
+            <CardTitle className="text-lg">
+              {isAdminUser ? 'Staff Status' : 'Your Status'}
+            </CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
-            <div className="flex justify-center">
-              <Badge
-                className={`text-lg px-4 py-2 ${
-                  clockedIn
-                    ? 'bg-solarized-green/10 text-solarized-green'
-                    : 'bg-solarized-base01/10 text-solarized-base01'
-                }`}
-              >
-                {clockedIn ? 'Clocked In' : 'Not Clocked In'}
-              </Badge>
-            </div>
-            {clockInTime && (
+            {isLoadingStatus ? (
+              <div className="animate-pulse">
+                <div className="h-8 bg-solarized-base01/10 rounded w-32 mx-auto mb-2"></div>
+                <div className="h-4 bg-solarized-base01/10 rounded w-48 mx-auto"></div>
+              </div>
+            ) : currentStatus ? (
+              <>
+                <div className="flex justify-center">
+                  <Badge
+                    className={`text-lg px-4 py-2 ${
+                      currentStatus.status === 'clocked_in'
+                        ? 'bg-solarized-green/10 text-solarized-green'
+                        : currentStatus.status === 'clocked_out'
+                        ? 'bg-solarized-blue/10 text-solarized-blue'
+                        : 'bg-solarized-base01/10 text-solarized-base01'
+                    }`}
+                  >
+                    {currentStatus.status === 'clocked_in' && 'Clocked In'}
+                    {currentStatus.status === 'clocked_out' && 'Clocked Out'}
+                    {currentStatus.status === 'not_clocked_in' && 'Not Clocked In'}
+                  </Badge>
+                </div>
+                {currentStatus.clock_in && (
+                  <p className="text-solarized-base01">
+                    Clocked in at: <strong>{formatTimeString(currentStatus.clock_in)}</strong>
+                  </p>
+                )}
+                {currentStatus.clock_out && (
+                  <p className="text-solarized-base01">
+                    Clocked out at: <strong>{formatTimeString(currentStatus.clock_out)}</strong>
+                  </p>
+                )}
+                {currentStatus.total_hours !== null && currentStatus.total_hours > 0 && (
+                  <p className="text-solarized-base01">
+                    Total hours today: <strong>{currentStatus.total_hours.toFixed(2)}h</strong>
+                  </p>
+                )}
+              </>
+            ) : (
               <p className="text-solarized-base01">
-                Clocked in at: <strong>{clockInTime}</strong>
+                {isAdminUser ? 'Select a staff member to view status' : 'Loading status...'}
               </p>
             )}
           </CardContent>
@@ -140,29 +433,36 @@ export default function ClockInOut() {
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
           <CardDescription>
-            Hello, {user?.name}! Use the buttons below to record your attendance.
+            {isAdminUser 
+              ? `Clock in/out for ${getCurrentStaffName() || 'selected staff member'}`
+              : 'Use the buttons below to record your attendance for today.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4">
             <Button
               onClick={handleClockIn}
-              disabled={isLoading || clockedIn}
+              disabled={isLoading || !selectedStaff || (currentStatus?.status === 'clocked_in')}
               className="flex-1 h-16 text-lg bg-solarized-green hover:bg-solarized-green/90"
             >
               <LogIn className="mr-2 h-6 w-6" />
-              Clock In
+              {isAdminUser ? 'Clock In Staff' : 'Clock In'}
             </Button>
             <Button
               onClick={handleClockOut}
-              disabled={isLoading || !clockedIn}
+              disabled={isLoading || !selectedStaff || (currentStatus?.status !== 'clocked_in')}
               variant="outline"
               className="flex-1 h-16 text-lg border-solarized-red text-solarized-red hover:bg-solarized-red/10"
             >
               <LogOut className="mr-2 h-6 w-6" />
-              Clock Out
+              {isAdminUser ? 'Clock Out Staff' : 'Clock Out'}
             </Button>
           </div>
+          {!selectedStaff && isAdminUser && (
+            <p className="text-sm text-solarized-red mt-2">
+              Please select a staff member to enable clock in/out
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -175,19 +475,69 @@ export default function ClockInOut() {
             <div className="text-center p-4 bg-solarized-base3 rounded-lg">
               <Clock className="h-8 w-8 mx-auto mb-2 text-solarized-blue" />
               <p className="text-sm text-solarized-base01">Clock In</p>
-              <p className="font-semibold">{clockInTime || '--:--'}</p>
+              <p className="font-semibold">{formatTimeString(currentStatus?.clock_in) || '--:--'}</p>
             </div>
             <div className="text-center p-4 bg-solarized-base3 rounded-lg">
               <Clock className="h-8 w-8 mx-auto mb-2 text-solarized-red" />
               <p className="text-sm text-solarized-base01">Clock Out</p>
-              <p className="font-semibold">--:--</p>
+              <p className="font-semibold">{formatTimeString(currentStatus?.clock_out) || '--:--'}</p>
             </div>
             <div className="text-center p-4 bg-solarized-base3 rounded-lg">
               <Clock className="h-8 w-8 mx-auto mb-2 text-solarized-green" />
               <p className="text-sm text-solarized-base01">Total Hours</p>
-              <p className="font-semibold">0h 0m</p>
+              <p className="font-semibold">{currentStatus?.total_hours?.toFixed(2) || '0.00'}h</p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Additional Information Card */}
+      <Card className="border-0 shadow-md">
+        <CardHeader>
+          <CardTitle>Important Notes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2 text-sm text-solarized-base01">
+            {isAdminUser ? (
+              <>
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="h-4 w-4 text-solarized-green mt-0.5 flex-shrink-0" />
+                  <span>Select a staff member from the dropdown to clock in/out for them.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-solarized-yellow mt-0.5 flex-shrink-0" />
+                  <span>You can optionally specify the location where the staff member is working.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-solarized-orange mt-0.5 flex-shrink-0" />
+                  <span>The system will track IP address and time automatically.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Users className="h-4 w-4 text-solarized-blue mt-0.5 flex-shrink-0" />
+                  <span>Use this feature to help staff who forgot to clock in/out or for remote teams.</span>
+                </li>
+              </>
+            ) : (
+              <>
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="h-4 w-4 text-solarized-green mt-0.5 flex-shrink-0" />
+                  <span>Please clock in when you start work and clock out when you finish.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-solarized-yellow mt-0.5 flex-shrink-0" />
+                  <span>Late clock-ins will be automatically recorded as late attendance.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-solarized-orange mt-0.5 flex-shrink-0" />
+                  <span>If you forget to clock out, please inform your manager to update your record.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Calendar className="h-4 w-4 text-solarized-blue mt-0.5 flex-shrink-0" />
+                  <span>View your complete attendance history in the "Work Logs" section.</span>
+                </li>
+              </>
+            )}
+          </ul>
         </CardContent>
       </Card>
     </div>
