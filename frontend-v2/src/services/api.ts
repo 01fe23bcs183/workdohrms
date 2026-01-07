@@ -98,7 +98,7 @@ export const leaveService = {
   processRequest: (id: number, data: { action: 'approve' | 'decline'; remarks?: string }) =>
     api.post(`/time-off-requests/${id}/process`, data),
   getBalances: (staffMemberId: number) => api.get(`/time-off-balance`, { params: { staff_member_id: staffMemberId } }),
-    getMyBalances: (year?: number) => api.get('/leave/my-balance', { params: { year } }),
+  getMyBalances: (year?: number) => api.get('/leave/my-balance', { params: { year } }),
 };
 
 export const payrollService = {
@@ -472,6 +472,30 @@ export const meetingService = {
   addActionItem: (meetingId: number, data: Record<string, unknown>) => api.post(`/meetings/${meetingId}/action-items`, data),
   getCalendar: () => api.get('/meetings-calendar'),
   getMyMeetings: () => api.get('/my-meetings'),
+};
+
+export const meetingAttendeeService = {
+  getAll: (params?: any) => api.get('/meeting-attendees', { params }),
+  getById: (id: number) => api.get(`/meeting-attendees/${id}`),
+  create: (data: any) => api.post('/meeting-attendees', data),
+  update: (id: number, data: any) => api.put(`/meeting-attendees/${id}`, data),
+  delete: (id: number) => api.delete(`/meeting-attendees/${id}`),
+};
+
+export const meetingMinuteService = {
+  getAll: (params?: any) => api.get('/meeting-minutes', { params }),
+  getById: (id: number) => api.get(`/meeting-minutes/${id}`),
+  create: (data: any) => api.post('/meeting-minutes', data),
+  update: (id: number, data: any) => api.put(`/meeting-minutes/${id}`, data),
+  delete: (id: number) => api.delete(`/meeting-minutes/${id}`),
+};
+
+export const meetingActionItemService = {
+  getAll: (params?: any) => api.get('/meeting-action-items', { params }),
+  getById: (id: number) => api.get(`/meeting-action-items/${id}`),
+  create: (data: any) => api.post('/meeting-action-items', data),
+  update: (id: number, data: any) => api.put(`/meeting-action-items/${id}`, data),
+  delete: (id: number) => api.delete(`/meeting-action-items/${id}`),
 };
 
 export const reportService = {

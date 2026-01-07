@@ -21,6 +21,9 @@ use App\Http\Controllers\Api\Company\MeetingController;
 // Leave Controllers
 use App\Http\Controllers\Api\Company\MeetingRoomController;
 use App\Http\Controllers\Api\Company\MeetingTypeController;
+use App\Http\Controllers\Api\Company\MeetingAttendeeController;
+use App\Http\Controllers\Api\Company\MeetingMinutesController;
+use App\Http\Controllers\Api\Company\MeetingActionItemController;
 // Payroll Controllers
 use App\Http\Controllers\Api\Documents\DocumentCategoryController;
 use App\Http\Controllers\Api\Documents\DocumentLocationController;
@@ -445,6 +448,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('meeting-rooms', MeetingRoomController::class);
     Route::get('/meeting-rooms-available', [MeetingRoomController::class, 'available']);
     Route::apiResource('meetings', MeetingController::class);
+    Route::apiResource('meeting-attendees', MeetingAttendeeController::class);
+    Route::apiResource('meeting-minutes', MeetingMinutesController::class);
+    Route::apiResource('meeting-action-items', MeetingActionItemController::class);
     Route::post('/meetings/{meeting}/attendees', [MeetingController::class, 'addAttendees']);
     Route::post('/meetings/{meeting}/start', [MeetingController::class, 'start']);
     Route::post('/meetings/{meeting}/complete', [MeetingController::class, 'complete']);

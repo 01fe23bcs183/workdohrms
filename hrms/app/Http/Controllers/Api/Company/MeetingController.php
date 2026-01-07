@@ -37,7 +37,7 @@ class MeetingController extends Controller
             'meetingType',
             'meetingRoom',
             'attendees.staffMember',
-            'minutes.createdByUser',
+            'minutes.creator',
             'actionItems.assignedEmployee'
         ]));
     }
@@ -175,7 +175,7 @@ class MeetingController extends Controller
             'created_by' => auth()->id(),
         ]);
 
-        return $this->success($minutes->load('createdByUser'), 'Minutes added');
+        return $this->success($minutes->load('creator'), 'Minutes added');
     }
 
     public function addActionItem(Request $request, Meeting $meeting)

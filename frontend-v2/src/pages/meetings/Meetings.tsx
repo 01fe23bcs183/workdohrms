@@ -436,7 +436,7 @@ export default function Meetings() {
       </div>
 
       {/* SUMMARY CARDS */}
-      {/* <div className="grid gap-6 sm:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-3">
         <Card className="border-0 shadow-md">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -476,7 +476,7 @@ export default function Meetings() {
             </div>
           </CardContent>
         </Card>
-      </div> */}
+      </div>
 
       {/* UPDATED: List UI aligned with StaffList */}
       <Card>
