@@ -349,50 +349,25 @@ export default function OrganizationList() {
                                             View organization information
                                         </DialogDescription>
                                     </DialogHeader>
-                                    {viewingOrganization && (
-                                        <div className="space-y-4 py-4">
-                                            <div className="space-y-2">
-                                                <Label className="text-sm text-muted-foreground">Organization Name</Label>
-                                                <p className="text-lg font-semibold">{viewingOrganization.name}</p>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-sm text-muted-foreground flex items-center gap-1">
-                                                    <MapPin className="h-4 w-4" /> Address
-                                                </Label>
-                                                <p className="text-base">{viewingOrganization.address || 'No address provided'}</p>
-                                            </div>
-                                            {viewingOrganization.created_at && (
-                                                <div className="space-y-2">
-                                                    <Label className="text-sm text-muted-foreground flex items-center gap-1">
-                                                        <Calendar className="h-4 w-4" /> Created At
-                                                    </Label>
-                                                    <p className="text-base">{new Date(viewingOrganization.created_at).toLocaleString()}</p>
-                                                </div>
-                                            )}
-                                            {viewingOrganization.updated_at && (
-                                                <div className="space-y-2">
-                                                    <Label className="text-sm text-muted-foreground flex items-center gap-1">
-                                                        <Calendar className="h-4 w-4" /> Last Updated
-                                                    </Label>
-                                                    <p className="text-base">{new Date(viewingOrganization.updated_at).toLocaleString()}</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                    <DialogFooter>
-                                        <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-                                            Close
-                                        </Button>
-                                        <Button 
-                                            className="bg-solarized-blue hover:bg-solarized-blue/90"
-                                            onClick={() => {
-                                                setIsViewDialogOpen(false);
-                                                if (viewingOrganization) handleEdit(viewingOrganization);
-                                            }}
-                                        >
-                                            <Edit className="mr-2 h-4 w-4" /> Edit
-                                        </Button>
-                                    </DialogFooter>
+                                                                        {viewingOrganization && (
+                                                                            <div className="space-y-4 py-4">
+                                                                                <div className="space-y-2">
+                                                                                    <Label className="text-sm text-muted-foreground">Organization Name</Label>
+                                                                                    <p className="text-lg font-semibold">{viewingOrganization.name}</p>
+                                                                                </div>
+                                                                                <div className="space-y-2">
+                                                                                    <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                                                                                        <MapPin className="h-4 w-4" /> Address
+                                                                                    </Label>
+                                                                                    <p className="text-base">{viewingOrganization.address || 'No address provided'}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                        <DialogFooter>
+                                                                            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+                                                                                Close
+                                                                            </Button>
+                                                                        </DialogFooter>
                                 </DialogContent>
                             </Dialog>
                         </div>

@@ -402,68 +402,43 @@ export default function DocumentTypeList() {
                                             View document type information
                                         </DialogDescription>
                                     </DialogHeader>
-                                    {viewingDocumentType && (
-                                        <div className="space-y-4 py-4">
-                                            <div className="space-y-2">
-                                                <Label className="text-sm text-muted-foreground">Title</Label>
-                                                <p className="text-lg font-semibold">{viewingDocumentType.title}</p>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-sm text-muted-foreground flex items-center gap-1">
-                                                    <User className="h-4 w-4" /> Owner Type
-                                                </Label>
-                                                <Badge variant="secondary">
-                                                    {OWNER_TYPES.find(t => t.value === viewingDocumentType.owner_type)?.label || viewingDocumentType.owner_type}
-                                                </Badge>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-sm text-muted-foreground">Notes</Label>
-                                                <p className="text-base">{viewingDocumentType.notes || 'No notes provided'}</p>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-sm text-muted-foreground">Status</Label>
-                                                <Badge
-                                                    className={
-                                                        viewingDocumentType.is_active
-                                                            ? 'bg-solarized-green/10 text-solarized-green'
-                                                            : 'bg-solarized-base01/10 text-solarized-base01'
-                                                    }
-                                                >
-                                                    {viewingDocumentType.is_active ? 'Active' : 'Inactive'}
-                                                </Badge>
-                                            </div>
-                                            {viewingDocumentType.created_at && (
-                                                <div className="space-y-2">
-                                                    <Label className="text-sm text-muted-foreground flex items-center gap-1">
-                                                        <Calendar className="h-4 w-4" /> Created At
-                                                    </Label>
-                                                    <p className="text-base">{new Date(viewingDocumentType.created_at).toLocaleString()}</p>
-                                                </div>
-                                            )}
-                                            {viewingDocumentType.updated_at && (
-                                                <div className="space-y-2">
-                                                    <Label className="text-sm text-muted-foreground flex items-center gap-1">
-                                                        <Calendar className="h-4 w-4" /> Last Updated
-                                                    </Label>
-                                                    <p className="text-base">{new Date(viewingDocumentType.updated_at).toLocaleString()}</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                    <DialogFooter>
-                                        <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-                                            Close
-                                        </Button>
-                                        <Button 
-                                            className="bg-solarized-blue hover:bg-solarized-blue/90"
-                                            onClick={() => {
-                                                setIsViewDialogOpen(false);
-                                                if (viewingDocumentType) handleEdit(viewingDocumentType);
-                                            }}
-                                        >
-                                            <Edit className="mr-2 h-4 w-4" /> Edit
-                                        </Button>
-                                    </DialogFooter>
+                                                                        {viewingDocumentType && (
+                                                                            <div className="space-y-4 py-4">
+                                                                                <div className="space-y-2">
+                                                                                    <Label className="text-sm text-muted-foreground">Title</Label>
+                                                                                    <p className="text-lg font-semibold">{viewingDocumentType.title}</p>
+                                                                                </div>
+                                                                                <div className="space-y-2">
+                                                                                    <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                                                                                        <User className="h-4 w-4" /> Owner Type
+                                                                                    </Label>
+                                                                                    <Badge variant="secondary">
+                                                                                        {OWNER_TYPES.find(t => t.value === viewingDocumentType.owner_type)?.label || viewingDocumentType.owner_type}
+                                                                                    </Badge>
+                                                                                </div>
+                                                                                <div className="space-y-2">
+                                                                                    <Label className="text-sm text-muted-foreground">Notes</Label>
+                                                                                    <p className="text-base">{viewingDocumentType.notes || 'No notes provided'}</p>
+                                                                                </div>
+                                                                                <div className="space-y-2">
+                                                                                    <Label className="text-sm text-muted-foreground">Status</Label>
+                                                                                    <Badge
+                                                                                        className={
+                                                                                            viewingDocumentType.is_active
+                                                                                                ? 'bg-solarized-green/10 text-solarized-green'
+                                                                                                : 'bg-solarized-base01/10 text-solarized-base01'
+                                                                                        }
+                                                                                    >
+                                                                                        {viewingDocumentType.is_active ? 'Active' : 'Inactive'}
+                                                                                    </Badge>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                        <DialogFooter>
+                                                                            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+                                                                                Close
+                                                                            </Button>
+                                                                        </DialogFooter>
                                 </DialogContent>
                             </Dialog>
                         </div>

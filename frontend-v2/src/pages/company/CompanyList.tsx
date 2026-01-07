@@ -348,56 +348,31 @@ export default function CompanyList() {
                                             View company information
                                         </DialogDescription>
                                     </DialogHeader>
-                                    {viewingCompany && (
-                                        <div className="space-y-4 py-4">
-                                            <div className="space-y-2">
-                                                <Label className="text-sm text-muted-foreground">Company Name</Label>
-                                                <p className="text-lg font-semibold">{viewingCompany.company_name}</p>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-sm text-muted-foreground flex items-center gap-1">
-                                                    <Building2 className="h-4 w-4" /> Organization
-                                                </Label>
-                                                <Badge variant="secondary">{viewingCompany.organization?.name || 'N/A'}</Badge>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-sm text-muted-foreground flex items-center gap-1">
-                                                    <MapPin className="h-4 w-4" /> Address
-                                                </Label>
-                                                <p className="text-base">{viewingCompany.address || 'No address provided'}</p>
-                                            </div>
-                                            {viewingCompany.created_at && (
-                                                <div className="space-y-2">
-                                                    <Label className="text-sm text-muted-foreground flex items-center gap-1">
-                                                        <Calendar className="h-4 w-4" /> Created At
-                                                    </Label>
-                                                    <p className="text-base">{new Date(viewingCompany.created_at).toLocaleString()}</p>
-                                                </div>
-                                            )}
-                                            {viewingCompany.updated_at && (
-                                                <div className="space-y-2">
-                                                    <Label className="text-sm text-muted-foreground flex items-center gap-1">
-                                                        <Calendar className="h-4 w-4" /> Last Updated
-                                                    </Label>
-                                                    <p className="text-base">{new Date(viewingCompany.updated_at).toLocaleString()}</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                    <DialogFooter>
-                                        <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-                                            Close
-                                        </Button>
-                                        <Button 
-                                            className="bg-solarized-blue hover:bg-solarized-blue/90"
-                                            onClick={() => {
-                                                setIsViewDialogOpen(false);
-                                                if (viewingCompany) handleEdit(viewingCompany);
-                                            }}
-                                        >
-                                            <Edit className="mr-2 h-4 w-4" /> Edit
-                                        </Button>
-                                    </DialogFooter>
+                                                                        {viewingCompany && (
+                                                                            <div className="space-y-4 py-4">
+                                                                                <div className="space-y-2">
+                                                                                    <Label className="text-sm text-muted-foreground">Company Name</Label>
+                                                                                    <p className="text-lg font-semibold">{viewingCompany.company_name}</p>
+                                                                                </div>
+                                                                                <div className="space-y-2">
+                                                                                    <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                                                                                        <Building2 className="h-4 w-4" /> Organization
+                                                                                    </Label>
+                                                                                    <Badge variant="secondary">{viewingCompany.organization?.name || 'N/A'}</Badge>
+                                                                                </div>
+                                                                                <div className="space-y-2">
+                                                                                    <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                                                                                        <MapPin className="h-4 w-4" /> Address
+                                                                                    </Label>
+                                                                                    <p className="text-base">{viewingCompany.address || 'No address provided'}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                        <DialogFooter>
+                                                                            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+                                                                                Close
+                                                                            </Button>
+                                                                        </DialogFooter>
                                 </DialogContent>
                             </Dialog>
                         </div>
