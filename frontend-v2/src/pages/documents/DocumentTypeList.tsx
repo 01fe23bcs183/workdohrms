@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { documentTypeService } from '../../services/api';
 import { showAlert, showConfirmDialog, getErrorMessage } from '../../lib/sweetalert';
 import { Card, CardContent, CardHeader } from '../../components/ui/card';
@@ -37,6 +38,7 @@ import {
     Edit,
     Trash2,
     FileText,
+    Eye,
 } from 'lucide-react';
 import DataTable, { TableColumn } from 'react-data-table-component';
 
@@ -55,6 +57,7 @@ const OWNER_TYPES = [
 ];
 
 export default function DocumentTypeList() {
+    const navigate = useNavigate();
     const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -243,19 +246,23 @@ export default function DocumentTypeList() {
                             <MoreHorizontal className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(row)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                            onClick={() => handleDelete(row.id)}
-                            className="text-solarized-red"
-                        >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => navigate(`/documents/types/${row.id}`)}>
+                                                <Eye className="mr-2 h-4 w-4" />
+                                                View
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleEdit(row)}>
+                                                <Edit className="mr-2 h-4 w-4" />
+                                                Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() => handleDelete(row.id)}
+                                                className="text-solarized-red"
+                                            >
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
                 </DropdownMenu>
             ),
             ignoreRowClick: true,
