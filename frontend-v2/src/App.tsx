@@ -124,6 +124,8 @@ import Unauthorized from './pages/Unauthorized';
 import CompanyNotices from './pages/settings/CompanyNotices';
 import AllLeaveRequests from './pages/leave/AllLeaveRequests';
 import MyLeaveBalances from './pages/leave/MyLeaveBalances';
+import MyWorkLogs from './pages/attendance/MyWorkLogs';
+import MyAttendanceSummary from './pages/attendance/MyAttendanceSummary';
 
 function App() {
   return (
@@ -173,7 +175,9 @@ function App() {
             <Route path="/attendance" element={<ClockInOut />} />
             <Route path="/attendance/clock" element={<ClockInOut />} />
             <Route path="/attendance/logs" element={<WorkLogs />} />
+            <Route path="/attendance/my-logs" element={<MyWorkLogs />} />
             <Route path="/attendance/summary" element={<AttendanceSummary />} />
+            <Route path="/attendance/my-summary" element={<MyAttendanceSummary />} />
             <Route path="/attendance/shifts" element={<Shifts />} />
 
             {/* Leave Management */}

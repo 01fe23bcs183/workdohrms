@@ -84,7 +84,9 @@ const navigation: NavItem[] = [
     children: [
       { name: 'Clock In/Out', href: '/attendance/clock' },
       { name: 'Work Logs', href: '/attendance/logs', permission: 'view_attendance' },
+      {name: 'My Work Logs', href: '/attendance/my-logs' },
       { name: 'Summary', href: '/attendance/summary', permission: 'view_attendance' },
+      { name: 'My Summary', href: '/attendance/my-summary', permission: 'view_attendance' },
       { name: 'Shifts', href: '/attendance/shifts', permission: 'edit_attendance' },
     ]
   },
