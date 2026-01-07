@@ -20,6 +20,9 @@ import {
   DialogFooter,
   DialogDescription,
 } from '../../components/ui/dialog';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
 import DataTable, { TableColumn } from 'react-data-table-component';
 import {
   Plus,
@@ -29,7 +32,17 @@ import {
   CheckCircle,
   XCircle,
   User,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Ban,
 } from 'lucide-react';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 
 interface LeaveRequest {
   id: number;
@@ -76,8 +89,20 @@ export default function LeaveRequests() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
 
+  // Dialogs state
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  
+  // Request state
   const [viewingRequest, setViewingRequest] = useState<LeaveRequest | null>(null);
+  const [editingRequest, setEditingRequest] = useState<LeaveRequest | null>(null);
+  const [actionRequest, setActionRequest] = useState<LeaveRequest | null>(null);
+  
+  const [editReason, setEditReason] = useState('');
+  const [editStartDate, setEditStartDate] = useState('');
+  const [editEndDate, setEditEndDate] = useState('');
 
   // Load user data from localStorage
   useEffect(() => {
@@ -107,7 +132,6 @@ export default function LeaveRequests() {
         };
         if (statusFilter !== 'all') params.status = statusFilter;
 
-        // IMPORTANT: Use the new endpoint for "My Leave Requests"
         const response = await leaveService.getMyRequests(params);
         const { data, meta } = response.data;
 
@@ -157,6 +181,85 @@ export default function LeaveRequests() {
   const handleView = (request: LeaveRequest) => {
     setViewingRequest(request);
     setIsViewDialogOpen(true);
+  };
+
+  const handleEditClick = (request: LeaveRequest) => {
+    setEditingRequest(request);
+    setEditReason(request.reason || '');
+    setEditStartDate(request.start_date.split('T')[0]);
+    setEditEndDate(request.end_date.split('T')[0]);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleCancelClick = (request: LeaveRequest) => {
+    setActionRequest(request);
+    setIsCancelDialogOpen(true);
+  };
+
+  const handleDeleteClick = (request: LeaveRequest) => {
+    setActionRequest(request);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editingRequest) return;
+    
+    try {
+      const response = await leaveService.updateRequest(editingRequest.id, {
+        reason: editReason,
+        start_date: editStartDate,
+        end_date: editEndDate,
+      });
+      
+      if (response.data.success) {
+        showAlert('success', 'Success', 'Leave request updated successfully');
+        fetchRequests(page);
+        setIsEditDialogOpen(false);
+        setEditingRequest(null);
+      }
+    } catch (error: any) {
+      console.error('Failed to update leave request:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to update leave request';
+      showAlert('error', 'Error', errorMessage);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!actionRequest) return;
+    
+    try {
+      const response = await leaveService.cancelRequest(actionRequest.id);
+      
+      if (response.data.success) {
+        showAlert('success', 'Success', 'Leave request cancelled');
+        fetchRequests(page);
+        setIsCancelDialogOpen(false);
+        setActionRequest(null);
+      }
+    } catch (error: any) {
+      console.error('Failed to cancel leave request:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to cancel leave request';
+      showAlert('error', 'Error', errorMessage);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!actionRequest) return;
+    
+    try {
+      const response = await leaveService.deleteRequest(actionRequest.id);
+      
+      if (response.data.success) {
+        showAlert('success', 'Success', 'Leave request deleted');
+        fetchRequests(page);
+        setIsDeleteDialogOpen(false);
+        setActionRequest(null);
+      }
+    } catch (error: any) {
+      console.error('Failed to delete leave request:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to delete leave request';
+      showAlert('error', 'Error', errorMessage);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -253,17 +356,47 @@ export default function LeaveRequests() {
     {
       name: 'Actions',
       cell: (row) => (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => handleView(row)}
-          title="View Details"
-        >
-          <Eye className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleView(row)}>
+                <Eye className="mr-2 h-4 w-4" />
+                View
+              </DropdownMenuItem>       
+              {row.approval_status === 'pending' && (
+                <DropdownMenuItem onClick={() => handleEditClick(row)}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
+              )}
+              
+              {(row.approval_status === 'pending' || row.approval_status === 'approved') && (
+                <DropdownMenuItem onClick={() => handleCancelClick(row)}>
+                  <Ban className="mr-2 h-4 w-4" />
+                  Cancel
+                </DropdownMenuItem>
+              )}
+              
+              {row.approval_status === 'pending' && (
+                <DropdownMenuItem
+                  onClick={() => handleDeleteClick(row)}
+                  className="text-red-600"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       ),
       ignoreRowClick: true,
-      width: '80px',
+      width: '120px',
     },
   ];
 
@@ -411,7 +544,7 @@ export default function LeaveRequests() {
         </CardContent>
       </Card>
 
-      {/* VIEW MODAL */}
+      {/* VIEW DIALOG */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -495,21 +628,150 @@ export default function LeaveRequests() {
             </div>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
               Close
             </Button>
-            {viewingRequest?.approval_status === 'pending' && (
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  // Add cancel functionality here
-                  setIsViewDialogOpen(false);
-                }}
-              >
-                Cancel Request
-              </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* EDIT DIALOG */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Leave Request</DialogTitle>
+            <DialogDescription>
+              Update your leave request details
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-start-date">Start Date *</Label>
+              <Input
+                id="edit-start-date"
+                type="date"
+                value={editStartDate}
+                onChange={(e) => setEditStartDate(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-end-date">End Date *</Label>
+              <Input
+                id="edit-end-date"
+                type="date"
+                value={editEndDate}
+                onChange={(e) => setEditEndDate(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-reason">Reason (Optional)</Label>
+              <Textarea
+                id="edit-reason"
+                placeholder="Update your reason for leave..."
+                value={editReason}
+                onChange={(e) => setEditReason(e.target.value)}
+                rows={3}
+              />
+            </div>
+            
+            {editingRequest && (
+              <div className="bg-solarized-base3 p-3 rounded-lg">
+                <p className="text-sm text-solarized-base01">Original Request:</p>
+                <p className="font-medium">{editingRequest?.category?.title} - {editingRequest?.total_days} day(s)</p>
+                <p className="text-sm">
+                  {formatDate(editingRequest.start_date)} to {formatDate(editingRequest.end_date)}
+                </p>
+              </div>
             )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-solarized-blue hover:bg-solarized-blue/90"
+              onClick={handleEdit}
+              disabled={!editStartDate || !editEndDate || new Date(editEndDate) < new Date(editStartDate)}
+            >
+              Update Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* CANCEL DIALOG */}
+      <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Leave Request</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel this leave request?
+            </DialogDescription>
+          </DialogHeader>
+          
+          {actionRequest && (
+            <div className="bg-solarized-base3 p-3 rounded-lg">
+              <p className="font-medium">{actionRequest?.category?.title} - {actionRequest?.total_days} day(s)</p>
+              <p className="text-sm">
+                {formatDate(actionRequest.start_date)} to {formatDate(actionRequest.end_date)}
+              </p>
+              <p className="text-sm mt-2">Status: <Badge className={getStatusBadge(actionRequest.approval_status)}>
+                {actionRequest.approval_status}
+              </Badge></p>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCancelDialogOpen(false)}>
+              No, Keep It
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCancel}
+            >
+              Yes, Cancel Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DELETE DIALOG */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Leave Request</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this leave request? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {actionRequest && (
+            <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
+              <p className="font-medium text-red-800">{actionRequest?.category?.title} - {actionRequest?.total_days} day(s)</p>
+              <p className="text-sm text-red-600">
+                {formatDate(actionRequest.start_date)} to {formatDate(actionRequest.end_date)}
+              </p>
+              <p className="text-sm mt-2 text-red-600">Status: <span className="font-medium">{actionRequest.approval_status}</span></p>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+            >
+              Yes, Delete Permanently
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

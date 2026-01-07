@@ -10,7 +10,6 @@ use App\Http\Controllers\Api\Attendance\AttendanceRegularizationController;
 use App\Http\Controllers\Api\Attendance\ExtraHoursRecordController;
 use App\Http\Controllers\Api\Attendance\ShiftController;
 use App\Http\Controllers\Api\Attendance\TimesheetController;
-// Auth Controllers
 use App\Http\Controllers\Api\Attendance\TimesheetProjectController;
 // Attendance Controllers
 use App\Http\Controllers\Api\Attendance\WorkLogController;
@@ -207,6 +206,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('time-off-categories', TimeOffCategoryController::class);
     Route::get('/leave/my-requests', [TimeOffRequestController::class, 'myRequests']);
     Route::apiResource('time-off-requests', TimeOffRequestController::class);
+    Route::post('/time-off-requests/{timeOffRequest}/cancel', [TimeOffRequestController::class, 'cancel']);
     Route::post('/time-off-requests/{timeOffRequest}/process', [TimeOffRequestController::class, 'processApproval']);
     Route::get('/time-off-balance', [TimeOffRequestController::class, 'getBalance']);
     Route::get('/leave/my-balance', [TimeOffRequestController::class, 'myBalance']);

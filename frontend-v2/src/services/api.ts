@@ -91,10 +91,14 @@ export const leaveService = {
   deleteCategory: (id: number) => api.delete(`/time-off-categories/${id}`),
   getRequests: (params?: { status?: string; page?: number }) => api.get('/time-off-requests', { params }),
   createRequest: (data: Record<string, unknown>) => api.post('/time-off-requests', data),
+  getRequestById: (id: number) => api.get(`/time-off-requests/${id}`),
+  updateRequest: (id: number, data: Record<string, unknown>) => api.put(`/time-off-requests/${id}`, data),
+  deleteRequest: (id: number) => api.delete(`/time-off-requests/${id}`),
+  cancelRequest: (id: number) => api.post(`/time-off-requests/${id}/cancel`),
   processRequest: (id: number, data: { action: 'approve' | 'decline'; remarks?: string }) =>
     api.post(`/time-off-requests/${id}/process`, data),
   getBalances: (staffMemberId: number) => api.get(`/time-off-balance`, { params: { staff_member_id: staffMemberId } }),
-  getMyBalances: () => api.get('/leave/my-balances'),
+    getMyBalances: (year?: number) => api.get('/leave/my-balance', { params: { year } }),
 };
 
 export const payrollService = {
@@ -122,7 +126,6 @@ export const payrollService = {
   }>) => api.put(`/staff-benefits/${id}`, data),
   deleteBenefit: (id: number) => api.delete(`/staff-benefits/${id}`),
 
-  // Benefit Types CRUD methods
   getBenefitTypes: (params?: {
     active?: boolean;
     taxable?: boolean;
