@@ -127,7 +127,7 @@ export default function AssetTypeList() {
         setPage(1);
     };
 
-    // Sorting Handler - Only Title column is sortable
+    // Sorting Handler - Only Title column is sortable====
     const handleSort = (column: TableColumn<AssetType>, sortDirection: 'asc' | 'desc') => {
         if (column.name === 'Title') {
             setSortField('title');

@@ -211,7 +211,7 @@ export const payrollService = {
 
   deleteWithholdingType: (id: number) => api.delete(`/withholding-types/${id}`),
 
-  getTaxSlabs: () => api.get('/tax-slabs'),
+  getTaxSlabs: (params?: { page?: number; per_page?: number; search?: string; order_by?: string; order?: string }) => api.get('/tax-slabs', { params }),
   calculateTax: (data: Record<string, unknown>) => api.post('/tax-slabs/calculate', data), // Remove 'annual_income' type restriction
   createTaxSlab: (data: Record<string, unknown>) => api.post('/tax-slabs', data),
   updateTaxSlab: (id: number, data: Record<string, unknown>) => api.put(`/tax-slabs/${id}`, data),
