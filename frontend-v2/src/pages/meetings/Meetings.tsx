@@ -115,7 +115,7 @@ export default function Meetings() {
     try {
       const [typesRes, roomsRes] = await Promise.all([
         meetingService.getTypes(),
-        meetingService.getAvailableRooms(),
+        meetingService.getRooms(),
       ]);
 
       if (typesRes.data.success) setMeetingTypes(typesRes.data.data || []);
@@ -224,8 +224,8 @@ export default function Meetings() {
       meeting_type_id: meeting.meeting_type?.id?.toString() || meeting.meeting_type_id?.toString() || '',
       meeting_room_id: meeting.meeting_room?.id?.toString() || meeting.meeting_room_id?.toString() || '',
       date: meeting.date ? new Date(meeting.date).toISOString().split('T')[0] : '',
-      start_time: meeting.start_time || '',
-      end_time: meeting.end_time || '',
+      start_time: meeting.start_time ? meeting.start_time.substring(0, 5) : '',
+      end_time: meeting.end_time ? meeting.end_time.substring(0, 5) : '',
       description: meeting.description || '',
       meeting_link: meeting.meeting_link || '',
       status: meeting.status || 'scheduled',
@@ -348,20 +348,20 @@ export default function Meetings() {
       sortable: true,
       width: '180px',
     },
-{
+    {
 
-   name: 'Time',
+      name: 'Time',
       selector: (row) => row.date,
       cell: (row) => (
-    <div className="flex items-center gap-1.5 mt-0.5">
-            <Clock className="h-3 w-3 text-muted-foreground" />
-            {row.start_time} - {row.end_time}
-          </div>
-            ),
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <Clock className="h-3 w-3 text-muted-foreground" />
+          {row.start_time} - {row.end_time}
+        </div>
+      ),
       sortable: true,
       width: '180px',
 
-},
+    },
     {
       name: 'Meeting Room',
       selector: (row) => row.meeting_room?.name || '',
