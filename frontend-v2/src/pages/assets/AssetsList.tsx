@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { assetService, assetTypeService } from "../../services/api";
+import { showAlert, getErrorMessage } from "../../lib/sweetalert";
 import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -62,7 +63,7 @@ interface Asset {
   status: string;
   current_value?: number;
   // assigned_to?: { full_name: string };
-    // FIX HERE
+  // FIX HERE
   assigned_employee?: {
     id: number;
     full_name: string;
@@ -119,8 +120,10 @@ export default function AssetsList() {
 
       if (editingAsset) {
         await assetService.update(editingAsset.id, payload);
+        showAlert("success", "Updated!", "Asset updated successfully");
       } else {
         await assetService.create(payload);
+        showAlert("success", "Created!", "Asset created successfully");
       }
       setIsDialogOpen(false);
       setEditingAsset(null);
@@ -128,6 +131,8 @@ export default function AssetsList() {
       fetchAssets();
     } catch (error) {
       console.error("Failed to save asset:", error);
+      const msg = getErrorMessage(error, "Failed to save asset");
+      showAlert("error", "Error", msg);
     }
   };
 
@@ -159,9 +164,12 @@ export default function AssetsList() {
     if (!confirm("Are you sure you want to delete this asset?")) return;
     try {
       await assetService.delete(id);
+      showAlert("success", "Deleted!", "Asset deleted successfully");
       fetchAssets();
     } catch (error) {
       console.error("Failed to delete asset:", error);
+      const msg = getErrorMessage(error, "Failed to delete asset");
+      showAlert("error", "Error", msg);
     }
   };
 
@@ -470,11 +478,11 @@ export default function AssetsList() {
                   <p>
                     {viewingAsset.purchase_date
                       ? new Date(viewingAsset.purchase_date)
-                          .toISOString()
-                          .slice(0, 10)
-                          .split("-")
-                          .reverse()
-                          .join("-")
+                        .toISOString()
+                        .slice(0, 10)
+                        .split("-")
+                        .reverse()
+                        .join("-")
                       : "-"}
                   </p>
                 </div>
