@@ -37,7 +37,7 @@ import {
     ChevronRight,
     ClipboardList,
 } from 'lucide-react';
-import { toast } from '../../hooks/use-toast';
+import { showAlert, getErrorMessage } from '../../lib/sweetalert';
 
 interface Asset {
     id: number;
@@ -124,11 +124,8 @@ export default function AssetAssignmentList() {
         } catch (error) {
             console.error('Failed to fetch assignments:', error);
             setAssignments([]);
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: 'Failed to fetch assignments',
-            });
+            const msg = getErrorMessage(error, 'Failed to fetch assignments');
+            showAlert('error', 'Error', msg);
         } finally {
             setIsLoading(false);
         }
@@ -136,17 +133,14 @@ export default function AssetAssignmentList() {
 
     const fetchAvailableAssets = async () => {
         try {
-            const response = await assetService.getAvailable();
+            const response = await assetService.getAll();
             // Assuming response structure is similar to others, but available might be direct array or data key
             const data = response.data.data || response.data;
             setAvailableAssets(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Failed to fetch available assets:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: 'Failed to fetch available assets',
-            });
+            const msg = getErrorMessage(error, 'Failed to fetch available assets');
+            showAlert('error', 'Error', msg);
         }
     };
 
@@ -176,11 +170,7 @@ export default function AssetAssignmentList() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.asset_id || !formData.staff_member_id) {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: 'Please select both an asset and a staff member',
-            });
+            showAlert('error', 'Validation Error', 'Please select both an asset and a staff member');
             return;
         }
 
@@ -191,21 +181,15 @@ export default function AssetAssignmentList() {
                 notes: formData.notes
             });
 
-            toast({
-                title: 'Success',
-                description: 'Asset assigned successfully',
-            });
+            showAlert('success', 'Success', 'Asset assigned successfully', 2000);
 
             setIsDialogOpen(false);
             resetForm();
             fetchAssignments();
         } catch (error) {
             console.error('Failed to assign asset:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: 'Failed to assign asset',
-            });
+            const msg = getErrorMessage(error, 'Failed to assign asset');
+            showAlert('error', 'Error', msg);
         } finally {
             setIsSubmitting(false);
         }

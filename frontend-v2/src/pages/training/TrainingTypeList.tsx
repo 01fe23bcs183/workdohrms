@@ -20,6 +20,7 @@ import {
     MoreHorizontal,
     Plus,
     Search,
+    Eye,
 } from 'lucide-react';
 import {
     DropdownMenu,
@@ -56,6 +57,10 @@ export default function TrainingTypeList() {
         description: '',
         default_duration: '',
     });
+
+    // View Modal State
+    const [viewingType, setViewingType] = useState<TrainingType | null>(null);
+    const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
     const fetchTypes = useCallback(
         async (currentPage: number = 1) => {
@@ -208,6 +213,12 @@ export default function TrainingTypeList() {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => {
+                            setViewingType(row);
+                            setIsViewDialogOpen(true);
+                        }}>
+                            <Eye className="mr-2 h-4 w-4" /> View
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleEdit(row)}>
                             <Edit className="mr-2 h-4 w-4" /> Edit
                         </DropdownMenuItem>
@@ -318,6 +329,52 @@ export default function TrainingTypeList() {
                 </Dialog>
             </div>
 
+            {/* View Training Type Dialog */}
+            <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Training Type Details</DialogTitle>
+                        <DialogDescription>
+                            Details of the training category.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {viewingType && (
+                        <div className="space-y-4 py-4">
+                            <div>
+                                <Label className="text-muted-foreground">Title</Label>
+                                <p className="font-medium text-lg">{viewingType.title}</p>
+                            </div>
+
+                            {viewingType.default_duration && (
+                                <div>
+                                    <Label className="text-muted-foreground">Default Duration</Label>
+                                    <p>{viewingType.default_duration}</p>
+                                </div>
+                            )}
+
+                            {viewingType.description && (
+                                <div>
+                                    <Label className="text-muted-foreground">Description</Label>
+                                    <p className="text-sm mt-1 whitespace-pre-wrap text-solarized-base01">
+                                        {viewingType.description}
+                                    </p>
+                                </div>
+                            )}
+
+                            <div>
+                                <Label className="text-muted-foreground">Created At</Label>
+                                <p className="text-sm">{new Date(viewingType.created_at).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button type="button" onClick={() => setIsViewDialogOpen(false)}>
+                            Close
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <Card>
                 <CardHeader>
                     <form onSubmit={handleSearchSubmit} className="flex gap-4">
@@ -357,6 +414,6 @@ export default function TrainingTypeList() {
                     )}
                 </CardContent>
             </Card>
-        </div>
+        </div >
     );
 }

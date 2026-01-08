@@ -263,14 +263,14 @@ export default function Participants() {
                             <>
                                 <Link to={`/training/participants/${row.id}/edit`}>
                                     <DropdownMenuItem>
-                                        <Edit className="mr-2 h-4 w-4" /> Update
+                                        <Edit className="mr-2 h-4 w-4" /> Edit
                                     </DropdownMenuItem>
                                 </Link>
                                 <DropdownMenuItem
                                     onClick={() => handleDelete(row.id)}
                                     className="text-red-600"
                                 >
-                                    <Trash2 className="mr-2 h-4 w-4" /> Remove
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
                                 </DropdownMenuItem>
                             </>
                         )}
