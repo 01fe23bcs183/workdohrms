@@ -130,7 +130,6 @@ import MyLeaveBalances from './pages/leave/MyLeaveBalances';
 import MyWorkLogs from './pages/attendance/MyWorkLogs';
 import MyAttendanceSummary from './pages/attendance/MyAttendanceSummary';
 import ClockInOutSelf from './pages/attendance/ClockInOutSelf';
-import Goals from './pages/performance/Goals';
 
 function App() {
   return (
@@ -219,10 +218,7 @@ function App() {
             <Route path="/performance/goals" element={<Goals />} />
             <Route path="/performance/competencies" element={<Competencies />} />
             <Route path="/performance/appraisals" element={<Appraisals />} />
-            <Route path="/performance/goals" element={<Goals />} />
 
-            {/* Assets */}
-            <Route path="/assets" element={<AssetsList />} />
             {/* Assets */}
             <Route path="/assets" element={<AssetsList />} />
             <Route path="/assets/assignments" element={<AssetAssignmentList />} />
