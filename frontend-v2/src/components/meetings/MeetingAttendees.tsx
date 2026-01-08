@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { meetingMinuteService, meetingService } from '../../services/api';
+import { meetingAttendeeService, meetingService, staffService } from '../../services/api';
 import { showAlert, showConfirmDialog, getErrorMessage } from '../../lib/sweetalert';
 import {
     Card,
@@ -15,8 +15,8 @@ import {
     MoreHorizontal,
     Edit,
     Trash2,
-    FileText,
-    Clock,
+    Users,
+    UserCheck,
     Eye,
 } from 'lucide-react';
 import {
@@ -35,7 +35,6 @@ import {
 } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { Textarea } from '../../components/ui/textarea';
 import {
     Select,
     SelectContent,
@@ -45,24 +44,26 @@ import {
 } from '../../components/ui/select';
 import DataTable, { TableColumn } from 'react-data-table-component';
 
-interface MeetingMinute {
+interface MeetingAttendee {
     id: number;
     meeting_id: number;
-    content: string;
-    creator?: {
-        id: number;
-        name: string;
-    };
-    created_at: string;
+    staff_member_id: number;
+    status: string;
+    is_organizer: boolean;
     meeting?: {
         id: number;
         title: string;
         date: string;
     };
+    staff_member?: {
+        id: number;
+        full_name: string;
+        last_name: string;
+    };
 }
 
-export default function MeetingMinutes() {
-    const [minutes, setMinutes] = useState<MeetingMinute[]>([]);
+export default function MeetingAttendees() {
+    const [attendees, setAttendees] = useState<MeetingAttendee[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
@@ -71,58 +72,65 @@ export default function MeetingMinutes() {
 
     // Modal State
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [editingMinute, setEditingMinute] = useState<MeetingMinute | null>(null);
+    const [editingAttendee, setEditingAttendee] = useState<MeetingAttendee | null>(null);
     const [meetings, setMeetings] = useState<{ id: number; title: string; date: string }[]>([]);
+    const [employees, setEmployees] = useState<{ id: number; full_name: string; last_name: string }[]>([]);
 
     // View Modal State
-    const [viewingMinute, setViewingMinute] = useState<MeetingMinute | null>(null);
+    const [viewingAttendee, setViewingAttendee] = useState<MeetingAttendee | null>(null);
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
     const [formData, setFormData] = useState({
         meeting_id: '',
-        content: '',
+        staff_member_id: '',
+        status: 'invited',
+        is_organizer: false,
     });
 
     const fetchMetadata = useCallback(async () => {
         try {
-            const [meetingsRes] = await Promise.all([
+            const [meetingsRes, staffRes] = await Promise.all([
                 meetingService.getAll({ per_page: 100 }),
+                staffService.getAll({ per_page: 100 }),
             ]);
             if (meetingsRes.data.success) {
                 setMeetings(meetingsRes.data.data.data || meetingsRes.data.data || []);
+            }
+            if (staffRes.data.success) {
+                setEmployees(staffRes.data.data.data || staffRes.data.data || []);
             }
         } catch (error) {
             console.error('Failed to fetch metadata:', error);
         }
     }, []);
 
-    const fetchMinutes = useCallback(async (currentPage: number = 1) => {
+    const fetchAttendees = useCallback(async (currentPage: number = 1) => {
         setIsLoading(true);
         try {
-            const response = await meetingMinuteService.getAll({
+            const response = await meetingAttendeeService.getAll({
                 page: currentPage,
                 per_page: perPage,
                 search,
             });
             const resData = response.data.data;
             if (Array.isArray(resData)) {
-                setMinutes(resData);
+                setAttendees(resData);
                 setTotalRows(response.data.meta?.total || resData.length);
             } else {
-                setMinutes(resData.data || []);
+                setAttendees(resData.data || []);
                 setTotalRows(resData.total || 0);
             }
         } catch (error) {
-            console.error('Failed to fetch minutes:', error);
-            showAlert('error', 'Error', 'Failed to fetch meeting minutes');
+            console.error('Failed to fetch attendees:', error);
+            showAlert('error', 'Error', 'Failed to fetch meeting attendees');
         } finally {
             setIsLoading(false);
         }
     }, [perPage, search]);
 
     useEffect(() => {
-        fetchMinutes(page);
-    }, [page, fetchMinutes]);
+        fetchAttendees(page);
+    }, [page, fetchAttendees]);
 
     useEffect(() => {
         fetchMetadata();
@@ -132,40 +140,45 @@ export default function MeetingMinutes() {
         e.preventDefault();
         try {
             const payload = {
+                ...formData,
                 meeting_id: Number(formData.meeting_id),
-                content: formData.content,
+                staff_member_id: Number(formData.staff_member_id),
             };
 
-            if (editingMinute) {
-                await meetingMinuteService.update(editingMinute.id, payload);
-                showAlert('success', 'Updated', 'Meeting minute updated successfully');
+            if (editingAttendee) {
+                await meetingAttendeeService.update(editingAttendee.id, payload);
+                showAlert('success', 'Updated', 'Attendee record updated successfully');
             } else {
-                await meetingMinuteService.create(payload);
-                showAlert('success', 'Success', 'Meeting minute recorded successfully');
+                await meetingAttendeeService.create(payload);
+                showAlert('success', 'Success', 'Meeting attendee added successfully');
             }
 
             setIsDialogOpen(false);
             resetForm();
-            fetchMinutes(page);
+            fetchAttendees(page);
         } catch (error) {
-            console.error('Failed to save minute:', error);
-            showAlert('error', 'Error', getErrorMessage(error, 'Failed to save meeting minute'));
+            console.error('Failed to save attendee:', error);
+            showAlert('error', 'Error', getErrorMessage(error, 'Failed to save attendee record'));
         }
     };
 
     const resetForm = () => {
         setFormData({
             meeting_id: '',
-            content: '',
+            staff_member_id: '',
+            status: 'invited',
+            is_organizer: false,
         });
-        setEditingMinute(null);
+        setEditingAttendee(null);
     };
 
-    const handleEdit = (minute: MeetingMinute) => {
-        setEditingMinute(minute);
+    const handleEdit = (attendee: MeetingAttendee) => {
+        setEditingAttendee(attendee);
         setFormData({
-            meeting_id: minute.meeting_id.toString(),
-            content: minute.content,
+            meeting_id: attendee.meeting_id.toString(),
+            staff_member_id: attendee.staff_member_id.toString(),
+            status: attendee.status,
+            is_organizer: attendee.is_organizer,
         });
         setIsDialogOpen(true);
     };
@@ -173,20 +186,49 @@ export default function MeetingMinutes() {
     const handleDelete = async (id: number) => {
         const result = await showConfirmDialog(
             'Are you sure?',
-            'You want to delete this meeting minute?'
+            'You want to remove this attendee record?'
         );
         if (result.isConfirmed) {
             try {
-                await meetingMinuteService.delete(id);
-                showAlert('success', 'Deleted', 'Meeting minute deleted successfully');
-                fetchMinutes(page);
+                await meetingAttendeeService.delete(id);
+                showAlert('success', 'Deleted', 'Attendee record removed successfully');
+                fetchAttendees(page);
             } catch (error) {
-                showAlert('error', 'Error', getErrorMessage(error, 'Failed to delete minute'));
+                showAlert('error', 'Error', getErrorMessage(error, 'Failed to remove attendee'));
             }
         }
     };
 
-    const columns: TableColumn<MeetingMinute>[] = [
+    const getStatusBadge = (status: string) => {
+        const variants: Record<string, string> = {
+            accepted: 'bg-green-100 text-green-700 border-green-200',
+            invited: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+            declined: 'bg-red-100 text-red-700 border-red-200',
+            attended: 'bg-blue-100 text-blue-700 border-blue-200',
+        };
+        return (
+            <Badge variant="outline" className={`${variants[status] || 'bg-gray-100 text-gray-700'}`}>
+                {status.toUpperCase()}
+            </Badge>
+        );
+    };
+
+    const columns: TableColumn<MeetingAttendee>[] = [
+        {
+            name: 'Attendee',
+            selector: (row) => `${row.staff_member?.full_name} ${row.staff_member?.last_name}`,
+            cell: (row) => (
+                <div className="py-2">
+                    <p className="font-medium">{row.staff_member?.full_name} {row.staff_member?.last_name}</p>
+                    {row.is_organizer && (
+                        <Badge variant="secondary" className="text-[10px] mt-1 uppercase bg-purple-100 text-purple-700 border-purple-200">
+                            Organizer
+                        </Badge>
+                    )}
+                </div>
+            ),
+            sortable: true,
+        },
         {
             name: 'Meeting',
             selector: (row) => row.meeting?.title || '',
@@ -198,33 +240,13 @@ export default function MeetingMinutes() {
             ),
             sortable: true,
         },
+
+        
         {
-            name: 'Content',
-            selector: (row) => row.content,
-            cell: (row) => (
-                <p className="max-w-[400px] text-sm text-muted-foreground py-2 leading-relaxed">
-                    {row.content}
-                </p>
-            ),
+            name: 'Status',
+            cell: (row) => getStatusBadge(row.status),
+            width: '150px',
         },
-        // {
-        //     name: 'Recorded By',
-        //     selector: (row) => row.creator?.name || 'System',
-        //     sortable: true,
-        //     width: '180px',
-        // },
-        // {
-        //     name: 'Recorded At',
-        //     selector: (row) => row.created_at,
-        //     cell: (row) => (
-        //         <div className="text-xs">
-        //             <p>{new Date(row.created_at).toLocaleDateString()}</p>
-        //             <p className="text-muted-foreground">{new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-        //         </div>
-        //     ),
-        //     sortable: true,
-        //     width: '130px',
-        // },
         {
             name: 'Action',
             cell: (row) => (
@@ -236,7 +258,7 @@ export default function MeetingMinutes() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => {
-                            setViewingMinute(row);
+                            setViewingAttendee(row);
                             setIsViewDialogOpen(true);
                         }}>
                             <Eye className="mr-2 h-4 w-4" /> View
@@ -261,8 +283,8 @@ export default function MeetingMinutes() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-solarized-base02">Meeting Minutes</h1>
-                    <p className="text-solarized-base01">Track discussions and decisions from meetings</p>
+                    <h1 className="text-2xl font-bold text-solarized-base02">Meeting Attendees</h1>
+                    <p className="text-solarized-base01">Manage and track guest lists for meetings</p>
                 </div>
                 <Button
                     className="bg-solarized-blue hover:bg-solarized-blue/90"
@@ -272,7 +294,7 @@ export default function MeetingMinutes() {
                     }}
                 >
                     <Plus className="mr-2 h-4 w-4" />
-                    Add Minute
+                    Add Attendee
                 </Button>
             </div>
 
@@ -281,10 +303,10 @@ export default function MeetingMinutes() {
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
                             <div className="p-2 bg-blue-50 rounded-lg">
-                                <FileText className="h-5 w-5 text-solarized-blue" />
+                                <Users className="h-5 w-5 text-solarized-blue" />
                             </div>
                             <div>
-                                <p className="text-sm text-muted-foreground">Total Minutes</p>
+                                <p className="text-sm text-muted-foreground">Total Invitations</p>
                                 <p className="text-xl font-bold text-solarized-base02">{totalRows}</p>
                             </div>
                         </div>
@@ -294,12 +316,12 @@ export default function MeetingMinutes() {
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
                             <div className="p-2 bg-green-50 rounded-lg">
-                                <Badge variant="outline" className="h-5 w-5 p-0 flex items-center justify-center border-green-600 text-green-600">D</Badge>
+                                <UserCheck className="h-5 w-5 text-green-600" />
                             </div>
                             <div>
-                                <p className="text-sm text-muted-foreground">Latest Entry</p>
+                                <p className="text-sm text-muted-foreground">Accepted</p>
                                 <p className="text-xl font-bold text-solarized-base02">
-                                    {minutes[0]?.created_at ? new Date(minutes[0].created_at).toLocaleDateString() : 'N/A'}
+                                    {attendees.filter(a => a.status === 'accepted').length}
                                 </p>
                             </div>
                         </div>
@@ -308,13 +330,13 @@ export default function MeetingMinutes() {
                 <Card className="border-0 shadow-sm bg-white">
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-4">
-                            <div className="p-2 bg-orange-50 rounded-lg">
-                                <Clock className="h-5 w-5 text-orange-600" />
+                            <div className="p-2 bg-red-50 rounded-lg">
+                                <Trash2 className="h-5 w-5 text-red-600" />
                             </div>
                             <div>
-                                <p className="text-sm text-muted-foreground">Meetings Covered</p>
+                                <p className="text-sm text-muted-foreground">Declined</p>
                                 <p className="text-xl font-bold text-solarized-base02">
-                                    {new Set(minutes.map(m => m.meeting_id)).size}
+                                    {attendees.filter(a => a.status === 'declined').length}
                                 </p>
                             </div>
                         </div>
@@ -325,10 +347,10 @@ export default function MeetingMinutes() {
             <Card>
                 <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg font-semibold">Discussion Log</CardTitle>
+                        <CardTitle className="text-lg font-semibold">Attendee List</CardTitle>
                         <div className="flex items-center gap-2">
                             <Input
-                                placeholder="Search topics..."
+                                placeholder="Search attendees..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="w-64"
@@ -342,7 +364,7 @@ export default function MeetingMinutes() {
                 <CardContent>
                     <DataTable
                         columns={columns}
-                        data={minutes}
+                        data={attendees}
                         progressPending={isLoading}
                         pagination
                         paginationServer
@@ -355,7 +377,7 @@ export default function MeetingMinutes() {
                         responsive
                         noDataComponent={
                             <div className="p-8 text-center text-muted-foreground">
-                                No meeting minutes recorded yet.
+                                No attendee records found.
                             </div>
                         }
                     />
@@ -365,9 +387,9 @@ export default function MeetingMinutes() {
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>{editingMinute ? 'Edit Minute' : 'Add Meeting Minute'}</DialogTitle>
+                        <DialogTitle>{editingAttendee ? 'Edit Attendee' : 'Add Meeting Attendee'}</DialogTitle>
                         <DialogDescription>
-                            Record a significant point from the meeting.
+                            {editingAttendee ? 'Update the RSVP and attendance status.' : 'Invite a staff member to a meeting.'}
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmit}>
@@ -380,7 +402,7 @@ export default function MeetingMinutes() {
                                     required
                                 >
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select meeting" />
+                                        <SelectValue placeholder="Select objective meeting" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {meetings.map((m) => (
@@ -393,15 +415,53 @@ export default function MeetingMinutes() {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="content">Minute Content *</Label>
-                                <Textarea
-                                    id="content"
-                                    placeholder="Enter meeting notes, decisions, or discussion points..."
-                                    value={formData.content}
-                                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                                    rows={8}
+                                <Label htmlFor="staff_member_id">Employee *</Label>
+                                <Select
+                                    value={formData.staff_member_id}
+                                    onValueChange={(v) => setFormData({ ...formData, staff_member_id: v })}
                                     required
-                                />
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select staff member" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {employees.map((e) => (
+                                            <SelectItem key={e.id} value={e.id.toString()}>
+                                                {e.full_name} {e.last_name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="status">Status</Label>
+                                    <Select
+                                        value={formData.status}
+                                        onValueChange={(v) => setFormData({ ...formData, status: v })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="invited">Invited</SelectItem>
+                                            <SelectItem value="accepted">Accepted</SelectItem>
+                                            <SelectItem value="declined">Declined</SelectItem>
+                                            <SelectItem value="attended">Attended</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex items-center space-x-2 pt-8">
+                                    <input
+                                        type="checkbox"
+                                        id="is_organizer"
+                                        checked={formData.is_organizer}
+                                        onChange={(e) => setFormData({ ...formData, is_organizer: e.target.checked })}
+                                        className="h-4 w-4 rounded border-gray-300 text-solarized-blue focus:ring-solarized-blue"
+                                    />
+                                    <Label htmlFor="is_organizer">Organizer</Label>
+                                </div>
                             </div>
                         </div>
                         <DialogFooter>
@@ -409,7 +469,7 @@ export default function MeetingMinutes() {
                                 Cancel
                             </Button>
                             <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90">
-                                {editingMinute ? 'Save Changes' : 'Record Minute'}
+                                {editingAttendee ? 'Save Changes' : 'Invite Attendee'}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -417,38 +477,42 @@ export default function MeetingMinutes() {
             </Dialog>
 
             <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-                <DialogContent className="max-w-lg">
+                <DialogContent className="max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Meeting Minute Details</DialogTitle>
+                        <DialogTitle>Attendee Details</DialogTitle>
                         <DialogDescription>
-                            Full details of the recorded minute.
+                            Invitation and status details.
                         </DialogDescription>
                     </DialogHeader>
-                    {viewingMinute && (
+                    {viewingAttendee && (
                         <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label className="text-muted-foreground">Name</Label>
+                                    <p className="font-medium text-lg">
+                                        {viewingAttendee.staff_member?.full_name} {viewingAttendee.staff_member?.last_name}
+                                    </p>
+                                </div>
+                                <div>
+                                    <Label className="text-muted-foreground">Status</Label>
+                                    <div className="mt-1">{getStatusBadge(viewingAttendee.status)}</div>
+                                </div>
+                            </div>
+
                             <div className="space-y-1">
                                 <Label className="text-muted-foreground">Meeting</Label>
-                                <p className="font-medium text-lg">{viewingMinute.meeting?.title || 'N/A'}</p>
-                                <p className="text-sm text-solarized-base01">{viewingMinute.meeting?.date}</p>
+                                <p className="font-medium">{viewingAttendee.meeting?.title || 'N/A'}</p>
+                                <p className="text-sm text-solarized-base01">{viewingAttendee.meeting?.date}</p>
                             </div>
 
-                            <div className="space-y-1">
-                                <Label className="text-muted-foreground">Content</Label>
-                                <div className="p-4 bg-muted/50 rounded-lg text-sm leading-relaxed whitespace-pre-wrap">
-                                    {viewingMinute.content}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label className="text-muted-foreground">Role</Label>
+                                    <p className="font-medium">
+                                        {viewingAttendee.is_organizer ? 'Organizer' : 'Participant'}
+                                    </p>
                                 </div>
                             </div>
-
-                            {/* <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label className="text-muted-foreground">Recorded By</Label>
-                                    <p className="font-medium">{viewingMinute.creator?.name || 'System'}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-muted-foreground">Recorded At</Label>
-                                    <p className="font-medium">{new Date(viewingMinute.created_at).toLocaleString()}</p>
-                                </div>
-                            </div> */}
                         </div>
                     )}
                     <DialogFooter>
@@ -458,6 +522,6 @@ export default function MeetingMinutes() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div >
+        </div>
     );
 }

@@ -84,7 +84,9 @@ const navigation: NavItem[] = [
     children: [
       { name: 'Clock In/Out', href: '/attendance/clock' },
       { name: 'Work Logs', href: '/attendance/logs', permission: 'view_attendance' },
+      {name: 'My Work Logs', href: '/attendance/my-logs' },
       { name: 'Summary', href: '/attendance/summary', permission: 'view_attendance' },
+      { name: 'My Summary', href: '/attendance/my-summary', permission: 'view_attendance' },
       { name: 'Shifts', href: '/attendance/shifts', permission: 'edit_attendance' },
     ]
   },
@@ -103,21 +105,21 @@ const navigation: NavItem[] = [
       { name: 'Categories', href: '/leave/categories', permission: 'edit_time_off' },
     ]
   },
-  {
-    name: 'Payroll',
-    href: '/payroll',
-    icon: DollarSign,
-    permission: 'view_payslips',
-    children: [
-      { name: 'Salary Slips', href: '/payroll/slips', permission: 'view_payslips' },
-      { name: 'Generate Payroll', href: '/payroll/generate', permission: 'generate_payslips' },
-      { name: 'Benefit Types', href: '/payroll/benefits/types', permission: 'edit_payslips' },
-      { name: 'Benefits', href: '/payroll/benefits', permission: 'edit_payslips' },
-      { name: 'Deduction Types', href: '/payroll/deductions/types', permission: 'edit_payslips' },
-      { name: 'Deductions', href: '/payroll/deductions', permission: 'edit_payslips' },
-      { name: 'Tax Slabs', href: '/payroll/tax', permission: 'edit_payslips' },
-    ]
-  },
+    {
+      name: 'Payroll',
+      href: '/payroll',
+      icon: DollarSign,
+      children: [
+        { name: 'My Salary Slips', href: '/payroll/my-slips' },
+        { name: 'Salary Slips', href: '/payroll/slips', permission: 'view_payslips' },
+        { name: 'Generate Payroll', href: '/payroll/generate', permission: 'generate_payslips' },
+        { name: 'Benefit Types', href: '/payroll/benefits/types', permission: 'edit_payslips' },
+        { name: 'Benefits', href: '/payroll/benefits', permission: 'edit_payslips' },
+        { name: 'Deduction Types', href: '/payroll/deductions/types', permission: 'edit_payslips' },
+        { name: 'Deductions', href: '/payroll/deductions', permission: 'edit_payslips' },
+        { name: 'Tax Slabs', href: '/payroll/tax', permission: 'edit_payslips' },
+      ]
+    },
   {
     name: 'Recruitment',
     href: '/recruitment',
@@ -183,9 +185,9 @@ const navigation: NavItem[] = [
     href: '/meetings',
     icon: Video,
     children: [
-      // { name: 'All Meetings', href: '/meetings' },
       { name: 'Meeting', href: '/meeting' },
-      { name: 'Meeting Calendar', href: '/meetings/calendar' },
+      { name: 'Meeting Attendees', href: '/meetings/attendees' },
+      // { name: 'Meeting Calendar', href: '/meetings/calendar' },
       { name: 'Meeting Minutes', href: '/meetings/minutes' },
       { name: 'Meeting Action Items', href: '/meetings/action-items' },
       { name: 'Meeting Types', href: '/meetings/types' },

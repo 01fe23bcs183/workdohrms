@@ -35,6 +35,12 @@ import {
     Settings,
     Clock,
     Palette,
+    Eye,
+    Info,
+    Calendar,
+    Layers,
+    CheckCircle2,
+    XCircle,
 } from 'lucide-react';
 
 // UPDATED: List UI aligned with StaffList
@@ -66,6 +72,8 @@ export default function MeetingTypes() {
         color: '#6366f1',
         status: 'active' as 'active' | 'inactive',
     });
+    const [viewingType, setViewingType] = useState<MeetingType | null>(null);
+    const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
     // ================= FETCH TYPES =================
     const fetchTypes = useCallback(
@@ -175,11 +183,18 @@ export default function MeetingTypes() {
 
     // ================= HELPERS =================
     const getStatusBadge = (status: string) => {
-        const variants: Record<string, string> = {
-            active: 'bg-solarized-green/10 text-solarized-green',
-            inactive: 'bg-solarized-base01/10 text-solarized-base01',
+        const variants: Record<string, { class: string; icon: any; label: string }> = {
+            active: { class: 'bg-solarized-green/10 text-solarized-green', icon: CheckCircle2, label: 'Active' },
+            inactive: { class: 'bg-solarized-base01/10 text-solarized-base01', icon: XCircle, label: 'Inactive' },
         };
-        return variants[status] || variants.inactive;
+        const config = variants[status] || variants.inactive;
+        const Icon = config.icon;
+        return (
+            <Badge className={config.class}>
+                <Icon className="h-3 w-3 mr-1" />
+                {config.label}
+            </Badge>
+        );
     };
 
     // ================= TABLE COLUMNS =================
@@ -232,12 +247,8 @@ export default function MeetingTypes() {
         },
         {
             name: 'Status',
-            cell: (row) => (
-                <Badge className={getStatusBadge(row.status)}>
-                    {row.status}
-                </Badge>
-            ),
-            width: '100px',
+            cell: (row) => getStatusBadge(row.status),
+            width: '120px',
         },
         {
             name: 'Meetings',
@@ -259,6 +270,14 @@ export default function MeetingTypes() {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                            onClick={() => {
+                                setViewingType(row);
+                                setIsViewDialogOpen(true);
+                            }}
+                        >
+                              <Eye className="mr-2 h-4 w-4" />  View
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                             onClick={() => {
                                 setEditingType(row);
@@ -373,9 +392,9 @@ export default function MeetingTypes() {
                 <DialogContent className="max-w-md">
                     <DialogHeader>
                         <DialogTitle>{editingType ? 'Edit Meeting Type' : 'Add Meeting Type'}</DialogTitle>
-                        <DialogDescription>
+                        {/* <DialogDescription>
                             Define meeting characteristics like default duration and color code.
-                        </DialogDescription>
+                        </DialogDescription> */}
                     </DialogHeader>
                     <form onSubmit={handleSubmit}>
                         <div className="grid gap-4 py-4">
@@ -462,6 +481,74 @@ export default function MeetingTypes() {
                             </Button>
                         </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* VIEW MEETING TYPE DIALOG */}
+            <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Meeting Type Details</DialogTitle>
+                        <DialogDescription>
+                            Configuration and characteristic details for this meeting category.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {viewingType && (
+                        <div className="grid gap-6 py-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label className="text-muted-foreground">Title</Label>
+                                    <p className="font-medium text-lg">{viewingType.title}</p>
+                                </div>
+                                <div className="text-right">
+                                    <Label className="text-muted-foreground">Status</Label>
+                                    <div className="mt-1">{getStatusBadge(viewingType.status)}</div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label className="text-muted-foreground flex items-center gap-1">
+                                        <Clock className="h-3 w-3" /> Duration
+                                    </Label>
+                                    <p>{viewingType.default_duration} minutes</p>
+                                </div>
+                                <div>
+                                    <Label className="text-muted-foreground flex items-center gap-1">
+                                        <Calendar className="h-3 w-3" /> Usage
+                                    </Label>
+                                    <p>{viewingType.meetings_count || 0} meetings</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <Label className="text-muted-foreground flex items-center gap-1">
+                                    <Palette className="h-3 w-3" /> Display Color
+                                </Label>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <div
+                                        className="w-8 h-8 rounded-md border shadow-sm"
+                                        style={{ backgroundColor: viewingType.color }}
+                                    />
+                                    <span className="font-mono text-sm uppercase">{viewingType.color}</span>
+                                </div>
+                            </div>
+
+                            {viewingType.description && (
+                                <div>
+                                    <Label className="text-muted-foreground">Description</Label>
+                                    <p className="text-sm mt-1 whitespace-pre-wrap text-solarized-base01">
+                                        {viewingType.description}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button type="button" onClick={() => setIsViewDialogOpen(false)}>
+                            Close
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

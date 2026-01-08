@@ -10,7 +10,6 @@ use App\Http\Controllers\Api\Attendance\AttendanceRegularizationController;
 use App\Http\Controllers\Api\Attendance\ExtraHoursRecordController;
 use App\Http\Controllers\Api\Attendance\ShiftController;
 use App\Http\Controllers\Api\Attendance\TimesheetController;
-// Auth Controllers
 use App\Http\Controllers\Api\Attendance\TimesheetProjectController;
 // Attendance Controllers
 use App\Http\Controllers\Api\Attendance\WorkLogController;
@@ -22,6 +21,9 @@ use App\Http\Controllers\Api\Company\MeetingController;
 // Leave Controllers
 use App\Http\Controllers\Api\Company\MeetingRoomController;
 use App\Http\Controllers\Api\Company\MeetingTypeController;
+use App\Http\Controllers\Api\Company\MeetingAttendeeController;
+use App\Http\Controllers\Api\Company\MeetingMinutesController;
+use App\Http\Controllers\Api\Company\MeetingActionItemController;
 // Payroll Controllers
 use App\Http\Controllers\Api\Documents\DocumentCategoryController;
 use App\Http\Controllers\Api\Documents\DocumentLocationController;
@@ -207,6 +209,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('time-off-categories', TimeOffCategoryController::class);
     Route::get('/leave/my-requests', [TimeOffRequestController::class, 'myRequests']);
     Route::apiResource('time-off-requests', TimeOffRequestController::class);
+    Route::post('/time-off-requests/{timeOffRequest}/cancel', [TimeOffRequestController::class, 'cancel']);
     Route::post('/time-off-requests/{timeOffRequest}/process', [TimeOffRequestController::class, 'processApproval']);
     Route::get('/time-off-balance', [TimeOffRequestController::class, 'getBalance']);
     Route::get('/leave/my-balance', [TimeOffRequestController::class, 'myBalance']);
@@ -219,6 +222,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/clock-out', [WorkLogController::class, 'clockOut']);
     Route::post('/work-logs/bulk', [WorkLogController::class, 'bulkStore']);
     Route::get('/attendance-summary', [WorkLogController::class, 'summary']);
+        Route::get('/my-logs', [WorkLogController::class, 'myLogs']); // My Work Logs
+    Route::get('/my-summary', [WorkLogController::class, 'mySummary']);
+    Route::get('/my-monthly-attendance', [WorkLogController::class, 'myMonthlyAttendance']);
 
     // ============================================
     // PROMPT SET 9: Payroll Setup
@@ -445,6 +451,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('meeting-rooms', MeetingRoomController::class);
     Route::get('/meeting-rooms-available', [MeetingRoomController::class, 'available']);
     Route::apiResource('meetings', MeetingController::class);
+    Route::apiResource('meeting-attendees', MeetingAttendeeController::class);
+    Route::apiResource('meeting-minutes', MeetingMinutesController::class);
+    Route::apiResource('meeting-action-items', MeetingActionItemController::class);
     Route::post('/meetings/{meeting}/attendees', [MeetingController::class, 'addAttendees']);
     Route::post('/meetings/{meeting}/start', [MeetingController::class, 'start']);
     Route::post('/meetings/{meeting}/complete', [MeetingController::class, 'complete']);

@@ -10,6 +10,7 @@ import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -43,10 +44,8 @@ import {
     CheckCircle2,
     XCircle,
     AlertCircle,
-    Monitor,
-    Wifi,
-    Cast,
-    Wind,
+    Eye,
+    X,
 } from 'lucide-react';
 
 // UPDATED: List UI aligned with StaffList
@@ -55,6 +54,7 @@ interface MeetingRoom {
     name: string;
     location: string;
     capacity: number;
+    description: string | null;
     equipment: string[];
     status: 'available' | 'occupied' | 'maintenance';
     created_at?: string;
@@ -75,16 +75,14 @@ export default function MeetingRooms() {
         name: '',
         location: '',
         capacity: 10,
+        description: '',
         equipment: [] as string[],
         status: 'available' as 'available' | 'occupied' | 'maintenance',
     });
 
-    const availableEquipment = [
-        { id: 'tv', name: 'Smart TV', icon: Monitor },
-        { id: 'wifi', name: 'High-speed WiFi', icon: Wifi },
-        { id: 'projector', name: 'Projector', icon: Cast },
-        { id: 'ac', name: 'Air Conditioning', icon: Wind },
-    ];
+    const [viewingRoom, setViewingRoom] = useState<MeetingRoom | null>(null);
+    const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+    const [newEquipment, setNewEquipment] = useState('');
 
     // ================= FETCH ROOMS =================
     const fetchRooms = useCallback(
@@ -165,11 +163,23 @@ export default function MeetingRooms() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            // Include any pending equipment that hasn't been "added" yet
+            let finalEquipment = [...formData.equipment];
+            const trimmedNew = newEquipment.trim();
+            if (trimmedNew && !finalEquipment.includes(trimmedNew)) {
+                finalEquipment.push(trimmedNew);
+            }
+
+            const submissionData = {
+                ...formData,
+                equipment: finalEquipment,
+            };
+
             if (editingRoom) {
-                await meetingRoomService.update(editingRoom.id, formData);
+                await meetingRoomService.update(editingRoom.id, submissionData);
                 showAlert('success', 'Updated', 'Meeting room updated successfully');
             } else {
-                await meetingRoomService.create(formData);
+                await meetingRoomService.create(submissionData);
                 showAlert('success', 'Created', 'Meeting room created successfully');
             }
             setIsDialogOpen(false);
@@ -186,10 +196,34 @@ export default function MeetingRooms() {
             name: '',
             location: '',
             capacity: 10,
+            description: '',
             equipment: [],
             status: 'available',
         });
         setEditingRoom(null);
+        setNewEquipment('');
+    };
+
+    // UPDATED: manual equipment input handlers
+    const addEquipment = () => {
+        const trimmed = newEquipment.trim();
+        if (!trimmed) return;
+
+        setFormData(prev => {
+            if (prev.equipment.includes(trimmed)) return prev;
+            return {
+                ...prev,
+                equipment: [...prev.equipment, trimmed]
+            };
+        });
+        setNewEquipment('');
+    };
+
+    const removeEquipment = (item: string) => {
+        setFormData(prev => ({
+            ...prev,
+            equipment: prev.equipment.filter(e => e !== item)
+        }));
     };
 
     // ================= HELPERS =================
@@ -235,6 +269,17 @@ export default function MeetingRooms() {
             width: '180px',
         },
         {
+            name: 'Description',
+            selector: (row) => row.description || '',
+            cell: (row) => (
+                <p className="text-sm text-muted-foreground line-clamp-2 py-2">
+                    {row.description || '-'}
+                </p>
+            ),
+            sortable: true,
+            minWidth: '200px',
+        },
+        {
             name: 'Capacity',
             selector: (row) => row.capacity,
             cell: (row) => (
@@ -250,17 +295,11 @@ export default function MeetingRooms() {
             cell: (row) => (
                 <div className="flex flex-wrap gap-1">
                     {row.equipment && row.equipment.length > 0 ? (
-                        row.equipment.slice(0, 2).map((eqId) => {
-                            const eq = availableEquipment.find(ae => ae.id === eqId);
-                            if (!eq) return null;
-                            const Icon = eq.icon;
-                            return (
-                                <Badge key={eqId} variant="outline" className="text-xs">
-                                    <Icon className="h-3 w-3 mr-1" />
-                                    {eq.name}
-                                </Badge>
-                            );
-                        })
+                        row.equipment.slice(0, 2).map((eq, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs">
+                                {eq}
+                            </Badge>
+                        ))
                     ) : (
                         <span className="text-xs text-muted-foreground">None</span>
                     )}
@@ -290,11 +329,20 @@ export default function MeetingRooms() {
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem
                             onClick={() => {
+                                setViewingRoom(row);
+                                setIsViewDialogOpen(true);
+                            }}
+                        >
+                             <Eye className="mr-2 h-4 w-4" />  View
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={() => {
                                 setEditingRoom(row);
                                 setFormData({
                                     name: row.name,
                                     location: row.location || '',
                                     capacity: row.capacity,
+                                    description: row.description || '',
                                     equipment: row.equipment || [],
                                     status: row.status,
                                 });
@@ -414,7 +462,7 @@ export default function MeetingRooms() {
                                     id="name"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    placeholder="e.g., Boardroom A"
+                                    placeholder="e.g., Webinar Room"
                                     required
                                 />
                             </div>
@@ -459,31 +507,45 @@ export default function MeetingRooms() {
                                 </div>
                             </div>
 
+                            <div className="space-y-2">
+                                <Label htmlFor="description">Description</Label>
+                                <Textarea
+                                    id="description"
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    placeholder="Brief description of the room..."
+                                    rows={3}
+                                />
+                            </div>
+
                             <div className="space-y-3">
-                                <Label>Available Equipment</Label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {availableEquipment.map((eq) => {
-                                        const Icon = eq.icon;
-                                        const isSelected = formData.equipment.includes(eq.id);
-                                        return (
-                                            <div
-                                                key={eq.id}
-                                                className={`flex items-center gap-3 p-2 rounded-lg border transition-all cursor-pointer ${isSelected
-                                                    ? 'border-solarized-blue bg-solarized-blue/5 text-solarized-blue'
-                                                    : 'border-solarized-base2 text-solarized-base01 hover:bg-solarized-base3'
-                                                    }`}
-                                                onClick={() => {
-                                                    const newEquipment = isSelected
-                                                        ? formData.equipment.filter(e => e !== eq.id)
-                                                        : [...formData.equipment, eq.id];
-                                                    setFormData({ ...formData, equipment: newEquipment });
-                                                }}
+                                <Label>Equipment</Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        value={newEquipment}
+                                        onChange={(e) => setNewEquipment(e.target.value)}
+                                        placeholder="Add equipment (e.g., Wifi, TV)"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                addEquipment();
+                                            }
+                                        }}
+                                    />
+                                </div>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {formData.equipment.map((item, index) => (
+                                        <Badge key={index} variant="secondary" className="flex items-center gap-1 pr-1">
+                                            {item}
+                                            <button
+                                                type="button"
+                                                onClick={() => removeEquipment(item)}
+                                                className="hover:bg-muted rounded-full p-0.5"
                                             >
-                                                <Icon className={`h-4 w-4 ${isSelected ? 'text-solarized-blue' : 'text-solarized-base1'}`} />
-                                                <span className="text-sm font-medium">{eq.name}</span>
-                                            </div>
-                                        );
-                                    })}
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </Badge>
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -496,6 +558,76 @@ export default function MeetingRooms() {
                             </Button>
                         </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* VIEW MEETING ROOM DIALOG */}
+            <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Meeting Room Details</DialogTitle>
+                        <DialogDescription>
+                            Detailed information about the selected meeting space.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {viewingRoom && (
+                        <div className="grid gap-6 py-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label className="text-muted-foreground">Room Name</Label>
+                                    <p className="font-medium text-lg">{viewingRoom.name}</p>
+                                </div>
+                                <div className="text-right">
+                                    <Label className="text-muted-foreground">Status</Label>
+                                    <div className="mt-1">{getStatusBadge(viewingRoom.status)}</div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label className="text-muted-foreground flex items-center gap-1">
+                                        <MapPin className="h-3 w-3" /> Location
+                                    </Label>
+                                    <p>{viewingRoom.location || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <Label className="text-muted-foreground flex items-center gap-1">
+                                        <Users className="h-3 w-3" /> Capacity
+                                    </Label>
+                                    <p>{viewingRoom.capacity} people</p>
+                                </div>
+                            </div>
+
+                            {viewingRoom.description && (
+                                <div>
+                                    <Label className="text-muted-foreground">Description</Label>
+                                    <p className="text-sm mt-1 whitespace-pre-wrap text-solarized-base01">
+                                        {viewingRoom.description}
+                                    </p>
+                                </div>
+                            )}
+
+                            <div>
+                                <Label className="text-muted-foreground">Available Equipment</Label>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {viewingRoom.equipment && viewingRoom.equipment.length > 0 ? (
+                                        viewingRoom.equipment.map((item, idx) => (
+                                            <Badge key={idx} variant="outline" className="bg-solarized-base3">
+                                                {item}
+                                            </Badge>
+                                        ))
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground italic">No equipment listed</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button type="button" onClick={() => setIsViewDialogOpen(false)}>
+                            Close
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

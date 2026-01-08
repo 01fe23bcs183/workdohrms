@@ -74,9 +74,27 @@ export const attendanceService = {
   clockOut: (data: Record<string, unknown>) => api.post('/attendance/clock-out', data),
 
   getCurrentStatus: () => api.get('/attendance/current-status'),
-  getWorkLogs: (params?: { staff_member_id?: number; start_date?: string; end_date?: string; page?: number }) =>
-    api.get('/work-logs', { params }),
-  getSummary: (params?: Record<string, unknown>) => api.get('/attendance/summary', { params }),
+  
+  getWorkLogs: (params?: { 
+    staff_member_id?: number; 
+    start_date?: string; 
+    end_date?: string; 
+    page?: number 
+  }) => api.get('/work-logs', { params }),
+  
+  getMyWorkLogs: (params?: { 
+    start_date?: string; 
+    end_date?: string; 
+    page?: number 
+  }) => api.get('/my-logs', { params }),
+  getSummary: (params?: Record<string, unknown>) =>
+    api.get('/attendance-summary', { params }),
+  
+  getMySummary: (params?: Record<string, unknown>) => 
+    api.get('/my-summary', { params }),
+  
+  getMyMonthlyAttendance: (params?: Record<string, unknown>) => 
+    api.get('/my-monthly-attendance', { params }),
   getShifts: () => api.get('/shifts'),
   createShift: (data: Record<string, unknown>) => api.post('/shifts', data),
   updateShift: (id: number, data: Record<string, unknown>) => api.put(`/shifts/${id}`, data),
@@ -91,10 +109,14 @@ export const leaveService = {
   deleteCategory: (id: number) => api.delete(`/time-off-categories/${id}`),
   getRequests: (params?: { status?: string; page?: number }) => api.get('/time-off-requests', { params }),
   createRequest: (data: Record<string, unknown>) => api.post('/time-off-requests', data),
+  getRequestById: (id: number) => api.get(`/time-off-requests/${id}`),
+  updateRequest: (id: number, data: Record<string, unknown>) => api.put(`/time-off-requests/${id}`, data),
+  deleteRequest: (id: number) => api.delete(`/time-off-requests/${id}`),
+  cancelRequest: (id: number) => api.post(`/time-off-requests/${id}/cancel`),
   processRequest: (id: number, data: { action: 'approve' | 'decline'; remarks?: string }) =>
     api.post(`/time-off-requests/${id}/process`, data),
   getBalances: (staffMemberId: number) => api.get(`/time-off-balance`, { params: { staff_member_id: staffMemberId } }),
-  getMyBalances: () => api.get('/leave/my-balances'),
+  getMyBalances: (year?: number) => api.get('/leave/my-balance', { params: { year } }),
 };
 
 export const payrollService = {
@@ -122,7 +144,6 @@ export const payrollService = {
   }>) => api.put(`/staff-benefits/${id}`, data),
   deleteBenefit: (id: number) => api.delete(`/staff-benefits/${id}`),
 
-  // Benefit Types CRUD methods
   getBenefitTypes: (params?: {
     active?: boolean;
     taxable?: boolean;
@@ -479,6 +500,30 @@ export const meetingService = {
   addActionItem: (meetingId: number, data: Record<string, unknown>) => api.post(`/meetings/${meetingId}/action-items`, data),
   getCalendar: () => api.get('/meetings-calendar'),
   getMyMeetings: () => api.get('/my-meetings'),
+};
+
+export const meetingAttendeeService = {
+  getAll: (params?: any) => api.get('/meeting-attendees', { params }),
+  getById: (id: number) => api.get(`/meeting-attendees/${id}`),
+  create: (data: any) => api.post('/meeting-attendees', data),
+  update: (id: number, data: any) => api.put(`/meeting-attendees/${id}`, data),
+  delete: (id: number) => api.delete(`/meeting-attendees/${id}`),
+};
+
+export const meetingMinuteService = {
+  getAll: (params?: any) => api.get('/meeting-minutes', { params }),
+  getById: (id: number) => api.get(`/meeting-minutes/${id}`),
+  create: (data: any) => api.post('/meeting-minutes', data),
+  update: (id: number, data: any) => api.put(`/meeting-minutes/${id}`, data),
+  delete: (id: number) => api.delete(`/meeting-minutes/${id}`),
+};
+
+export const meetingActionItemService = {
+  getAll: (params?: any) => api.get('/meeting-action-items', { params }),
+  getById: (id: number) => api.get(`/meeting-action-items/${id}`),
+  create: (data: any) => api.post('/meeting-action-items', data),
+  update: (id: number, data: any) => api.put(`/meeting-action-items/${id}`, data),
+  delete: (id: number) => api.delete(`/meeting-action-items/${id}`),
 };
 
 export const reportService = {

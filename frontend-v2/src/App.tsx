@@ -25,8 +25,9 @@ import OrganizationList from './pages/organization/OrganizationList';
 import CompanyList from './pages/company/CompanyList';
 
 // Assets
-import AssetTypeList from './pages/assets/AssetTypeList';
+import AssetsList from './pages/assets/AssetsList';
 import AssetAssignmentList from './pages/assets/AssetAssignmentList';
+import AssetTypeList from './pages/assets/AssetTypeList';
 // Documents
 import DocumentTypeList from './pages/documents/DocumentTypeList';
 import DocumentLocationList from './pages/documents/DocumentLocationList';
@@ -46,6 +47,7 @@ import LeaveCategories from './pages/leave/LeaveCategories';
 
 // Payroll
 import SalarySlips from './pages/payroll/SalarySlips';
+import MySalarySlip from './pages/payroll/MySalarySlip';
 import GeneratePayroll from './pages/payroll/GeneratePayroll';
 import Benefits from './pages/payroll/Benefits';
 import Deductions from './pages/payroll/Deductions';
@@ -63,7 +65,8 @@ import ParticipantForm from './pages/training/ParticipantForm';
 import Appraisals from './pages/performance/Appraisals';
 
 // Assets
-import AssetsList from './pages/assets/AssetsList';
+// import AssetsList from './pages/assets/AssetsList';
+// import AssetAssignmentList from './pages/assets/AssetAssignmentList';
 
 // Training
 import Programs from './pages/training/Programs';
@@ -83,7 +86,8 @@ import MeetingCalendar from './pages/meetings/MeetingCalendar';
 import MeetingTypes from './pages/meetings/MeetingTypes';
 import MeetingRooms from './pages/meetings/MeetingRooms';
 import MeetingMinutesPage from './pages/meetings/MeetingMinutesPage';
-// import MeetingActionItemsPage from './pages/meetings/MeetingActionItemsPage';
+import MeetingActionItemsPage from './pages/meetings/MeetingActionItemsPage';
+import MeetingAttendeesPage from './pages/meetings/MeetingAttendeesPage';
 
 
 // ... (existing imports)
@@ -121,6 +125,8 @@ import Unauthorized from './pages/Unauthorized';
 import CompanyNotices from './pages/settings/CompanyNotices';
 import AllLeaveRequests from './pages/leave/AllLeaveRequests';
 import MyLeaveBalances from './pages/leave/MyLeaveBalances';
+import MyWorkLogs from './pages/attendance/MyWorkLogs';
+import MyAttendanceSummary from './pages/attendance/MyAttendanceSummary';
 
 function App() {
   return (
@@ -154,22 +160,25 @@ function App() {
             <Route path="/staff/:id" element={<StaffProfile />} />
             <Route path="/staff/:id/edit" element={<StaffEdit />} />
 
-            {/* Organization */}
-            <Route path="/organizations" element={<OrganizationList />} />
-            <Route path="/companies" element={<CompanyList />} />
+                        {/* Organization */}
+                        <Route path="/organizations" element={<OrganizationList />} />
+                        <Route path="/companies" element={<CompanyList />} />
 
-            {/* Assets */}
-            <Route path="/assets/types" element={<AssetTypeList />} />
+           {/* Assets */}
+            <Route path="/assets" element={<AssetsList />} />
+            <Route path="/assets/assignments" element={<AssetAssignmentList />} />
 
-            {/* Documents */}
-            <Route path="/documents/types" element={<DocumentTypeList />} />
-            <Route path="/documents/locations" element={<DocumentLocationList />} />
+                        {/* Documents */}
+                        <Route path="/documents/types" element={<DocumentTypeList />} />
+                        <Route path="/documents/locations" element={<DocumentLocationList />} />
 
             {/* Attendance */}
             <Route path="/attendance" element={<ClockInOut />} />
             <Route path="/attendance/clock" element={<ClockInOut />} />
             <Route path="/attendance/logs" element={<WorkLogs />} />
+            <Route path="/attendance/my-logs" element={<MyWorkLogs />} />
             <Route path="/attendance/summary" element={<AttendanceSummary />} />
+            <Route path="/attendance/my-summary" element={<MyAttendanceSummary />} />
             <Route path="/attendance/shifts" element={<Shifts />} />
 
             {/* Leave Management */}
@@ -185,6 +194,7 @@ function App() {
             {/* Payroll */}
             <Route path="/payroll" element={<SalarySlips />} />
             <Route path="/payroll/slips" element={<SalarySlips />} />
+            <Route path="/payroll/my-slips" element={<MySalarySlip />} />
             <Route path="/payroll/generate" element={<GeneratePayroll />} />
             <Route path="/payroll/benefits" element={<Benefits />} />
             <Route path="/payroll/benefits/types" element={<BenefitTypes />} />
@@ -210,6 +220,7 @@ function App() {
             {/* Assets */}
             <Route path="/assets" element={<AssetsList />} />
             <Route path="/assets/assignments" element={<AssetAssignmentList />} />
+            <Route path="/assets/types" element={<AssetTypeList />} />
 
             {/* Training */}
             <Route path="/training" element={<Programs />} />
@@ -230,7 +241,8 @@ function App() {
             <Route path="/meeting" element={<Meetings />} />
             <Route path="/meetings/calendar" element={<MeetingCalendar />} />
             <Route path="/meetings/minutes" element={<MeetingMinutesPage />} />
-            {/* <Route path="/meetings/action-items" element={<MeetingActionItemsPage />} /> */}
+            <Route path="/meetings/action-items" element={<MeetingActionItemsPage />} />
+            <Route path="/meetings/attendees" element={<MeetingAttendeesPage />} />
             <Route path="/meetings/types" element={<MeetingTypes />} />
             <Route path="/meetings/rooms" element={<MeetingRooms />} />
 
