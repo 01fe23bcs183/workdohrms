@@ -399,7 +399,7 @@ export default function Meetings() {
               onClick={() => handleDelete(row.id)}
               className="text-red-600"
             >
-              <Trash2 className="mr-2 h-4 w-4" /> Cancel
+              <Trash2 className="mr-2 h-4 w-4" /> Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
