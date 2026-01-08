@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { attendanceService, staffService } from '../../services/api';
 import { showAlert, getErrorMessage } from '../../lib/sweetalert';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
@@ -120,39 +120,85 @@ export default function ClockInOut() {
     }
   }, [isAdminUser]);
 
-  // Fetch current status
-  useEffect(() => {
-    const fetchCurrentStatus = async () => {
-      if (!selectedStaff) return;
-      
-      setIsLoadingStatus(true);
-      try {
-        // Prepare params based on user role
-        const params: Record<string, unknown> = {};
-        
-        // Only include staff_member_id for admin users if they selected someone else
-        if (isAdminUser && selectedStaff) {
-          params.staff_member_id = Number(selectedStaff);
-        }
-        
-        const response = await attendanceService.getCurrentStatus(params);
-        setCurrentStatus(response.data.data);
-      } catch (error) {
-        console.error('Failed to fetch current status:', error);
-        // Set default status
-        setCurrentStatus({
-          status: 'not_clocked_in',
-          clock_in: null,
-          clock_out: null,
-          total_hours: null,
-        });
-      } finally {
-        setIsLoadingStatus(false);
-      }
-    };
+  const fetchCurrentStatus = useCallback(async () => {
+  if (!selectedStaff) return;
+  
+  setIsLoadingStatus(true);
+  try {
+    const params: Record<string, unknown> = {};
     
-    fetchCurrentStatus();
-  }, [selectedStaff, isAdminUser]);
+    if (isAdminUser && selectedStaff) {
+      params.staff_member_id = Number(selectedStaff);
+    } else if (!isAdminUser && currentUser?.staff_member_id) {
+      params.staff_member_id = currentUser.staff_member_id;
+    }
+    
+    console.log('Refreshing status with params:', params);
+    
+    const response = await attendanceService.getCurrentStatus(params);
+    console.log('Refresh response:', response.data);
+    
+    setCurrentStatus(response.data.data);
+  } catch (error) {
+    console.error('Failed to refresh status:', error);
+    setCurrentStatus({
+      status: 'not_clocked_in',
+      clock_in: null,
+      clock_out: null,
+      total_hours: null,
+    });
+  } finally {
+    setIsLoadingStatus(false);
+  }
+}, [selectedStaff, isAdminUser, currentUser]);
+
+// Fetch current status
+useEffect(() => {
+  const fetchCurrentStatus = async () => {
+    // For admin users, wait until staff members are loaded
+    if (isAdminUser && staffMembers.length === 0) return;
+    
+    // For non-admin users, wait until we have current user data
+    if (!isAdminUser && !currentUser?.staff_member_id) return;
+    
+    if (!selectedStaff) return;
+    
+    setIsLoadingStatus(true);
+    try {
+      // Prepare params - always include staff_member_id
+      const params: Record<string, unknown> = {};
+      
+      // For admin users, use selected staff member
+      if (isAdminUser && selectedStaff) {
+        params.staff_member_id = Number(selectedStaff);
+      }
+      // For non-admin users, use their own staff_member_id
+      else if (!isAdminUser && currentUser?.staff_member_id) {
+        params.staff_member_id = currentUser.staff_member_id;
+      }
+      
+      console.log('Fetching status with params:', params); // Debug
+      
+      const response = await attendanceService.getCurrentStatus(params);
+      console.log('Status response:', response.data); // Debug
+      
+      setCurrentStatus(response.data.data);
+    } catch (error) {
+      console.error('Failed to fetch current status:', error);
+      // Set default status
+      setCurrentStatus({
+        status: 'not_clocked_in',
+        clock_in: null,
+        clock_out: null,
+        total_hours: null,
+      });
+    } finally {
+      setIsLoadingStatus(false);
+    }
+  };
+  
+  fetchCurrentStatus();
+}, [selectedStaff, isAdminUser, currentUser, staffMembers.length]); // Added staffMembers.length dependency
 
   // Update current time every second
   useEffect(() => {
@@ -180,73 +226,124 @@ export default function ClockInOut() {
     });
   };
 
-  const formatTimeString = (timeString: string | null) => {
-    if (!timeString) return '--:--';
-    try {
+const formatTimeString = (timeString: string | null | undefined) => {
+  if (!timeString) return '--:--';
+  
+  try {
+    // Check if it's already a valid ISO date string
+    if (timeString.includes('T')) {
       const date = new Date(timeString);
       return date.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
         hour12: true,
       });
-    } catch (error) {
-      return timeString;
     }
-  };
+    
+    // Handle time-only strings (e.g., "06:12:36")
+    // Split the time string
+    const timeParts = timeString.split(':');
+    
+    if (timeParts.length >= 2) {
+      const hours = parseInt(timeParts[0], 10);
+      const minutes = parseInt(timeParts[1], 10);
+      
+      // Create a date object with today's date and the parsed time
+      const today = new Date();
+      today.setHours(hours, minutes, 0, 0);
+      
+      return today.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      });
+    }
+    
+    // If we can't parse it, return the original string
+    return timeString;
+  } catch (error) {
+    console.error('Error formatting time:', error, timeString);
+    return timeString;
+  }
+};
 
-  const handleClockIn = async () => {
-    setIsLoading(true);
-    setMessage(null);
-    try {
-      const data: Record<string, unknown> = {
-        ip_address: ipAddress,
-        location: location || 'Office',
-      };
-      
-      // For admin users, include staff_member_id if selected
-      if (isAdminUser && selectedStaff) {
-        data.staff_member_id = Number(selectedStaff);
-      }
-      
-      const response = await attendanceService.clockIn(data);
-      setCurrentStatus(response.data.data);
-      setMessage({ type: 'success', text: 'Successfully clocked in!' });
-      showAlert('success', 'Success!', 'Successfully clocked in!', 2000);
-    } catch (err: unknown) {
-      const errorMessage = getErrorMessage(err, 'Failed to clock in');
-      setMessage({ type: 'error', text: errorMessage });
-      showAlert('error', 'Error', errorMessage);
-    } finally {
-      setIsLoading(false);
+const handleClockIn = async () => {
+  setIsLoading(true);
+  setMessage(null);
+  try {
+    const data: Record<string, unknown> = {
+      ip_address: ipAddress,
+      location: location || 'Office',
+    };
+    
+    // For admin users, include staff_member_id if selected
+    if (isAdminUser && selectedStaff) {
+      data.staff_member_id = Number(selectedStaff);
     }
-  };
+    
+    console.log('Clock In Data:', data); // Debug
+    
+    const response = await attendanceService.clockIn(data);
+    console.log('Clock In Response:', response.data); // Debug
+    
+    // Immediately update the status
+    setCurrentStatus(response.data.data);
+    setMessage({ type: 'success', text: 'Successfully clocked in!' });
+    showAlert('success', 'Success!', 'Successfully clocked in!', 2000);
+    
+    // Optionally refetch status after a short delay
+    setTimeout(() => {
+      fetchCurrentStatus();
+    }, 500);
+    
+  } catch (err: unknown) {
+    const errorMessage = getErrorMessage(err, 'Failed to clock in');
+    console.error('Clock In Error:', err); // Debug
+    setMessage({ type: 'error', text: errorMessage });
+    showAlert('error', 'Error', errorMessage);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-  const handleClockOut = async () => {
-    setIsLoading(true);
-    setMessage(null);
-    try {
-      const data: Record<string, unknown> = {
-        ip_address: ipAddress,
-        location: location || 'Office',
-      };
-      
-      // For admin users, include staff_member_id if selected
-      if (isAdminUser && selectedStaff) {
-        data.staff_member_id = Number(selectedStaff);
-      }
-      
-      const response = await attendanceService.clockOut(data);
-      setCurrentStatus(response.data.data);
-      setMessage({ type: 'success', text: 'Successfully clocked out!' });
-      showAlert('success', 'Success!', 'Successfully clocked out!', 2000);
-    } catch (err: unknown) {
-      const errorMessage = getErrorMessage(err, 'Failed to clock out');
-      setMessage({ type: 'error', text: errorMessage });
-      showAlert('error', 'Error', errorMessage);
-    } finally {
-      setIsLoading(false);
+const handleClockOut = async () => {
+  setIsLoading(true);
+  setMessage(null);
+  try {
+    const data: Record<string, unknown> = {
+      ip_address: ipAddress,
+      location: location || 'Office',
+    };
+    
+    // For admin users, include staff_member_id if selected
+    if (isAdminUser && selectedStaff) {
+      data.staff_member_id = Number(selectedStaff);
     }
-  };
+    
+    console.log('Clock Out Data:', data); // Debug
+    
+    const response = await attendanceService.clockOut(data);
+    console.log('Clock Out Response:', response.data); // Debug
+    
+    // Immediately update the status
+    setCurrentStatus(response.data.data);
+    setMessage({ type: 'success', text: 'Successfully clocked out!' });
+    showAlert('success', 'Success!', 'Successfully clocked out!', 2000);
+    
+    // Optionally refetch status after a short delay
+    setTimeout(() => {
+      fetchCurrentStatus();
+    }, 500);
+    
+  } catch (err: unknown) {
+    const errorMessage = getErrorMessage(err, 'Failed to clock out');
+    console.error('Clock Out Error:', err); // Debug
+    setMessage({ type: 'error', text: errorMessage });
+    showAlert('error', 'Error', errorMessage);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // Get current staff member name
   const getCurrentStaffName = () => {
@@ -330,7 +427,7 @@ export default function ClockInOut() {
                 />
               </div>
             </div>
-            {selectedStaff && (
+            {/* {selectedStaff && (
               <div className="mt-4 p-3 bg-solarized-base3 rounded-lg">
                 <p className="text-sm text-solarized-base01">Selected Staff:</p>
                 <p className="font-medium text-lg">{getCurrentStaffName()}</p>
@@ -338,7 +435,7 @@ export default function ClockInOut() {
                   <p className="text-sm text-solarized-base01">{getCurrentStaffCode()}</p>
                 )}
               </div>
-            )}
+            )} */}
           </CardContent>
         </Card>
       )}
@@ -393,7 +490,7 @@ export default function ClockInOut() {
                     {currentStatus.status === 'not_clocked_in' && 'Not Clocked In'}
                   </Badge>
                 </div>
-                {currentStatus.clock_in && (
+                {/* {currentStatus.clock_in && (
                   <p className="text-solarized-base01">
                     Clocked in at: <strong>{formatTimeString(currentStatus.clock_in)}</strong>
                   </p>
@@ -407,7 +504,7 @@ export default function ClockInOut() {
                   <p className="text-solarized-base01">
                     Total hours today: <strong>{currentStatus.total_hours.toFixed(2)}h</strong>
                   </p>
-                )}
+                )} */}
               </>
             ) : (
               <p className="text-solarized-base01">
@@ -491,55 +588,6 @@ export default function ClockInOut() {
         </CardContent>
       </Card>
 
-      {/* Additional Information Card */}
-      <Card className="border-0 shadow-md">
-        <CardHeader>
-          <CardTitle>Important Notes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-2 text-sm text-solarized-base01">
-            {isAdminUser ? (
-              <>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-solarized-green mt-0.5 flex-shrink-0" />
-                  <span>Select a staff member from the dropdown to clock in/out for them.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 text-solarized-yellow mt-0.5 flex-shrink-0" />
-                  <span>You can optionally specify the location where the staff member is working.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 text-solarized-orange mt-0.5 flex-shrink-0" />
-                  <span>The system will track IP address and time automatically.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Users className="h-4 w-4 text-solarized-blue mt-0.5 flex-shrink-0" />
-                  <span>Use this feature to help staff who forgot to clock in/out or for remote teams.</span>
-                </li>
-              </>
-            ) : (
-              <>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-solarized-green mt-0.5 flex-shrink-0" />
-                  <span>Please clock in when you start work and clock out when you finish.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 text-solarized-yellow mt-0.5 flex-shrink-0" />
-                  <span>Late clock-ins will be automatically recorded as late attendance.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 text-solarized-orange mt-0.5 flex-shrink-0" />
-                  <span>If you forget to clock out, please inform your manager to update your record.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Calendar className="h-4 w-4 text-solarized-blue mt-0.5 flex-shrink-0" />
-                  <span>View your complete attendance history in the "Work Logs" section.</span>
-                </li>
-              </>
-            )}
-          </ul>
-        </CardContent>
-      </Card>
     </div>
   );
 }
