@@ -7,7 +7,7 @@ import { Label } from '../../components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../components/ui/card';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { toast } from '../../hooks/use-toast';
+import { showAlert, getErrorMessage } from '../../lib/sweetalert';
 
 interface FieldErrors {
   email?: string;
@@ -41,11 +41,7 @@ export default function Login() {
     setFieldErrors(errors);
 
     if (Object.keys(errors).length > 0) {
-      toast({
-        variant: 'destructive',
-        title: 'Validation Error',
-        description: 'Please fix the errors in the form',
-      });
+      showAlert('warning', 'Validation Error', 'Please fix the errors in the form');
       return false;
     }
 
@@ -65,10 +61,17 @@ export default function Login() {
 
     try {
       await login(email, password);
-      navigate('/dashboard');
+
+      // Show success alert with backend message
+      showAlert('success', 'Login Successful', 'Welcome back! You have been logged in successfully.', 2000);
+
+      // Navigate after showing the alert
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 2000);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
-      const errorMessage = error.response?.data?.message || 'Invalid credentials. Please try again.';
+      const errorMessage = getErrorMessage(error, 'Invalid credentials. Please try again.');
 
       if (error.response?.data?.errors) {
         const apiErrors: FieldErrors = {};
@@ -79,11 +82,9 @@ export default function Login() {
       }
 
       setError(errorMessage);
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: errorMessage,
-      });
+
+      // Show error alert with backend message
+      showAlert('error', 'Login Failed', errorMessage);
     } finally {
       setIsLoading(false);
     }
