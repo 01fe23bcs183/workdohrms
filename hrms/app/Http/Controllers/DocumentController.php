@@ -268,48 +268,62 @@ class DocumentController extends Controller
 
 
     /**
- * View document in browser (INLINE)
- */
-public function view($id)
-{
-    $user = auth()->user();
+     * View document in browser (INLINE)
+     * Note: This route is public (withoutMiddleware auth:sanctum)
+     * So we fetch document directly by ID without org/company filtering
+     */
+    public function view($id)
+    {
+        // Since this is a public route, don't filter by org_id/company_id
+        // Just fetch the document by ID with its relationships
+        $document = Document::with('location')->find($id);
 
-    $filters = [
-        'org_id' => $user->org_id ?? null,
-        'company_id' => $user->company_id ?? null,
-    ];
-
-    $document = $this->documentService->getDocument($id, $filters);
-
-    if (!$document) {
-        abort(404);
-    }
-
-    $storageType = $document->location->location_type;
-
-    // LOCAL STORAGE → stream inline
-    if ($storageType === 1) {
-        $path = storage_path('app/' . $document->file_path);
-
-        if (!file_exists($path)) {
-            abort(404);
+        if (!$document) {
+            abort(404, 'Document not found');
         }
 
-        return response()->file($path, [
-            'Content-Type' => $document->mime_type,
-            'Content-Disposition' => 'inline; filename="' . $document->document_name . '"',
-        ]);
-    }
+        $storageType = $document->location->location_type ?? null;
 
-    // S3 / WASABI → redirect
-    if (in_array($storageType, [2, 3])) {
-        return redirect()->away(
-            $this->documentService->getDocumentUrl($document)
-        );
-    }
+        // LOCAL STORAGE → stream inline
+        if ($storageType === 1) {
+            // Use doc_url field (the correct field name from the model)
+            $filePath = $document->doc_url;
+            
+            if (empty($filePath)) {
+                abort(404, 'File path not found');
+            }
+            
+            // Check if path is for public disk (starts with public/) or app disk
+            if (str_starts_with($filePath, 'public/')) {
+                $path = storage_path('app/' . $filePath);
+            } else {
+                // Try public disk first
+                $path = storage_path('app/public/' . $filePath);
+                if (!file_exists($path)) {
+                    // Fall back to app disk
+                    $path = storage_path('app/' . $filePath);
+                }
+            }
 
-    abort(400);
-}
+            if (!file_exists($path)) {
+                abort(404, 'File does not exist: ' . $filePath);
+            }
+
+            return response()->file($path, [
+                'Content-Type' => $document->mime_type,
+                'Content-Disposition' => 'inline; filename="' . $document->document_name . '"',
+            ]);
+        }
+
+        // S3 / WASABI → redirect
+        if (in_array($storageType, [2, 3])) {
+            return redirect()->away(
+                $this->documentService->getDocumentUrl($document)
+            );
+        }
+
+        abort(400, 'Unsupported storage type');
+    }
 
 /**
  * Convert bytes into human readable format

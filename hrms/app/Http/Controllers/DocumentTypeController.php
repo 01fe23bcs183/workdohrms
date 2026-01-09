@@ -26,12 +26,16 @@ class DocumentTypeController extends Controller
     {
         try {
             $types = $this->documentTypeService->getAllDocumentTypes($request->all());
-            return response()->json(['success' => true, 'data' => $types->items(), 'meta' => [
-                'current_page' => $types->currentPage(),
-                'per_page' => $types->perPage(),
-                'total' => $types->total(),
-                'total_pages' => $types->lastPage(),
-            ]]);
+            return response()->json([
+                'success' => true,
+                'data' => $types->items(),
+                'meta' => [
+                    'current_page' => $types->currentPage(),
+                    'per_page' => $types->perPage(),
+                    'total' => $types->total(),
+                    'total_pages' => $types->lastPage(),
+                ]
+            ]);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
@@ -45,7 +49,7 @@ class DocumentTypeController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255|unique:document_types,title',
             'notes' => 'nullable|string',
-            'owner_type' => ['required', new Enum(DocumentOwnerType::class)], // Validates against 'employee', 'company', etc.
+            'owner_type' => ['nullable', new Enum(DocumentOwnerType::class)], // Validates against 'employee', 'company', etc.
             'is_active' => 'boolean'
         ]);
 
@@ -68,7 +72,8 @@ class DocumentTypeController extends Controller
     {
         try {
             $type = $this->documentTypeService->getDocumentType($id);
-            if (!$type) return response()->json(['success' => false, 'message' => 'Not Found'], 404);
+            if (!$type)
+                return response()->json(['success' => false, 'message' => 'Not Found'], 404);
             return response()->json(['success' => true, 'data' => $type]);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -81,7 +86,7 @@ class DocumentTypeController extends Controller
     public function update(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'title' => 'sometimes|string|max:255|unique:document_types,title,'.$id,
+            'title' => 'sometimes|string|max:255|unique:document_types,title,' . $id,
             'notes' => 'nullable|string',
             'owner_type' => ['sometimes', new Enum(DocumentOwnerType::class)],
             'is_active' => 'boolean'
@@ -93,7 +98,7 @@ class DocumentTypeController extends Controller
 
         try {
             $type = $this->documentTypeService->updateDocumentType($id, $request->all());
-             return response()->json(['success' => true, 'message' => 'Updated successfully', 'data' => $type]);
+            return response()->json(['success' => true, 'message' => 'Updated successfully', 'data' => $type]);
         } catch (Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }

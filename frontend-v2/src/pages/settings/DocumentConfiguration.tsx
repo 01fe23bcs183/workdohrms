@@ -217,50 +217,83 @@ export default function DocumentConfiguration() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!currentStorage || loadingTypes.has(currentStorage.type)) return;
-        if (!user?.org_id || !user?.company_id || !currentStorage) return;
+
+        // Debug logging
+        console.log('handleSubmit triggered');
+        console.log('currentStorage:', currentStorage);
+        console.log('user:', user);
+        console.log('formData:', formData);
+
+        // Validation with user feedback
+        if (!currentStorage) {
+            showAlert('error', 'Error', 'Please select a storage type first');
+            return;
+        }
+
+        if (loadingTypes.has(currentStorage.type)) {
+            console.log('Already loading, skipping duplicate submission');
+            return;
+        }
+
+        if (!user?.org_id || !user?.company_id) {
+            showAlert('error', 'Error', 'Organization or Company not found. Please ensure you are logged in properly.');
+            console.error('Missing org_id or company_id:', { org_id: user?.org_id, company_id: user?.company_id });
+            return;
+        }
 
         setLoadingTypes(prev => new Set(prev).add(currentStorage.type));
         try {
             let locationId: number;
             const existingLoc = locations.find(loc => loc.location_type === currentStorage.id);
 
+            console.log('existingLoc:', existingLoc);
+
             if (existingLoc) {
                 locationId = existingLoc.id;
 
                 if (existingLoc.config && existingLoc.config.id) {
+                    // UPDATE existing config
                     const configId = existingLoc.config.id;
-                    const configData = { ...formData, location_id: locationId, is_active: true }; // Ensure updated as active
+                    const configData = { ...formData, location_id: locationId, is_active: true };
+                    console.log('Updating config:', { configId, configData, type: currentStorage.type });
+
                     if (currentStorage.type === 'local') await documentConfigService.updateLocal(configId, configData);
                     else if (currentStorage.type === 'wasabi') await documentConfigService.updateWasabi(configId, configData);
                     else if (currentStorage.type === 'aws') await documentConfigService.updateAws(configId, configData);
                 } else {
-                    const configData = { ...formData, location_id: locationId, is_active: true }; // Ensure created as active
+                    // CREATE new config for existing location
+                    const configData = { ...formData, location_id: locationId, is_active: true };
+                    console.log('Creating config for existing location:', { locationId, configData, type: currentStorage.type });
+
                     if (currentStorage.type === 'local') await documentConfigService.createLocal(configData);
                     else if (currentStorage.type === 'wasabi') await documentConfigService.createWasabi(configData);
                     else if (currentStorage.type === 'aws') await documentConfigService.createAws(configData);
                 }
             } else {
-                // 1. Create Location
+                // 1. Create Location first
+                console.log('Creating new location:', { location_type: currentStorage.id, org_id: user.org_id, company_id: user.company_id });
                 const locResponse = await documentLocationService.create({
                     location_type: currentStorage.id,
                     org_id: user.org_id,
                     company_id: user.company_id,
                 });
                 locationId = locResponse.data.data.id;
+                console.log('Location created with ID:', locationId);
 
                 // 2. Create specific config
-                const configData = { ...formData, location_id: locationId, is_active: true }; // Ensure created as active
+                const configData = { ...formData, location_id: locationId, is_active: true };
+                console.log('Creating config:', { configData, type: currentStorage.type });
+
                 if (currentStorage.type === 'local') await documentConfigService.createLocal(configData);
                 else if (currentStorage.type === 'wasabi') await documentConfigService.createWasabi(configData);
                 else if (currentStorage.type === 'aws') await documentConfigService.createAws(configData);
             }
 
-            showAlert('success', 'Success!', 'Detailed configuration saved successfully', 2000);
+            showAlert('success', 'Success!', 'Configuration saved successfully', 2000);
             fetchLocations();
         } catch (error: unknown) {
             console.error('Failed to save config:', error);
-            showAlert('error', 'Error', getErrorMessage(error, 'Failed to save detailed configuration'));
+            showAlert('error', 'Error', getErrorMessage(error, 'Failed to save configuration'));
         } finally {
             if (currentStorage) {
                 setLoadingTypes(prev => {
