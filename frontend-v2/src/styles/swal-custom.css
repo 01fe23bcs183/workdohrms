@@ -52,6 +52,16 @@
   color: #b58900 !important;
 }
 
+/* Question Icon */
+.swal2-icon.swal2-question {
+  border-color: #268bd2 !important;
+  color: #268bd2 !important;
+}
+
+.swal2-icon.swal2-question [class^='swal2-question-mark'] {
+  color: #268bd2 !important;
+}
+
 /* Buttons */
 .swal2-confirm {
   background-color: #268bd2 !important;

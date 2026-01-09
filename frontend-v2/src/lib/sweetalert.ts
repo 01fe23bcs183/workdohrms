@@ -61,6 +61,24 @@ export const showConfirmDialog = async (
   });
 };
 
+export const showLogoutDialog = async () => {
+  return Swal.fire({
+    title: 'Logout',
+    text: 'Are you sure you want to logout?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#dc322f',
+    cancelButtonColor: '#268bd2',
+    confirmButtonText: 'Yes, logout',
+    cancelButtonText: 'Cancel',
+    customClass: {
+      popup: 'swal-solarized',
+      title: 'swal-title',
+      htmlContainer: 'swal-text',
+    },
+  });
+};
+
 export const getErrorMessage = (error: unknown, fallbackMessage: string): string => {
   if (error && typeof error === "object" && "response" in error) {
     const axiosError = error as { response?: { data?: { message?: string } } };

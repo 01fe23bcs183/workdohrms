@@ -17,13 +17,6 @@ import {
     DialogTrigger,
 } from '../../components/ui/dialog';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '../../components/ui/select';
-import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -38,8 +31,6 @@ import {
     Trash2,
     FileText,
     Eye,
-    Calendar,
-    User,
 } from 'lucide-react';
 import DataTable, { TableColumn } from 'react-data-table-component';
 
@@ -47,17 +38,10 @@ interface DocumentType {
     id: number;
     title: string;
     notes: string;
-    owner_type: string;
     is_active: boolean;
     created_at?: string;
     updated_at?: string;
 }
-
-const OWNER_TYPES = [
-    { value: 'employee', label: 'Employee' },
-    { value: 'company', label: 'Company' },
-    { value: 'accountant', label: 'Accountant' },
-];
 
 export default function DocumentTypeList() {
     const [documentTypes, setDocumentTypes] = useState<DocumentType[]>([]);
@@ -78,7 +62,6 @@ export default function DocumentTypeList() {
     const [formData, setFormData] = useState({
         title: '',
         notes: '',
-        owner_type: '',
         is_active: true,
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -165,7 +148,6 @@ export default function DocumentTypeList() {
             setFormData({
                 title: documentType.title,
                 notes: documentType.notes || '',
-                owner_type: documentType.owner_type,
                 is_active: documentType.is_active,
             });
             setIsDialogOpen(true);
@@ -189,7 +171,6 @@ export default function DocumentTypeList() {
         setFormData({
             title: '',
             notes: '',
-            owner_type: '',
             is_active: true,
         });
         setEditingDocumentType(null);
@@ -342,24 +323,6 @@ export default function DocumentTypeList() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="owner_type">Owner Type *</Label>
-                                    <Select
-                                        value={formData.owner_type}
-                                        onValueChange={(value) => setFormData({ ...formData, owner_type: value })}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select owner type" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {OWNER_TYPES.map((type) => (
-                                                <SelectItem key={type.value} value={type.value}>
-                                                    {type.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
                                     <Label htmlFor="notes">Notes</Label>
                                     <Textarea
                                         id="notes"
@@ -407,14 +370,6 @@ export default function DocumentTypeList() {
                                                                                 <div className="space-y-2">
                                                                                     <Label className="text-sm text-muted-foreground">Title</Label>
                                                                                     <p className="text-lg font-semibold">{viewingDocumentType.title}</p>
-                                                                                </div>
-                                                                                <div className="space-y-2">
-                                                                                    <Label className="text-sm text-muted-foreground flex items-center gap-1">
-                                                                                        <User className="h-4 w-4" /> Owner Type
-                                                                                    </Label>
-                                                                                    <Badge variant="secondary">
-                                                                                        {OWNER_TYPES.find(t => t.value === viewingDocumentType.owner_type)?.label || viewingDocumentType.owner_type}
-                                                                                    </Badge>
                                                                                 </div>
                                                                                 <div className="space-y-2">
                                                                                     <Label className="text-sm text-muted-foreground">Notes</Label>

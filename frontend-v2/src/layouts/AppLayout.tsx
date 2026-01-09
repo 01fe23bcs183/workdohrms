@@ -32,6 +32,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
+import { showAlert, showLogoutDialog } from '../lib/sweetalert';
 
 interface NavItem {
   name: string;
@@ -300,8 +301,20 @@ export default function AppLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+    // Show confirmation dialog
+    const result = await showLogoutDialog();
+
+    if (result.isConfirmed) {
+      await logout();
+
+      // Show success message
+      showAlert('success', 'Logged Out', 'You have been logged out successfully.', 2000);
+
+      // Navigate after showing the alert
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+    }
   };
 
   return (
