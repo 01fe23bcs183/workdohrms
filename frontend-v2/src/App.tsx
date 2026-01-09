@@ -176,34 +176,98 @@ function App() {
             <Route path="/documents/locations" element={<DocumentLocationList />} />
 
             {/* Attendance */}
-            <Route path="/attendance" element={<ClockInOut />} />
+            <Route path="/attendance" element={
+              <ProtectedRoute requiredPermission="view_attendance">
+                <ClockInOut />
+              </ProtectedRoute>
+            } />
             <Route path="/attendance/self" element={<ClockInOutSelf />} />
-            <Route path="/attendance/logs" element={<WorkLogs />} />
+            <Route path="/attendance/logs" element={
+              <ProtectedRoute requiredPermission="view_attendance">
+                <WorkLogs />
+              </ProtectedRoute>
+            } />
             <Route path="/attendance/my-logs" element={<MyWorkLogs />} />
-            <Route path="/attendance/summary" element={<AttendanceSummary />} />
+            <Route path="/attendance/summary" element={
+              <ProtectedRoute requiredPermission="view_attendance">
+                <AttendanceSummary />
+              </ProtectedRoute>
+            } />
             <Route path="/attendance/my-summary" element={<MyAttendanceSummary />} />
-            <Route path="/attendance/shifts" element={<Shifts />} />
+            <Route path="/attendance/shifts" element={
+              <ProtectedRoute requiredPermission="view_attendance">
+                <Shifts />
+              </ProtectedRoute>
+            } />
 
             {/* Leave Management */}
             <Route path="/leave" element={<LeaveRequests />} />
             <Route path="/leave/requests" element={<LeaveRequests />} />
-            <Route path="/leave/all-requests" element={<AllLeaveRequests />} />
+            <Route path="/leave/all-requests" element={
+              <ProtectedRoute requiredPermission="view_all_time_off">
+                <AllLeaveRequests />
+              </ProtectedRoute>
+            } />
             <Route path="/leave/apply" element={<LeaveApply />} />
-            <Route path="/leave/approvals" element={<LeaveApprovals />} />
-            <Route path="/leave/balances" element={<LeaveBalances />} />
+            <Route path="/leave/approvals" element={
+              <ProtectedRoute requiredPermission="approve_time_off">
+                <LeaveApprovals />
+              </ProtectedRoute>
+            } />
+            <Route path="/leave/balances" element={
+              <ProtectedRoute requiredPermission="view_time_off">
+                <LeaveBalances />
+              </ProtectedRoute>
+            } />
             <Route path="/leave/my-balances" element={<MyLeaveBalances />} />
-            <Route path="/leave/categories" element={<LeaveCategories />} />
+            <Route path="/leave/categories" element={
+              <ProtectedRoute requiredPermission="manage_time_off_categories">
+                <LeaveCategories />
+              </ProtectedRoute>
+            } />
 
             {/* Payroll */}
-            <Route path="/payroll" element={<SalarySlips />} />
-            <Route path="/payroll/slips" element={<SalarySlips />} />
+            <Route path="/payroll" element={
+              <ProtectedRoute requiredPermission="view_payslips">
+                <SalarySlips />
+              </ProtectedRoute>
+            } />
+            <Route path="/payroll/slips" element={
+              <ProtectedRoute requiredPermission="view_payslips">
+                <SalarySlips />
+              </ProtectedRoute>
+            } />
             <Route path="/payroll/my-slips" element={<MySalarySlip />} />
-            <Route path="/payroll/generate" element={<GeneratePayroll />} />
-            <Route path="/payroll/benefits" element={<Benefits />} />
-            <Route path="/payroll/benefits/types" element={<BenefitTypes />} />
-            <Route path="/payroll/deductions" element={<Deductions />} />
-            <Route path="/payroll/deductions/types" element={<WithholdingTypes />} />
-            <Route path="/payroll/tax" element={<TaxSlabs />} />
+            <Route path="/payroll/generate" element={
+              <ProtectedRoute requiredPermission="generate_payslips">
+                <GeneratePayroll />
+              </ProtectedRoute>
+            } />
+            <Route path="/payroll/benefits" element={
+              <ProtectedRoute requiredPermission="view_benefits">
+                <Benefits />
+              </ProtectedRoute>
+            } />
+            <Route path="/payroll/benefits/types" element={
+              <ProtectedRoute requiredPermission="view_benefits">
+                <BenefitTypes />
+              </ProtectedRoute>
+            } />
+            <Route path="/payroll/deductions" element={
+              <ProtectedRoute requiredPermission="view_benefits">
+                <Deductions />
+              </ProtectedRoute>
+            } />
+            <Route path="/payroll/deductions/types" element={
+              <ProtectedRoute requiredPermission="view_benefits">
+                <WithholdingTypes />
+              </ProtectedRoute>
+            } />
+            <Route path="/payroll/tax" element={
+              <ProtectedRoute requiredPermission="view_benefits">
+                <TaxSlabs />
+              </ProtectedRoute>
+            } />
 
             {/* Recruitment */}
             <Route path="/recruitment/job/categories" element={<JobCategories />} />

@@ -344,12 +344,13 @@ class AccessSeeder extends Seeder
         // USER: Self-service only
         $userRole = Role::findByName('user');
         $userRole->syncPermissions([
-            // Leave (view own, create own)
-            'view_time_off', 'create_time_off',
-            // Attendance (view own)
-            'view_attendance',
-            // Payroll (view own payslips)
-            'view_payslips',
+            // Leave (create own only - no view access to all leave/balances)
+            // Note: 'view_time_off' REMOVED to prevent access to all leave requests and balances
+            'create_time_off',
+            // Attendance (view own only - no access to view all staff attendance)
+            // Note: 'view_attendance' permission REMOVED to prevent access to admin attendance pages
+            // Payroll (view own payslips only - no access to view all staff payslips)
+            // Note: 'view_payslips' permission REMOVED to prevent access to admin payroll pages
             // Announcements (view)
             'view_announcements',
         ]);
