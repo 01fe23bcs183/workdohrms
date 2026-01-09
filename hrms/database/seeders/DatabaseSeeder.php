@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]
         );
-        $admin->assignRole('administrator');
+        $admin->assignRole('admin');
 
         // Create HR Manager user
         $hrManager = User::firstOrCreate(
@@ -36,7 +36,7 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]
         );
-        $hrManager->assignRole('hr_officer');
+        $hrManager->assignRole('hr');
 
         // Create Department Head / Manager user
         $manager = User::firstOrCreate(
@@ -47,7 +47,7 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]
         );
-        $manager->assignRole('manager');
+        $manager->assignRole('company');
 
         // Create Accountant user
         $accountant = User::firstOrCreate(
@@ -58,7 +58,7 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]
         );
-        $accountant->assignRole('staff_member');
+        $accountant->assignRole('user');
 
         // Create Employee user
         $employee = User::firstOrCreate(
@@ -69,6 +69,6 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]
         );
-        $employee->assignRole('staff_member');
+        $employee->assignRole('user');
     }
 }

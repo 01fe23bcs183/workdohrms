@@ -82,7 +82,7 @@ class StaffMemberService extends BaseService
                 'password' => Hash::make($data['password'] ?? 'password123'),
                 'is_active' => true,
             ]);
-            $user->assignRole('staff_member');
+            $user->assignRole('user');
 
             // Prepare staff member data
             $staffData = collect($data)->except(['email', 'password'])->toArray();

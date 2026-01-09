@@ -52,7 +52,7 @@ class DataImportService
                             'password' => Hash::make($row['password'] ?? 'password123'),
                             'is_active' => true,
                         ]);
-                        $user->assignRole('staff_member');
+                        $user->assignRole('user');
                     }
 
                     $staffMemberData = [

@@ -24,7 +24,7 @@ class StaffMemberTest extends TestCase
         $this->artisan('db:seed', ['--class' => 'Database\\Seeders\\AccessSeeder']);
 
         $this->user = User::factory()->create();
-        $this->user->assignRole('administrator');
+        $this->user->assignRole('admin');
         $this->token = $this->user->createToken('test-token')->plainTextToken;
     }
 

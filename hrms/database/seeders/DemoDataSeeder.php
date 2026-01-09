@@ -98,28 +98,28 @@ class DemoDataSeeder extends Seeder
             [
                 'name' => 'Admin User',
                 'email' => 'admin@hrms.local',
-                'role' => 'administrator',
+                'role' => 'admin',
                 'staff_code' => 'EMP001',
                 'base_salary' => 120000,
             ],
             [
                 'name' => 'HR Officer',
                 'email' => 'hr@hrms.local',
-                'role' => 'hr_officer',
+                'role' => 'hr',
                 'staff_code' => 'EMP002',
                 'base_salary' => 85000,
             ],
             [
                 'name' => 'Manager User',
                 'email' => 'manager@hrms.local',
-                'role' => 'manager',
+                'role' => 'company',
                 'staff_code' => 'EMP003',
                 'base_salary' => 95000,
             ],
             [
                 'name' => 'Staff User',
                 'email' => 'staff@hrms.local',
-                'role' => 'staff_member',
+                'role' => 'user',
                 'staff_code' => 'EMP004',
                 'base_salary' => 55000,
             ],
@@ -173,8 +173,8 @@ class DemoDataSeeder extends Seeder
                     'password' => Hash::make('password'),
                 ]
             );
-            if (! $user->hasRole('staff_member')) {
-                $user->assignRole('staff_member');
+            if (! $user->hasRole('user')) {
+                $user->assignRole('user');
             }
 
             StaffMember::firstOrCreate(

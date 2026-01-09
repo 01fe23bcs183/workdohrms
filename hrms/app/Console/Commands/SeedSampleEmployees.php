@@ -58,7 +58,7 @@ class SeedSampleEmployees extends Command
                     'password' => Hash::make('password'),
                     'is_active' => true,
                 ]);
-                $user->assignRole('staff_member');
+                $user->assignRole('user');
             }
 
             // Check if staff member already exists for this user
