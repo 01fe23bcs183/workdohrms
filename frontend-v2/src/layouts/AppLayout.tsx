@@ -59,6 +59,7 @@ const navigation: NavItem[] = [
     name: 'Documents',
     href: '/documents',
     icon: FileText,
+    permission: 'view_documents',
     children: [
       { name: 'Document Types', href: '/documents/types' },
       // { name: 'Document Locations', href: '/documents/locations' },
@@ -79,47 +80,48 @@ const navigation: NavItem[] = [
   },
   {
     name: 'Attendance',
-    href: '/attendance',
+    href: '/attendance/self',
     icon: Clock,
-    permission: 'view_attendance',
     children: [
-      { name: 'Clock In/Out', href: '/attendance' },
       { name: 'Clock In/Out (Self)', href: '/attendance/self' },
+      { name: 'My Work Logs', href: '/attendance/my-logs' },
+      { name: 'My Summary', href: '/attendance/my-summary' },
+      // Admin-only items (hidden for user role)
+      { name: 'Clock In/Out', href: '/attendance', permission: 'view_attendance' },
       { name: 'Work Logs', href: '/attendance/logs', permission: 'view_attendance' },
-      {name: 'My Work Logs', href: '/attendance/my-logs' },
       { name: 'Summary', href: '/attendance/summary', permission: 'view_attendance' },
-      { name: 'My Summary', href: '/attendance/my-summary', permission: 'view_attendance' },
       { name: 'Shifts', href: '/attendance/shifts', permission: 'edit_attendance' },
     ]
   },
   {
     name: 'Leave',
-    href: '/leave',
+    href: '/leave/requests',
     icon: Calendar,
-    permission: 'view_time_off',
     children: [
       { name: 'My Requests', href: '/leave/requests' },
-      { name: 'All Requests', href: '/leave/all-requests', permission: 'view_time_off' },
-      { name: 'Apply Leave', href: '/leave/apply', permission: 'create_time_off' },
+      { name: 'Apply Leave', href: '/leave/apply' },
+      { name: 'My Balances', href: '/leave/my-balances' },
+      // Admin-only items (hidden for user role)
+      { name: 'All Requests', href: '/leave/all-requests', permission: 'view_all_time_off' },
       { name: 'Approvals', href: '/leave/approvals', permission: 'approve_time_off' },
-      { name: 'My Balances', href: '/leave/my-balances', permission: 'view_time_off' },
       { name: 'Balances', href: '/leave/balances', permission: 'view_time_off' },
-      { name: 'Categories', href: '/leave/categories', permission: 'edit_time_off' },
+      { name: 'Categories', href: '/leave/categories', permission: 'manage_time_off_categories' },
     ]
   },
     {
       name: 'Payroll',
-      href: '/payroll',
+      href: '/payroll/my-slips',
       icon: DollarSign,
       children: [
         { name: 'My Salary Slips', href: '/payroll/my-slips' },
+        // Admin-only items (hidden for user role)
         { name: 'Salary Slips', href: '/payroll/slips', permission: 'view_payslips' },
         { name: 'Generate Payroll', href: '/payroll/generate', permission: 'generate_payslips' },
-        { name: 'Benefit Types', href: '/payroll/benefits/types', permission: 'edit_payslips' },
-        { name: 'Benefits', href: '/payroll/benefits', permission: 'edit_payslips' },
-        { name: 'Deduction Types', href: '/payroll/deductions/types', permission: 'edit_payslips' },
-        { name: 'Deductions', href: '/payroll/deductions', permission: 'edit_payslips' },
-        { name: 'Tax Slabs', href: '/payroll/tax', permission: 'edit_payslips' },
+        { name: 'Benefit Types', href: '/payroll/benefits/types', permission: 'view_benefits' },
+        { name: 'Benefits', href: '/payroll/benefits', permission: 'view_benefits' },
+        { name: 'Deduction Types', href: '/payroll/deductions/types', permission: 'view_benefits' },
+        { name: 'Deductions', href: '/payroll/deductions', permission: 'view_benefits' },
+        { name: 'Tax Slabs', href: '/payroll/tax', permission: 'view_benefits' },
       ]
     },
   {

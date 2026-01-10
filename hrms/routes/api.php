@@ -206,27 +206,28 @@ Route::middleware('auth:sanctum')->group(function () {
     // ============================================
     // PROMPT SET 7: Leave Management
     // ============================================
-    Route::apiResource('time-off-categories', TimeOffCategoryController::class);
+    Route::apiResource('time-off-categories', TimeOffCategoryController::class)->middleware('permission:manage_time_off_categories');
     Route::get('/leave/my-requests', [TimeOffRequestController::class, 'myRequests']);
+    Route::get('/leave/all-requests', [TimeOffRequestController::class, 'index'])->middleware('permission:view_all_time_off');
     Route::apiResource('time-off-requests', TimeOffRequestController::class);
     Route::post('/time-off-requests/{timeOffRequest}/cancel', [TimeOffRequestController::class, 'cancel']);
-    Route::post('/time-off-requests/{timeOffRequest}/process', [TimeOffRequestController::class, 'processApproval']);
-    Route::get('/time-off-balance', [TimeOffRequestController::class, 'getBalance']);
+    Route::post('/time-off-requests/{timeOffRequest}/process', [TimeOffRequestController::class, 'processApproval'])->middleware('permission:approve_time_off');
+    Route::get('/time-off-balance', [TimeOffRequestController::class, 'getBalance'])->middleware('permission:view_time_off');
     Route::get('/leave/my-balance', [TimeOffRequestController::class, 'myBalance']);
 
     // ============================================
     // PROMPT SET 8: Attendance Management
     // ============================================
-    Route::apiResource('work-logs', WorkLogController::class);
-    Route::post('/clock-in', [WorkLogController::class, 'clockIn']);
-    Route::post('/clock-out', [WorkLogController::class, 'clockOut']);
+    Route::apiResource('work-logs', WorkLogController::class)->middleware('permission:view_attendance');
+    Route::post('/clock-in', [WorkLogController::class, 'clockIn'])->middleware('permission:view_attendance');
+    Route::post('/clock-out', [WorkLogController::class, 'clockOut'])->middleware('permission:view_attendance');
     Route::post('/clock-in-self', [WorkLogController::class, 'clockInSelf']);
     Route::post('/clock-out-self', [WorkLogController::class, 'clockOutSelf']);
     Route::get('/current-status-self', [WorkLogController::class, 'currentStatusSelf']);
-    Route::post('/work-logs/bulk', [WorkLogController::class, 'bulkStore']);
-    Route::get('/current-status', [WorkLogController::class, 'currentStatus']);
-    Route::get('/attendance-summary', [WorkLogController::class, 'summary']);
-    Route::get('/my-logs', [WorkLogController::class, 'myLogs']); // My Work Logs
+    Route::post('/work-logs/bulk', [WorkLogController::class, 'bulkStore'])->middleware('permission:bulk_attendance');
+    Route::get('/current-status', [WorkLogController::class, 'currentStatus'])->middleware('permission:view_attendance');
+    Route::get('/attendance-summary', [WorkLogController::class, 'summary'])->middleware('permission:view_attendance');
+    Route::get('/my-logs', [WorkLogController::class, 'myLogs']); // My Work Logs - no permission needed
     Route::get('/my-summary', [WorkLogController::class, 'mySummary']);
     Route::get('/my-monthly-attendance', [WorkLogController::class, 'myMonthlyAttendance']);
     Route::get('/attendance/shift-analytics', [WorkLogController::class, 'shiftAnalytics']);
@@ -234,10 +235,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // ============================================
     // PROMPT SET 9: Payroll Setup
     // ============================================
-    Route::apiResource('compensation-categories', CompensationCategoryController::class);
-    Route::apiResource('benefit-types', BenefitTypeController::class);
-    Route::apiResource('advance-types', AdvanceTypeController::class);
-    Route::apiResource('withholding-types', WithholdingTypeController::class);
+    Route::apiResource('compensation-categories', CompensationCategoryController::class)->middleware('permission:view_compensation');
+    Route::apiResource('benefit-types', BenefitTypeController::class)->middleware('permission:view_benefits');
+    Route::apiResource('advance-types', AdvanceTypeController::class)->middleware('permission:view_compensation');
+    Route::apiResource('withholding-types', WithholdingTypeController::class)->middleware('permission:view_benefits');
 
     // ============================================
     // PROMPT SET 10: Salary Components
@@ -258,17 +259,18 @@ Route::middleware('auth:sanctum')->group(function () {
     // ============================================
     // PROMPT SET 12: Payslip Generation
     // ============================================
-    Route::apiResource('salary-slips', SalarySlipController::class)->except(['store', 'update']);
-    Route::post('/salary-slips/generate', [SalarySlipController::class, 'generate']);
-    Route::post('/salary-slips/bulk-generate', [SalarySlipController::class, 'bulkGenerate']);
-    Route::post('/salary-slips/{salarySlip}/mark-paid', [SalarySlipController::class, 'markPaid']);
-    Route::get('payroll/salary-slips/{id}/download', [SalarySlipController::class, 'download']);
+    Route::apiResource('salary-slips', SalarySlipController::class)->except(['store', 'update'])->middleware('permission:view_payslips');
+    Route::get('/payroll/my-slips', [SalarySlipController::class, 'mySlips']); // No permission needed - for own slips
+    Route::post('/salary-slips/generate', [SalarySlipController::class, 'generate'])->middleware('permission:generate_payslips');
+    Route::post('/salary-slips/bulk-generate', [SalarySlipController::class, 'bulkGenerate'])->middleware('permission:generate_payslips');
+    Route::post('/salary-slips/{salarySlip}/mark-paid', [SalarySlipController::class, 'markPaid'])->middleware('permission:generate_payslips');
+    Route::get('payroll/salary-slips/{id}/download', [SalarySlipController::class, 'download'])->middleware('permission:view_payslips');
 
     // ============================================
     // PROMPT SET 13: Tax Management
     // ============================================
-    Route::apiResource('tax-slabs', TaxSlabController::class);
-    Route::post('/tax-slabs/calculate', [TaxSlabController::class, 'calculate']);
+    Route::apiResource('tax-slabs', TaxSlabController::class)->middleware('permission:view_benefits');
+    Route::post('/tax-slabs/calculate', [TaxSlabController::class, 'calculate'])->middleware('permission:view_benefits');
     Route::apiResource('tax-exemptions', TaxExemptionController::class);
     Route::apiResource('minimum-tax-limits', MinimumTaxLimitController::class);
 
@@ -471,11 +473,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // ============================================
     // PROMPT SET 31: Shifts Management
     // ============================================
-    Route::apiResource('shifts', ShiftController::class);
-    Route::post('/shifts/{shift}/assign', [ShiftController::class, 'assign']);
-    Route::get('/shift-roster', [ShiftController::class, 'roster']);
-    Route::get('/shifts/employee/{staffMemberId}', [ShiftController::class, 'employeeShifts']);
-    Route::delete('/shift-assignments/{assignment}', [ShiftController::class, 'deleteAssignment']);
+    Route::apiResource('shifts', ShiftController::class)->middleware('permission:view_attendance');
+    Route::post('/shifts/{shift}/assign', [ShiftController::class, 'assign'])->middleware('permission:edit_attendance');
+    Route::get('/shift-roster', [ShiftController::class, 'roster'])->middleware('permission:view_attendance');
+    Route::get('/shifts/employee/{staffMemberId}', [ShiftController::class, 'employeeShifts'])->middleware('permission:view_attendance');
 
     // ============================================
     // PROMPT SET 32: Timesheets
@@ -543,10 +544,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // ============================================
     // ATTENDANCE REGULARIZATION (100% Coverage)
     // ============================================
-    Route::apiResource('attendance-regularizations', AttendanceRegularizationController::class)->only(['index', 'store', 'show']);
-    Route::post('/attendance-regularizations/{attendanceRegularization}/approve', [AttendanceRegularizationController::class, 'approve']);
-    Route::post('/attendance-regularizations/{attendanceRegularization}/reject', [AttendanceRegularizationController::class, 'reject']);
-    Route::get('/attendance-regularizations-pending', [AttendanceRegularizationController::class, 'pending']);
+    Route::apiResource('attendance-regularizations', AttendanceRegularizationController::class)->only(['index', 'store', 'show'])->middleware('permission:view_attendance');
+    Route::post('/attendance-regularizations/{attendanceRegularization}/approve', [AttendanceRegularizationController::class, 'approve'])->middleware('permission:approve_attendance');
+    Route::post('/attendance-regularizations/{attendanceRegularization}/reject', [AttendanceRegularizationController::class, 'reject'])->middleware('permission:approve_attendance');
+    Route::get('/attendance-regularizations-pending', [AttendanceRegularizationController::class, 'pending'])->middleware('permission:view_attendance');
     Route::get('/my-regularization-requests', [AttendanceRegularizationController::class, 'myRequests']);
 
     // ============================================

@@ -156,12 +156,13 @@ export default function Users() {
 
   const getRoleBadgeColor = (role: string) => {
     const colors: Record<string, string> = {
-      administrator: 'bg-solarized-red/10 text-solarized-red',
-      hr_officer: 'bg-solarized-blue/10 text-solarized-blue',
-      manager: 'bg-solarized-yellow/10 text-solarized-yellow',
-      staff_member: 'bg-solarized-green/10 text-solarized-green',
+      admin: 'bg-solarized-red/10 text-solarized-red',
+      org: 'bg-solarized-purple/10 text-solarized-purple',
+      company: 'bg-solarized-yellow/10 text-solarized-yellow',
+      hr: 'bg-solarized-blue/10 text-solarized-blue',
+      user: 'bg-solarized-green/10 text-solarized-green',
     };
-    return colors[role] || colors.staff_member;
+    return colors[role] || colors.user;
   };
 
   return (
@@ -200,7 +201,7 @@ export default function Users() {
               <div>
                 <p className="text-sm text-solarized-base01">Administrators</p>
                 <p className="text-xl font-bold text-solarized-base02">
-                  {users.filter((u) => u.roles?.some((r) => r.name === 'administrator')).length}
+                  {users.filter((u) => u.roles?.some((r) => r.name === 'admin')).length}
                 </p>
               </div>
             </div>

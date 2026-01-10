@@ -344,45 +344,18 @@ class AccessSeeder extends Seeder
         // USER: Self-service only
         $userRole = Role::findByName('user');
         $userRole->syncPermissions([
-            // Leave (view own, create own)
-            'view_time_off', 'create_time_off',
-            // Attendance (view own)
-            'view_attendance',
-            // Payroll (view own payslips)
-            'view_payslips',
+            // Leave (create own only - no view access to all leave/balances)
+            // Note: 'view_time_off' REMOVED to prevent access to all leave requests and balances
+            'create_time_off',
+            // Attendance (view own only - no access to view all staff attendance)
+            // Note: 'view_attendance' permission REMOVED to prevent access to admin attendance pages
+            // Payroll (view own payslips only - no access to view all staff payslips)
+            // Note: 'view_payslips' permission REMOVED to prevent access to admin payroll pages
             // Announcements (view)
             'view_announcements',
         ]);
 
-        // ============================================
-        // LEGACY ROLE ALIASES FOR BACKWARD COMPATIBILITY
-        // ============================================
-        $legacyRoleAliases = [
-            'administrator' => ['canonical' => 'admin', 'hierarchy_level' => 1, 'description' => 'Legacy alias of admin role'],
-            'organisation' => ['canonical' => 'org', 'hierarchy_level' => 2, 'description' => 'Legacy alias of org role'],
-            'hr_officer' => ['canonical' => 'hr', 'hierarchy_level' => 4, 'description' => 'Legacy alias of hr role'],
-            'manager' => ['canonical' => 'company', 'hierarchy_level' => 3, 'description' => 'Legacy alias of company role'],
-            'staff' => ['canonical' => 'user', 'hierarchy_level' => 5, 'description' => 'Legacy alias of user role'],
-            'staff_member' => ['canonical' => 'user', 'hierarchy_level' => 5, 'description' => 'Legacy alias of user role'],
-        ];
-
-        foreach ($legacyRoleAliases as $legacyName => $config) {
-            $canonicalRole = Role::findByName($config['canonical']);
-            if ($canonicalRole) {
-                $legacyRole = Role::firstOrCreate(
-                    ['name' => $legacyName, 'guard_name' => 'web'],
-                    [
-                        'is_system' => true,
-                        'hierarchy_level' => $config['hierarchy_level'],
-                        'description' => $config['description'],
-                        'icon' => $canonicalRole->icon,
-                    ]
-                );
-                $legacyRole->syncPermissions($canonicalRole->permissions);
-            }
-        }
-
         $this->command->info('Roles, resources, and permissions seeded successfully!');
-        $this->command->info('5 Default Roles: admin, org, company, hr, user');
+        $this->command->info('5 System Roles: admin, org, company, hr, user');
     }
 }
