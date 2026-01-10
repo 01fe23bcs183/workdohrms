@@ -226,9 +226,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/work-logs/bulk', [WorkLogController::class, 'bulkStore']);
     Route::get('/current-status', [WorkLogController::class, 'currentStatus']);
     Route::get('/attendance-summary', [WorkLogController::class, 'summary']);
-        Route::get('/my-logs', [WorkLogController::class, 'myLogs']); // My Work Logs
+    Route::get('/my-logs', [WorkLogController::class, 'myLogs']); // My Work Logs
     Route::get('/my-summary', [WorkLogController::class, 'mySummary']);
     Route::get('/my-monthly-attendance', [WorkLogController::class, 'myMonthlyAttendance']);
+    Route::get('/attendance/shift-analytics', [WorkLogController::class, 'shiftAnalytics']);
 
     // ============================================
     // PROMPT SET 9: Payroll Setup
@@ -474,6 +475,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/shifts/{shift}/assign', [ShiftController::class, 'assign']);
     Route::get('/shift-roster', [ShiftController::class, 'roster']);
     Route::get('/shifts/employee/{staffMemberId}', [ShiftController::class, 'employeeShifts']);
+    Route::delete('/shift-assignments/{assignment}', [ShiftController::class, 'deleteAssignment']);
 
     // ============================================
     // PROMPT SET 32: Timesheets
@@ -559,8 +561,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/documents/{id}/download', [DocumentController::class, 'download']); // Download
     Route::put('/documents/{id}', [DocumentController::class, 'update']); // Update Metadata
     Route::delete('/documents/{id}', [DocumentController::class, 'destroy']); // Delete File & Record
-Route::get('documents/{id}/view', [DocumentController::class, 'view'])
-  ->withoutMiddleware('auth:sanctum');
+    Route::get('documents/{id}/view', [DocumentController::class, 'view'])
+        ->withoutMiddleware('auth:sanctum');
 
 
     // ============================================
@@ -603,7 +605,7 @@ Route::get('documents/{id}/view', [DocumentController::class, 'view'])
     // AWS
     Route::post('/document-configs/aws', [DocumentConfigController::class, 'storeAws']);
     Route::put('/document-configs/aws/{id}', [DocumentConfigController::class, 'updateAws']);
-    
+
     // Show Config
     Route::get('/document-configs/local/{locationId}', [DocumentConfigController::class, 'showLocal']);
     Route::get('/document-configs/wasabi/{locationId}', [DocumentConfigController::class, 'showWasabi']);
@@ -643,5 +645,4 @@ Route::get('documents/{id}/view', [DocumentController::class, 'view'])
         Route::post('/{id}/roles/add', [UserRoleController::class, 'addRole'])->middleware('permission:edit_roles');
         Route::post('/{id}/roles/remove', [UserRoleController::class, 'removeRole'])->middleware('permission:edit_roles');
     });
-
 });

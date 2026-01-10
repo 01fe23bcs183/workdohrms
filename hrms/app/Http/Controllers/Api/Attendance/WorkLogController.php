@@ -10,7 +10,10 @@ use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use App\Services\Attendance\ShiftService;
+
 
 /**
  * Work Log Controller
@@ -21,11 +24,15 @@ class WorkLogController extends Controller
 {
     use ApiResponse;
 
-    protected AttendanceService $service;
+    protected AttendanceService $attendanceService;
+    protected ShiftService $shiftService;
+    protected $service;
 
-    public function __construct(AttendanceService $service)
+    public function __construct(AttendanceService $attendanceService, ShiftService $shiftService)
     {
-        $this->service = $service;
+        $this->attendanceService = $attendanceService;
+        $this->shiftService = $shiftService;
+        $this->service = $attendanceService;
     }
 
     /**
@@ -98,44 +105,62 @@ class WorkLogController extends Controller
     /**
      * Display a listing of work logs.
      */
-    public function index(Request $request): JsonResponse
-    {
-        try {
-            $params = $request->only([
-                'staff_member_id',
-                'office_location_id',
-                'date',
-                'start_date',
-                'end_date',
-                'month',
-                'year',
-                'paginate',
-                'per_page',
-                'page',
-            ]);
+/**
+ * Display a listing of work logs.
+ */
+public function index(Request $request): JsonResponse
+{
+    try {
+        Log::info('WorkLogController index called', ['params' => $request->all(), 'user' => $request->user()->id ?? null]);
+        
+        $params = $request->only([
+            'staff_member_id',
+            'office_location_id',
+            'date',
+            'start_date',
+            'end_date',
+            'month',
+            'year',
+            'paginate',
+            'per_page',
+            'page',
+        ]);
 
-            $user = $request->user();
+        $user = $request->user();
+        Log::info('User info', ['user_id' => $user->id ?? null, 'user_roles' => $user->roles ?? []]);
 
-            // Check user role and adjust parameters
-            if (!$this->isAdminUser($user)) {
-                // For non-admin users, they can only see their own work logs
-                $staffMemberId = $this->getStaffMemberId($user);
+        // Check user role and adjust parameters
+        if (!$this->isAdminUser($user)) {
+            Log::info('User is not admin');
+            // For non-admin users, they can only see their own work logs
+            $staffMemberId = $this->getStaffMemberId($user);
 
-                if ($staffMemberId) {
-                    $params['staff_member_id'] = $staffMemberId;
-                } else {
-                    return $this->error('Staff member not found', 404);
-                }
+            if ($staffMemberId) {
+                $params['staff_member_id'] = $staffMemberId;
+                Log::info('Non-admin staff member ID set', ['staff_member_id' => $staffMemberId]);
+            } else {
+                Log::warning('Staff member not found for non-admin user');
+                return $this->error('Staff member not found', 404);
             }
-            // For admin users, they can see all work logs (staff_member_id filter remains optional)
-
-            $result = $this->service->getAll($params);
-
-            return $this->success($result, 'Work logs retrieved successfully');
-        } catch (\Exception $e) {
-            return $this->serverError('Failed to retrieve work logs: ' . $e->getMessage());
+        } else {
+            Log::info('User is admin, can see all work logs');
         }
+        // For admin users, they can see all work logs (staff_member_id filter remains optional)
+
+        Log::info('Calling service getAll with params', $params);
+        $result = $this->service->getAll($params);
+        Log::info('Service getAll returned successfully');
+
+        return $this->success($result, 'Work logs retrieved successfully');
+    } catch (\Exception $e) {
+        Log::error('Error in WorkLogController index', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'params' => $request->all()
+        ]);
+        return $this->serverError('Failed to retrieve work logs: ' . $e->getMessage());
     }
+}
 
     /**
      * Store a new work log (manual attendance entry).
@@ -224,40 +249,91 @@ class WorkLogController extends Controller
     /**
      * Clock in for an employee.
      */
-    public function clockIn(Request $request): JsonResponse
+ public function clockIn(Request $request): JsonResponse
     {
         try {
             $user = $request->user();
-
-            // Get staff member ID from request or user
+            
+            // Get staff member ID
             $staffMemberId = $request->input('staff_member_id');
-
-            // If staff_member_id is not provided in request
             if (!$staffMemberId) {
-                // For non-admin users, use their own staff member ID
                 if (!$this->isAdminUser($user)) {
                     $staffMemberId = $this->getStaffMemberId($user);
                 } else {
-                    // For admin users without staff_member_id, return error
                     return $this->error('Staff member ID is required for admin users', 400);
                 }
             }
 
-            if (! $staffMemberId) {
+            if (!$staffMemberId) {
                 return $this->error('Staff member not found', 404);
             }
 
-            // Ensure staffMemberId is an integer
-            $staffMemberId = (int) $staffMemberId;
-
-            $workLog = $this->service->clockIn($staffMemberId, [
+            $workLog = $this->attendanceService->clockIn((int)$staffMemberId, [
                 'ip_address' => $request->ip(),
                 'location' => $request->input('location'),
+                'author_id' => $user->id,
             ]);
 
             return $this->success($workLog, 'Clocked in successfully');
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 400);
+        }
+    }
+
+     /**
+     * Get employee's shift-based attendance analytics.
+     */
+    public function shiftAnalytics(Request $request): JsonResponse
+    {
+        try {
+            $staffMemberId = $request->input('staff_member_id');
+            $month = $request->input('month', now()->month);
+            $year = $request->input('year', now()->year);
+
+            if (!$staffMemberId) {
+                return $this->error('Staff member ID is required', 422);
+            }
+
+            $attendance = $this->attendanceService->getEmployeeMonthlyAttendance($staffMemberId, $month, $year);
+            
+            // Calculate shift compliance
+            $shift = $attendance['shift'] ?? null;
+            $compliance = [];
+            
+            if ($shift) {
+                $totalDays = $attendance['working_days'];
+                $lateDays = $attendance['late_days'];
+                $earlyLeaveDays = count(array_filter($attendance['records']->toArray(), function($record) {
+                    return $record['early_leave_minutes'] > 0;
+                }));
+                
+                $compliance = [
+                    'shift_name' => $shift->name,
+                    'shift_timings' => $shift->start_time . ' - ' . $shift->end_time,
+                    'total_working_days' => $totalDays,
+                    'punctuality_rate' => $totalDays > 0 
+                        ? round((($totalDays - $lateDays) / $totalDays) * 100, 2) 
+                        : 0,
+                    'early_leave_rate' => $totalDays > 0 
+                        ? round(($earlyLeaveDays / $totalDays) * 100, 2) 
+                        : 0,
+                    'average_late_minutes' => $attendance['late_days'] > 0 
+                        ? round($attendance['total_late_minutes'] / $attendance['late_days'], 2) 
+                        : 0,
+                    'average_overtime_minutes' => $attendance['records']->count() > 0 
+                        ? round($attendance['total_overtime_minutes'] / $attendance['records']->count(), 2) 
+                        : 0,
+                ];
+            }
+
+            $response = [
+                'attendance_summary' => $attendance,
+                'shift_compliance' => $compliance,
+            ];
+
+            return $this->success($response, 'Shift analytics retrieved successfully');
+        } catch (\Exception $e) {
+            return $this->serverError('Failed to retrieve shift analytics: ' . $e->getMessage());
         }
     }
 
@@ -487,8 +563,8 @@ class WorkLogController extends Controller
         return $this->bulkRecord($request);
     }
 
-    /**
-     * Get attendance summary for a date range.
+ /**
+     * Get enhanced attendance summary with shift info.
      */
     public function summary(Request $request): JsonResponse
     {
@@ -497,7 +573,17 @@ class WorkLogController extends Controller
             $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
             $endDate = $request->input('end_date', now()->endOfMonth()->toDateString());
 
-            $summary = $this->service->getSummaryForDateRange($startDate, $endDate, $staffMemberId);
+            $summary = $this->attendanceService->getSummaryForDateRange($startDate, $endDate, $staffMemberId);
+            
+            // Add shift information if staff member specified
+            if ($staffMemberId) {
+                $shiftSchedule = $this->shiftService->getEmployeeShiftSchedule(
+                    $staffMemberId, 
+                    $startDate, 
+                    $endDate
+                );
+                $summary['shift_schedule'] = $shiftSchedule;
+            }
 
             return $this->success($summary, 'Attendance summary retrieved successfully');
         } catch (\Exception $e) {
