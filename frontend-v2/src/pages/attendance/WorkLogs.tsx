@@ -15,7 +15,7 @@ import {
   TableRow,
 } from '../../components/ui/table';
 import { Skeleton } from '../../components/ui/skeleton';
-import { Calendar, Clock, ChevronLeft, ChevronRight, Filter, ShieldAlert } from 'lucide-react';
+import { Calendar, Clock, ChevronLeft, ChevronRight, Filter, ShieldAlert, Watch } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface StaffMember {
@@ -25,10 +25,22 @@ interface StaffMember {
   email?: string;
 }
 
+interface ShiftInfo {
+  id: number;
+  name: string;
+  start_time: string;
+  end_time: string;
+  is_night_shift: boolean;
+}
+
 interface WorkLog {
   id: number;
   staff_member_id: number;
-  staff_member?: { full_name: string; staff_code?: string };
+  staff_member?: { 
+    full_name: string; 
+    staff_code?: string;
+    email?: string;
+  };
   log_date: string;
   log_date_formatted?: string;
   clock_in: string | null;
@@ -37,8 +49,12 @@ interface WorkLog {
   clock_out_time?: string | null;
   status: string;
   late_minutes: number;
+  early_leave_minutes: number;
+  overtime_minutes: number;
+  break_minutes: number;
   notes: string | null;
   total_hours?: number;
+  shift?: ShiftInfo;
 }
 
 interface PaginationMeta {
@@ -94,8 +110,8 @@ export default function WorkLogs() {
           const userData: UserData = JSON.parse(userStr);
           setCurrentUser(userData);
           
-          // Check if user has admin role (admin, administrator, org, organisation, company, hr)
-          const adminRoles = ['admin', 'administrator', 'org', 'organisation', 'company', 'hr'];
+          // Check if user has admin role (admin, administrator, organisation, company, hr)
+          const adminRoles = ['admin', 'administrator', 'organisation', 'company', 'hr'];
           const userRoles = userData.roles || [userData.role];
           const hasAdminRole = userRoles.some(role => 
             adminRoles.includes(role.toLowerCase())
@@ -163,6 +179,8 @@ export default function WorkLogs() {
       if (staffMemberId) params.staff_member_id = staffMemberId;
 
       const response = await attendanceService.getWorkLogs(params);
+      console.log('Work logs response:', response.data); // Debug
+      
       setLogs(response.data.data || []);
       setMeta(response.data.meta);
     } catch (error: any) {
@@ -201,6 +219,8 @@ export default function WorkLogs() {
       late: 'bg-solarized-yellow/10 text-solarized-yellow',
       half_day: 'bg-solarized-orange/10 text-solarized-orange',
       leave: 'bg-solarized-blue/10 text-solarized-blue',
+      on_leave: 'bg-solarized-blue/10 text-solarized-blue',
+      holiday: 'bg-solarized-cyan/10 text-solarized-cyan',
     };
     return variants[status] || variants.absent;
   };
@@ -282,18 +302,25 @@ export default function WorkLogs() {
 
   // Get stats for current page
   const getStats = () => {
-    const presentCount = logs.filter(log => log.status === 'present').length;
+    const presentCount = logs.filter(log => log.status === 'present' || log.status === 'late').length;
     const lateCount = logs.filter(log => log.status === 'late').length;
     const absentCount = logs.filter(log => log.status === 'absent').length;
     const halfDayCount = logs.filter(log => log.status === 'half_day').length;
+    const leaveCount = logs.filter(log => log.status === 'leave' || log.status === 'on_leave').length;
     
     return {
       present: presentCount,
       late: lateCount,
       absent: absentCount,
       halfDay: halfDayCount,
+      leave: leaveCount,
       total: logs.length
     };
+  };
+
+  // Calculate total minutes
+  const getTotalMinutes = (field: keyof WorkLog) => {
+    return logs.reduce((total, log) => total + (log[field] as number || 0), 0);
   };
 
   if (!isAdminUser) {
@@ -330,7 +357,7 @@ export default function WorkLogs() {
 
       {/* Stats Summary */}
       {logs.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
           <Card className="border-0 shadow-sm">
             <CardContent className="p-4">
               <div className="text-sm text-solarized-base01">Total Records</div>
@@ -357,8 +384,20 @@ export default function WorkLogs() {
           </Card>
           <Card className="border-0 shadow-sm">
             <CardContent className="p-4">
+              <div className="text-sm text-solarized-base01">Leave</div>
+              <div className="text-2xl font-bold text-solarized-blue">{getStats().leave}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-4">
               <div className="text-sm text-solarized-base01">Total Hours</div>
-              <div className="text-2xl font-bold text-solarized-blue">{safeNumberFormat(getTotalHours(), 1)}</div>
+              <div className="text-2xl font-bold text-solarized-cyan">{safeNumberFormat(getTotalHours(), 1)}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-4">
+              <div className="text-sm text-solarized-base01">Late Minutes</div>
+              <div className="text-2xl font-bold text-solarized-orange">{getTotalMinutes('late_minutes')}</div>
             </CardContent>
           </Card>
         </div>
@@ -457,21 +496,37 @@ export default function WorkLogs() {
                     <TableRow>
                       <TableHead>Date</TableHead>
                       <TableHead>Employee</TableHead>
+                      <TableHead>Shift</TableHead>
                       <TableHead>Clock In</TableHead>
                       <TableHead>Clock Out</TableHead>
                       <TableHead>Hours</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Late (mins)</TableHead>
+                      <TableHead>
+                        <div className="flex items-center gap-1">
+                          <Watch className="h-4 w-4" />
+                          Late
+                        </div>
+                      </TableHead>
+                      <TableHead>
+                        <div className="flex items-center gap-1">
+                          <Watch className="h-4 w-4" />
+                          Early Leave
+                        </div>
+                      </TableHead>
+                      <TableHead>
+                        <div className="flex items-center gap-1">
+                          <Watch className="h-4 w-4" />
+                          Overtime
+                        </div>
+                      </TableHead>
                       <TableHead>Notes</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {logs.map((log) => {
-                      // Use formatted time if available, otherwise use clock_in/clock_out
                       const clockInTime = formatTime(log.clock_in, log.clock_in_time);
                       const clockOutTime = formatTime(log.clock_out, log.clock_out_time);
                       
-                      // Calculate total hours
                       let totalHours = log.total_hours;
                       if (totalHours === undefined || totalHours === null) {
                         totalHours = calculateTotalHours(log.clock_in, log.clock_out);
@@ -495,6 +550,21 @@ export default function WorkLogs() {
                               <div className="text-xs text-solarized-base01">
                                 ID: {log.staff_member.staff_code}
                               </div>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {log.shift ? (
+                              <div className="text-sm">
+                                <div className="font-medium">{log.shift.name}</div>
+                                <div className="text-xs text-solarized-base01">
+                                  {log.shift.start_time} - {log.shift.end_time}
+                                  {log.shift.is_night_shift && (
+                                    <span className="ml-1 text-solarized-violet">🌙</span>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-solarized-base01 text-sm">-</span>
                             )}
                           </TableCell>
                           <TableCell>
@@ -522,6 +592,16 @@ export default function WorkLogs() {
                           <TableCell>
                             <div className={`font-medium ${log.late_minutes > 0 ? 'text-solarized-yellow' : 'text-solarized-green'}`}>
                               {log.late_minutes || 0}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className={`font-medium ${log.early_leave_minutes > 0 ? 'text-solarized-orange' : 'text-solarized-green'}`}>
+                              {log.early_leave_minutes || 0}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className={`font-medium ${log.overtime_minutes > 0 ? 'text-solarized-green' : 'text-solarized-base01'}`}>
+                              {log.overtime_minutes || 0}
                             </div>
                           </TableCell>
                           <TableCell className="max-w-[200px] truncate" title={log.notes || ''}>

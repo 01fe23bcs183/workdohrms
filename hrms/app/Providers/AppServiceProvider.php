@@ -7,15 +7,23 @@ use Dedoc\Scramble\Support\Generator\OpenApi;
 use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use App\Services\Attendance\AttendanceService;
+use App\Services\Attendance\ShiftService;
+use App\Services\Leave\LeaveService;
 
 class AppServiceProvider extends ServiceProvider
 {
     /**
      * Register any application services.
      */
-    public function register(): void
+ public function register(): void
     {
-        //
+        $this->app->singleton(AttendanceService::class, function ($app) {
+            return new AttendanceService(
+                $app->make(ShiftService::class),
+                $app->make(LeaveService::class)
+            );
+        });
     }
 
     /**

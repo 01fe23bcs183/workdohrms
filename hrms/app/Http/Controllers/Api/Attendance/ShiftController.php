@@ -55,34 +55,66 @@ class ShiftController extends Controller
         return $this->success($shift, 'Updated');
     }
 
-    public function destroy(Shift $shift)
-    {
-        $shift->delete();
+    public function deleteAssignment($assignmentId) {
+    try {
+        $assignment = ShiftAssignment::findOrFail($assignmentId);
+        $assignment->delete();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Assignment deleted successfully'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to delete assignment',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 
-        return $this->noContent('Deleted');
+public function assign(Request $request, Shift $shift)
+{
+    $validator = Validator::make($request->all(), [
+        'staff_member_id' => 'required', // Remove array requirement
+        'effective_from' => 'required|date',
+        'effective_to' => 'nullable|date|after:effective_from',
+    ]);
+
+    if ($validator->fails()) {
+        return $this->validationError($validator->errors());
     }
 
-    public function assign(Request $request, Shift $shift)
-    {
-        $validator = Validator::make($request->all(), [
-            'staff_member_id' => 'required|exists:staff_members,id',
-            'effective_from' => 'required|date',
-            'effective_to' => 'nullable|date|after:effective_from',
-        ]);
+    // Convert single staff member ID to array if needed
+    $staffMemberIds = $request->staff_member_id;
+    if (!is_array($staffMemberIds)) {
+        $staffMemberIds = [$staffMemberIds];
+    }
 
-        if ($validator->fails()) {
-            return $this->validationError($validator->errors());
+    // Validate each staff member ID exists
+    foreach ($staffMemberIds as $staffMemberId) {
+        if (!\App\Models\StaffMember::where('id', $staffMemberId)->exists()) {
+            return $this->validationError([
+                'staff_member_id' => ['Staff member with ID ' . $staffMemberId . ' does not exist']
+            ]);
         }
+    }
 
+    $assignments = collect();
+    
+    foreach ($staffMemberIds as $staffMemberId) {
         $assignment = ShiftAssignment::create([
             'shift_id' => $shift->id,
-            'staff_member_id' => $request->staff_member_id,
+            'staff_member_id' => $staffMemberId,
             'effective_from' => $request->effective_from,
             'effective_to' => $request->effective_to,
         ]);
-
-        return $this->success($assignment->load('staffMember'), 'Shift assigned');
+        
+        $assignments->push($assignment->load('staffMember'));
     }
+
+    return $this->success($assignments, 'Shift assigned successfully');
+}
 
     public function roster(Request $request)
     {
