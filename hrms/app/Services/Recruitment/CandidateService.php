@@ -151,7 +151,7 @@ class CandidateService extends BaseService
                 'is_active' => true,
             ]);
 
-            $user->assignRole('staff_member');
+            $user->assignRole('user');
 
             // Create staff member
             $staffMember = StaffMember::create([

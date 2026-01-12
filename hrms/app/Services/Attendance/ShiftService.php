@@ -5,6 +5,7 @@ namespace App\Services\Attendance;
 use App\Models\Shift;
 use App\Models\ShiftAssignment;
 use App\Services\Core\BaseService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -56,7 +57,7 @@ class ShiftService extends BaseService
     /**
      * Update a shift.
      */
-    public function update(int|Shift $shift, array $data): Shift
+    public function update(int|Model $shift, array $data): Model
     {
         if (is_int($shift)) {
             $shift = $this->findOrFail($shift);
@@ -69,14 +70,14 @@ class ShiftService extends BaseService
 
     /**
      * Delete a shift.
-     */
-    public function delete(int|Shift $shift): bool
+     */   
+     public function delete(Model|int $model): bool
     {
-        if (is_int($shift)) {
-            $shift = $this->findOrFail($shift);
+        if (is_int($model)) {
+            $model = $this->findOrFail($model);
         }
 
-        return $shift->delete();
+        return $model->delete();
     }
 
     /**
@@ -110,28 +111,60 @@ class ShiftService extends BaseService
 
     /**
      * Get shifts for dropdown.
+     * Updated to match BaseService method signature
      */
-    public function getForDropdown(): Collection
+    public function getForDropdown(array $params = [], array $fields = ['id', 'name', 'start_time', 'end_time']): Collection
     {
-        return $this->query()
-            ->select(['id', 'name', 'start_time', 'end_time'])
-            ->orderBy('name')
-            ->get();
+        $query = $this->query();
+        
+        // Apply search if provided
+        if (!empty($params['search'])) {
+            $query = $this->applySearch($query, $params['search']);
+        }
+        
+        // Use the provided fields or default ones
+        $query->select($fields);
+        
+        // Order by name as specified
+        $query->orderBy('name');
+        
+        return $query->get();
     }
 
-    /**
-     * Get employee's current shift.
-     */
-    public function getEmployeeShift(int $staffMemberId): ?Shift
+    public function getEmployeeShift(int $staffMemberId, string $date = null): ?Shift
     {
+        $date = $date ?? now()->toDateString();
+        
         $assignment = ShiftAssignment::where('staff_member_id', $staffMemberId)
-            ->where('effective_from', '<=', now())
-            ->where(function ($q) {
+            ->where('effective_from', '<=', $date)
+            ->where(function ($q) use ($date) {
                 $q->whereNull('effective_to')
-                    ->orWhere('effective_to', '>=', now());
+                    ->orWhere('effective_to', '>=', $date);
             })
             ->first();
 
         return $assignment ? $assignment->shift : null;
+    }
+
+    /**
+     * Get shift schedule for date range.
+     */
+    public function getEmployeeShiftSchedule(int $staffMemberId, string $startDate, string $endDate): Collection
+    {
+        return ShiftAssignment::with('shift')
+            ->where('staff_member_id', $staffMemberId)
+            ->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('effective_from', [$startDate, $endDate])
+                    ->orWhereBetween('effective_to', [$startDate, $endDate])
+                    ->orWhere(function ($q2) use ($startDate, $endDate) {
+                        $q2->where('effective_from', '<=', $startDate)
+                            ->where(function ($q3) use ($endDate) {
+                                $q3->whereNull('effective_to')
+                                    ->orWhere('effective_to', '>=', $endDate);
+                            });
+                    });
+            })
+            ->orderBy('effective_from')
+            ->get();
     }
 }

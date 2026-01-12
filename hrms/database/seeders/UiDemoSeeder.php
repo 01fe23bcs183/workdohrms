@@ -30,7 +30,7 @@ class UiDemoSeeder extends Seeder
                 'email' => 'admin@hrms.local',
                 'password' => Hash::make('password'),
             ]);
-            $adminUser->assignRole('administrator');
+            $adminUser->assignRole('admin');
         }
 
         // HR Officer demo account
@@ -41,7 +41,7 @@ class UiDemoSeeder extends Seeder
                 'email' => 'hr@hrms.local',
                 'password' => Hash::make('password'),
             ]);
-            $hrUser->assignRole('hr_officer');
+            $hrUser->assignRole('hr');
         }
 
         // Manager demo account
@@ -52,7 +52,7 @@ class UiDemoSeeder extends Seeder
                 'email' => 'manager@hrms.local',
                 'password' => Hash::make('password'),
             ]);
-            $managerUser->assignRole('manager');
+            $managerUser->assignRole('company');
         }
 
         // Staff Member demo account
@@ -63,7 +63,7 @@ class UiDemoSeeder extends Seeder
                 'email' => 'staff@hrms.local',
                 'password' => Hash::make('password'),
             ]);
-            $staffUser->assignRole('staff_member');
+            $staffUser->assignRole('user');
         }
 
         $headquarters = OfficeLocation::firstOrCreate(
@@ -154,18 +154,18 @@ class UiDemoSeeder extends Seeder
         }
 
         $employees = [
-            ['name' => 'Alex Chen', 'email' => 'alex.chen@company.com', 'role' => 'manager', 'job' => $cto, 'division' => $engineering, 'location' => $headquarters, 'salary' => 180000, 'gender' => 'male', 'years' => 5],
-            ['name' => 'Sarah Johnson', 'email' => 'sarah.j@company.com', 'role' => 'hr_officer', 'job' => $hrDirector, 'division' => $hr, 'location' => $headquarters, 'salary' => 120000, 'gender' => 'female', 'years' => 4],
-            ['name' => 'Michael Williams', 'email' => 'm.williams@company.com', 'role' => 'manager', 'job' => $seniorDev, 'division' => $engineering, 'location' => $headquarters, 'salary' => 140000, 'gender' => 'male', 'years' => 3],
-            ['name' => 'Emily Brown', 'email' => 'emily.b@company.com', 'role' => 'staff_member', 'job' => $developer, 'division' => $engineering, 'location' => $headquarters, 'salary' => 95000, 'gender' => 'female', 'years' => 2],
-            ['name' => 'David Lee', 'email' => 'd.lee@company.com', 'role' => 'staff_member', 'job' => $developer, 'division' => $engineering, 'location' => $nyOffice, 'salary' => 90000, 'gender' => 'male', 'years' => 2],
-            ['name' => 'Jessica Martinez', 'email' => 'j.martinez@company.com', 'role' => 'staff_member', 'job' => $juniorDev, 'division' => $engineering, 'location' => $headquarters, 'salary' => 65000, 'gender' => 'female', 'years' => 1],
-            ['name' => 'Robert Taylor', 'email' => 'r.taylor@company.com', 'role' => 'manager', 'job' => $salesManager, 'division' => $sales, 'location' => $nyOffice, 'salary' => 110000, 'gender' => 'male', 'years' => 3],
-            ['name' => 'Amanda Wilson', 'email' => 'a.wilson@company.com', 'role' => 'hr_officer', 'job' => $hrManager, 'division' => $hr, 'location' => $headquarters, 'salary' => 85000, 'gender' => 'female', 'years' => 2],
-            ['name' => 'James Anderson', 'email' => 'j.anderson@company.com', 'role' => 'staff_member', 'job' => $accountant, 'division' => $finance, 'location' => $headquarters, 'salary' => 95000, 'gender' => 'male', 'years' => 4],
-            ['name' => 'Olivia Thomas', 'email' => 'o.thomas@company.com', 'role' => 'manager', 'job' => $opsManager, 'division' => $operations, 'location' => $londonOffice, 'salary' => 100000, 'gender' => 'female', 'years' => 3],
-            ['name' => 'Daniel Garcia', 'email' => 'd.garcia@company.com', 'role' => 'staff_member', 'job' => $developer, 'division' => $engineering, 'location' => $londonOffice, 'salary' => 88000, 'gender' => 'male', 'years' => 1],
-            ['name' => 'Sophia Rodriguez', 'email' => 's.rodriguez@company.com', 'role' => 'staff_member', 'job' => $juniorDev, 'division' => $engineering, 'location' => $headquarters, 'salary' => 62000, 'gender' => 'female', 'years' => 0],
+            ['name' => 'Alex Chen', 'email' => 'alex.chen@company.com', 'role' => 'company', 'job' => $cto, 'division' => $engineering, 'location' => $headquarters, 'salary' => 180000, 'gender' => 'male', 'years' => 5],
+            ['name' => 'Sarah Johnson', 'email' => 'sarah.j@company.com', 'role' => 'hr', 'job' => $hrDirector, 'division' => $hr, 'location' => $headquarters, 'salary' => 120000, 'gender' => 'female', 'years' => 4],
+            ['name' => 'Michael Williams', 'email' => 'm.williams@company.com', 'role' => 'company', 'job' => $seniorDev, 'division' => $engineering, 'location' => $headquarters, 'salary' => 140000, 'gender' => 'male', 'years' => 3],
+            ['name' => 'Emily Brown', 'email' => 'emily.b@company.com', 'role' => 'user', 'job' => $developer, 'division' => $engineering, 'location' => $headquarters, 'salary' => 95000, 'gender' => 'female', 'years' => 2],
+            ['name' => 'David Lee', 'email' => 'd.lee@company.com', 'role' => 'user', 'job' => $developer, 'division' => $engineering, 'location' => $nyOffice, 'salary' => 90000, 'gender' => 'male', 'years' => 2],
+            ['name' => 'Jessica Martinez', 'email' => 'j.martinez@company.com', 'role' => 'user', 'job' => $juniorDev, 'division' => $engineering, 'location' => $headquarters, 'salary' => 65000, 'gender' => 'female', 'years' => 1],
+            ['name' => 'Robert Taylor', 'email' => 'r.taylor@company.com', 'role' => 'company', 'job' => $salesManager, 'division' => $sales, 'location' => $nyOffice, 'salary' => 110000, 'gender' => 'male', 'years' => 3],
+            ['name' => 'Amanda Wilson', 'email' => 'a.wilson@company.com', 'role' => 'hr', 'job' => $hrManager, 'division' => $hr, 'location' => $headquarters, 'salary' => 85000, 'gender' => 'female', 'years' => 2],
+            ['name' => 'James Anderson', 'email' => 'j.anderson@company.com', 'role' => 'user', 'job' => $accountant, 'division' => $finance, 'location' => $headquarters, 'salary' => 95000, 'gender' => 'male', 'years' => 4],
+            ['name' => 'Olivia Thomas', 'email' => 'o.thomas@company.com', 'role' => 'company', 'job' => $opsManager, 'division' => $operations, 'location' => $londonOffice, 'salary' => 100000, 'gender' => 'female', 'years' => 3],
+            ['name' => 'Daniel Garcia', 'email' => 'd.garcia@company.com', 'role' => 'user', 'job' => $developer, 'division' => $engineering, 'location' => $londonOffice, 'salary' => 88000, 'gender' => 'male', 'years' => 1],
+            ['name' => 'Sophia Rodriguez', 'email' => 's.rodriguez@company.com', 'role' => 'user', 'job' => $juniorDev, 'division' => $engineering, 'location' => $headquarters, 'salary' => 62000, 'gender' => 'female', 'years' => 0],
         ];
 
         $staffMembers = [];

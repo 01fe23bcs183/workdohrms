@@ -20,7 +20,7 @@ class AuthService
             'is_active' => true,
         ]);
 
-        $user->assignRole('staff_member');
+        $user->assignRole('user');
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -130,11 +130,11 @@ class AuthService
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
-            'role' => $primaryRole ? $primaryRole->name : 'staff',
-            'role_display' => $primaryRole ? ucwords(str_replace('_', ' ', $primaryRole->name)) : 'Staff',
+            'role' => $primaryRole ? $primaryRole->name : 'user',
+            'role_display' => $primaryRole ? ucwords(str_replace('_', ' ', $primaryRole->name)) : 'User',
             'roles' => $roles->pluck('name')->toArray(),
             'permissions' => $permissions,
-            'primary_role' => $primaryRole ? $primaryRole->name : 'staff',
+            'primary_role' => $primaryRole ? $primaryRole->name : 'user',
             'primary_role_icon' => $primaryRole ? $primaryRole->icon : 'User',
             'primary_role_hierarchy' => $primaryRole ? $primaryRole->hierarchy_level : 5,
             'staff_member_id' => $user->staffMember?->id,

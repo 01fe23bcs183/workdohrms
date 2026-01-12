@@ -91,7 +91,7 @@ class OrganizationController extends Controller
                 'is_active' => true,
             ]);
 
-            $user->assignRole('organisation');
+            $user->assignRole('org');
 
             DB::commit();
 

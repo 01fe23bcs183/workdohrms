@@ -115,37 +115,39 @@ export default function ClockInOutSelf() {
 
 const formatTimeString = (timeString: string | null | undefined) => {
   if (!timeString) return '--:--';
-  
+
   try {
-    // Check if it's already a valid ISO date string
+    // Check if it's already a valid ISO date string (from backend)
     if (timeString.includes('T')) {
       const date = new Date(timeString);
-      return date.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      });
+
+      // Get hours and minutes directly from the parsed date
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+
+      // Format as HH:MM AM/PM
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12; // Convert 0 to 12
+      const displayMinutes = minutes.toString().padStart(2, '0');
+
+      return `${displayHours}:${displayMinutes} ${period}`;
     }
-    
+
     // Handle time-only strings (e.g., "06:12:36")
-    // Split the time string
     const timeParts = timeString.split(':');
-    
+
     if (timeParts.length >= 2) {
       const hours = parseInt(timeParts[0], 10);
       const minutes = parseInt(timeParts[1], 10);
-      
-      // Create a date object with today's date and the parsed time
-      const today = new Date();
-      today.setHours(hours, minutes, 0, 0);
-      
-      return today.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      });
+
+      // Format as HH:MM AM/PM
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12; // Convert 0 to 12
+      const displayMinutes = minutes.toString().padStart(2, '0');
+
+      return `${displayHours}:${displayMinutes} ${period}`;
     }
-    
+
     // If we can't parse it, return the original string
     return timeString;
   } catch (error) {

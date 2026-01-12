@@ -48,6 +48,27 @@ class WorkLog extends Model
         return $this->belongsTo(User::class, 'author_id');
     }
 
+        /**
+     * Get the shift for this work log (through staff member's shift assignment).
+     */
+    public function shift()
+    {
+        return $this->hasOneThrough(
+            Shift::class,
+            ShiftAssignment::class,
+            'staff_member_id', // Foreign key on ShiftAssignment table
+            'id', // Foreign key on Shift table
+            'staff_member_id', // Local key on WorkLog table
+            'shift_id' // Local key on ShiftAssignment table
+        )->where(function ($query) {
+            $query->where('shift_assignments.effective_from', '<=', $this->log_date)
+                ->where(function ($q) {
+                    $q->whereNull('shift_assignments.effective_to')
+                        ->orWhere('shift_assignments.effective_to', '>=', $this->log_date);
+                });
+        });
+    }
+
     /**
      * Calculate working hours.
      */

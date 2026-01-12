@@ -14,12 +14,13 @@ import {
 } from '../../components/ui/select';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { Clock, LogIn, LogOut, CheckCircle, AlertCircle, Calendar, User, Users } from 'lucide-react';
+import { Clock, LogIn, LogOut, CheckCircle, AlertCircle, Calendar, User, Users, Watch } from 'lucide-react';
 
 interface StaffMember {
   id: number;
   full_name: string;
   staff_code: string;
+  email?: string;
 }
 
 interface UserData {
@@ -36,11 +37,27 @@ interface UserData {
   staff_member_id: number | null;
 }
 
+interface ShiftInfo {
+  id: number;
+  name: string;
+  start_time: string;
+  end_time: string;
+  is_night_shift: boolean;
+}
+
 interface CurrentStatus {
   status: string;
   clock_in: string | null;
   clock_out: string | null;
   total_hours: number | null;
+  late_minutes: number;
+  early_leave_minutes: number;
+  overtime_minutes: number;
+  break_minutes: number;
+  shift: ShiftInfo | null;
+  current_time: string;
+  on_leave?: boolean;
+  leave_details?: any;
 }
 
 export default function ClockInOut() {
@@ -65,9 +82,9 @@ export default function ClockInOut() {
         if (userStr) {
           const userData: UserData = JSON.parse(userStr);
           setCurrentUser(userData);
-          
-          // Check if user has admin role (admin, administrator, organisation, company, hr)
-          const adminRoles = ['admin', 'administrator', 'organisation', 'company', 'hr'];
+
+          // Check if user has admin role (admin, org, company, hr)
+          const adminRoles = ['admin', 'org', 'company', 'hr'];
           const userRoles = userData.roles || [userData.role];
           const hasAdminRole = userRoles.some(role => 
             adminRoles.includes(role.toLowerCase())
@@ -86,7 +103,7 @@ export default function ClockInOut() {
     
     loadUserData();
     
-    // Get client IP address (simplified - in real app, you'd get this from backend)
+    // Get client IP address
     fetch('https://api.ipify.org?format=json')
       .then(response => response.json())
       .then(data => setIpAddress(data.ip))
@@ -121,84 +138,75 @@ export default function ClockInOut() {
   }, [isAdminUser]);
 
   const fetchCurrentStatus = useCallback(async () => {
-  if (!selectedStaff) return;
-  
-  setIsLoadingStatus(true);
-  try {
-    const params: Record<string, unknown> = {};
-    
-    if (isAdminUser && selectedStaff) {
-      params.staff_member_id = Number(selectedStaff);
-    } else if (!isAdminUser && currentUser?.staff_member_id) {
-      params.staff_member_id = currentUser.staff_member_id;
-    }
-    
-    console.log('Refreshing status with params:', params);
-    
-    const response = await attendanceService.getCurrentStatus(params);
-    console.log('Refresh response:', response.data);
-    
-    setCurrentStatus(response.data.data);
-  } catch (error) {
-    console.error('Failed to refresh status:', error);
-    setCurrentStatus({
-      status: 'not_clocked_in',
-      clock_in: null,
-      clock_out: null,
-      total_hours: null,
-    });
-  } finally {
-    setIsLoadingStatus(false);
-  }
-}, [selectedStaff, isAdminUser, currentUser]);
-
-// Fetch current status
-useEffect(() => {
-  const fetchCurrentStatus = async () => {
-    // For admin users, wait until staff members are loaded
-    if (isAdminUser && staffMembers.length === 0) return;
-    
-    // For non-admin users, wait until we have current user data
-    if (!isAdminUser && !currentUser?.staff_member_id) return;
-    
-    if (!selectedStaff) return;
+    if (!selectedStaff && isAdminUser) return;
     
     setIsLoadingStatus(true);
     try {
-      // Prepare params - always include staff_member_id
       const params: Record<string, unknown> = {};
       
-      // For admin users, use selected staff member
       if (isAdminUser && selectedStaff) {
         params.staff_member_id = Number(selectedStaff);
-      }
-      // For non-admin users, use their own staff_member_id
-      else if (!isAdminUser && currentUser?.staff_member_id) {
+      } else if (!isAdminUser && currentUser?.staff_member_id) {
         params.staff_member_id = currentUser.staff_member_id;
       }
       
-      console.log('Fetching status with params:', params); // Debug
+      console.log('Refreshing status with params:', params);
       
       const response = await attendanceService.getCurrentStatus(params);
-      console.log('Status response:', response.data); // Debug
+      console.log('Refresh response:', response.data);
       
-      setCurrentStatus(response.data.data);
+      // Ensure we have all required fields
+      const statusData = response.data.data || {};
+      setCurrentStatus({
+        status: statusData.status || 'not_clocked_in',
+        clock_in: statusData.clock_in || null,
+        clock_out: statusData.clock_out || null,
+        total_hours: statusData.total_hours || null,
+        late_minutes: statusData.late_minutes || 0,
+        early_leave_minutes: statusData.early_leave_minutes || 0,
+        overtime_minutes: statusData.overtime_minutes || 0,
+        break_minutes: statusData.break_minutes || 0,
+        shift: statusData.shift || null,
+        current_time: statusData.current_time || new Date().toLocaleTimeString(),
+        on_leave: statusData.on_leave || false,
+        leave_details: statusData.leave_details || null,
+      });
     } catch (error) {
-      console.error('Failed to fetch current status:', error);
-      // Set default status
+      console.error('Failed to refresh status:', error);
       setCurrentStatus({
         status: 'not_clocked_in',
         clock_in: null,
         clock_out: null,
         total_hours: null,
+        late_minutes: 0,
+        early_leave_minutes: 0,
+        overtime_minutes: 0,
+        break_minutes: 0,
+        shift: null,
+        current_time: new Date().toLocaleTimeString(),
+        on_leave: false,
       });
     } finally {
       setIsLoadingStatus(false);
     }
-  };
-  
-  fetchCurrentStatus();
-}, [selectedStaff, isAdminUser, currentUser, staffMembers.length]); // Added staffMembers.length dependency
+  }, [selectedStaff, isAdminUser, currentUser]);
+
+  // Fetch current status
+  useEffect(() => {
+    const fetchStatus = async () => {
+      // For admin users, wait until staff members are loaded
+      if (isAdminUser && staffMembers.length === 0) return;
+      
+      // For non-admin users, wait until we have current user data
+      if (!isAdminUser && !currentUser?.staff_member_id) return;
+      
+      if (isAdminUser && !selectedStaff) return;
+      
+      await fetchCurrentStatus();
+    };
+    
+    fetchStatus();
+  }, [selectedStaff, isAdminUser, currentUser, staffMembers.length, fetchCurrentStatus]);
 
   // Update current time every second
   useEffect(() => {
@@ -226,124 +234,112 @@ useEffect(() => {
     });
   };
 
-const formatTimeString = (timeString: string | null | undefined) => {
-  if (!timeString) return '--:--';
-  
-  try {
-    // Check if it's already a valid ISO date string
-    if (timeString.includes('T')) {
-      const date = new Date(timeString);
-      return date.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      });
-    }
+  const formatTimeString = (timeString: string | null | undefined) => {
+    if (!timeString) return '--:--';
     
-    // Handle time-only strings (e.g., "06:12:36")
-    // Split the time string
-    const timeParts = timeString.split(':');
-    
-    if (timeParts.length >= 2) {
-      const hours = parseInt(timeParts[0], 10);
-      const minutes = parseInt(timeParts[1], 10);
+    try {
+      // Check if it's already a valid ISO date string
+      if (timeString.includes('T')) {
+        const date = new Date(timeString);
+        return date.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        });
+      }
       
-      // Create a date object with today's date and the parsed time
-      const today = new Date();
-      today.setHours(hours, minutes, 0, 0);
+      // Handle time-only strings (e.g., "06:12:36")
+      const timeParts = timeString.split(':');
       
-      return today.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-      });
+      if (timeParts.length >= 2) {
+        const hours = parseInt(timeParts[0], 10);
+        const minutes = parseInt(timeParts[1], 10);
+        
+        // Create a date object with today's date and the parsed time
+        const today = new Date();
+        today.setHours(hours, minutes, 0, 0);
+        
+        return today.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        });
+      }
+      
+      return timeString;
+    } catch (error) {
+      console.error('Error formatting time:', error, timeString);
+      return timeString;
     }
-    
-    // If we can't parse it, return the original string
-    return timeString;
-  } catch (error) {
-    console.error('Error formatting time:', error, timeString);
-    return timeString;
-  }
-};
+  };
 
-const handleClockIn = async () => {
-  setIsLoading(true);
-  setMessage(null);
-  try {
-    const data: Record<string, unknown> = {
-      ip_address: ipAddress,
-      location: location || 'Office',
-    };
-    
-    // For admin users, include staff_member_id if selected
-    if (isAdminUser && selectedStaff) {
-      data.staff_member_id = Number(selectedStaff);
+  const handleClockIn = async () => {
+    setIsLoading(true);
+    setMessage(null);
+    try {
+      const data: Record<string, unknown> = {
+        ip_address: ipAddress,
+        location: location || 'Office',
+      };
+      
+      // For admin users, include staff_member_id if selected
+      if (isAdminUser && selectedStaff) {
+        data.staff_member_id = Number(selectedStaff);
+      }
+      
+      console.log('Clock In Data:', data);
+      
+      const response = await attendanceService.clockIn(data);
+      console.log('Clock In Response:', response.data);
+      
+      // Immediately update the status
+      await fetchCurrentStatus();
+      setMessage({ type: 'success', text: 'Successfully clocked in!' });
+      showAlert('success', 'Success!', 'Successfully clocked in!', 2000);
+      
+    } catch (err: unknown) {
+      const errorMessage = getErrorMessage(err, 'Failed to clock in');
+      console.error('Clock In Error:', err);
+      setMessage({ type: 'error', text: errorMessage });
+      showAlert('error', 'Error', errorMessage);
+    } finally {
+      setIsLoading(false);
     }
-    
-    console.log('Clock In Data:', data); // Debug
-    
-    const response = await attendanceService.clockIn(data);
-    console.log('Clock In Response:', response.data); // Debug
-    
-    // Immediately update the status
-    setCurrentStatus(response.data.data);
-    setMessage({ type: 'success', text: 'Successfully clocked in!' });
-    showAlert('success', 'Success!', 'Successfully clocked in!', 2000);
-    
-    // Optionally refetch status after a short delay
-    setTimeout(() => {
-      fetchCurrentStatus();
-    }, 500);
-    
-  } catch (err: unknown) {
-    const errorMessage = getErrorMessage(err, 'Failed to clock in');
-    console.error('Clock In Error:', err); // Debug
-    setMessage({ type: 'error', text: errorMessage });
-    showAlert('error', 'Error', errorMessage);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
-const handleClockOut = async () => {
-  setIsLoading(true);
-  setMessage(null);
-  try {
-    const data: Record<string, unknown> = {
-      ip_address: ipAddress,
-      location: location || 'Office',
-    };
-    
-    // For admin users, include staff_member_id if selected
-    if (isAdminUser && selectedStaff) {
-      data.staff_member_id = Number(selectedStaff);
+  const handleClockOut = async () => {
+    setIsLoading(true);
+    setMessage(null);
+    try {
+      const data: Record<string, unknown> = {
+        ip_address: ipAddress,
+        location: location || 'Office',
+      };
+      
+      // For admin users, include staff_member_id if selected
+      if (isAdminUser && selectedStaff) {
+        data.staff_member_id = Number(selectedStaff);
+      }
+      
+      console.log('Clock Out Data:', data);
+      
+      const response = await attendanceService.clockOut(data);
+      console.log('Clock Out Response:', response.data);
+      
+      // Immediately update the status
+      await fetchCurrentStatus();
+      setMessage({ type: 'success', text: 'Successfully clocked out!' });
+      showAlert('success', 'Success!', 'Successfully clocked out!', 2000);
+      
+    } catch (err: unknown) {
+      const errorMessage = getErrorMessage(err, 'Failed to clock out');
+      console.error('Clock Out Error:', err);
+      setMessage({ type: 'error', text: errorMessage });
+      showAlert('error', 'Error', errorMessage);
+    } finally {
+      setIsLoading(false);
     }
-    
-    console.log('Clock Out Data:', data); // Debug
-    
-    const response = await attendanceService.clockOut(data);
-    console.log('Clock Out Response:', response.data); // Debug
-    
-    // Immediately update the status
-    setCurrentStatus(response.data.data);
-    setMessage({ type: 'success', text: 'Successfully clocked out!' });
-    showAlert('success', 'Success!', 'Successfully clocked out!', 2000);
-    
-    // Optionally refetch status after a short delay
-    setTimeout(() => {
-      fetchCurrentStatus();
-    }, 500);
-    
-  } catch (err: unknown) {
-    const errorMessage = getErrorMessage(err, 'Failed to clock out');
-    console.error('Clock Out Error:', err); // Debug
-    setMessage({ type: 'error', text: errorMessage });
-    showAlert('error', 'Error', errorMessage);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   // Get current staff member name
   const getCurrentStaffName = () => {
@@ -369,6 +365,27 @@ const handleClockOut = async () => {
     
     const staffMember = staffMembers.find(s => s.id.toString() === selectedStaff);
     return staffMember?.staff_code ? `Code: ${staffMember.staff_code}` : '';
+  };
+
+  // Format shift timing
+  const formatShiftTime = (shift: ShiftInfo | null) => {
+    if (!shift) return 'No shift assigned';
+    return `${shift.start_time} - ${shift.end_time}${shift.is_night_shift ? ' (Night Shift)' : ''}`;
+  };
+
+  // Determine if clock-in is disabled
+  const isClockInDisabled = () => {
+    if (isLoading || !selectedStaff) return true;
+    if (currentStatus?.on_leave) return true;
+    if (currentStatus?.status === 'clocked_in') return true;
+    return false;
+  };
+
+  // Determine if clock-out is disabled
+  const isClockOutDisabled = () => {
+    if (isLoading || !selectedStaff) return true;
+    if (currentStatus?.status !== 'clocked_in') return true;
+    return false;
   };
 
   return (
@@ -475,36 +492,66 @@ const handleClockOut = async () => {
               </div>
             ) : currentStatus ? (
               <>
-                <div className="flex justify-center">
-                  <Badge
-                    className={`text-lg px-4 py-2 ${
-                      currentStatus.status === 'clocked_in'
-                        ? 'bg-solarized-green/10 text-solarized-green'
-                        : currentStatus.status === 'clocked_out'
-                        ? 'bg-solarized-blue/10 text-solarized-blue'
-                        : 'bg-solarized-base01/10 text-solarized-base01'
-                    }`}
-                  >
-                    {currentStatus.status === 'clocked_in' && 'Clocked In'}
-                    {currentStatus.status === 'clocked_out' && 'Clocked Out'}
-                    {currentStatus.status === 'not_clocked_in' && 'Not Clocked In'}
-                  </Badge>
-                </div>
-                {/* {currentStatus.clock_in && (
-                  <p className="text-solarized-base01">
-                    Clocked in at: <strong>{formatTimeString(currentStatus.clock_in)}</strong>
-                  </p>
+                {currentStatus.on_leave ? (
+                  <div className="space-y-3">
+                    <Badge className="bg-solarized-blue/10 text-solarized-blue text-lg px-4 py-2">
+                      On Leave
+                    </Badge>
+                    {currentStatus.leave_details && (
+                      <p className="text-solarized-base01 text-sm">
+                        {currentStatus.leave_details.category?.title || 'Approved Leave'}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-center">
+                      <Badge
+                        className={`text-lg px-4 py-2 ${
+                          currentStatus.status === 'clocked_in'
+                            ? 'bg-solarized-green/10 text-solarized-green'
+                            : currentStatus.status === 'clocked_out'
+                            ? 'bg-solarized-blue/10 text-solarized-blue'
+                            : 'bg-solarized-base01/10 text-solarized-base01'
+                        }`}
+                      >
+                        {currentStatus.status === 'clocked_in' && 'Clocked In'}
+                        {currentStatus.status === 'clocked_out' && 'Clocked Out'}
+                        {currentStatus.status === 'not_clocked_in' && 'Not Clocked In'}
+                      </Badge>
+                    </div>
+                    
+                    {/* Show shift information */}
+                    {currentStatus.shift && (
+                      <div className="mt-3 p-3 bg-solarized-base3 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-solarized-base01">Shift</p>
+                            <p className="font-medium">{currentStatus.shift.name}</p>
+                            <p className="text-sm text-solarized-base01">
+                              {currentStatus.shift.start_time} - {currentStatus.shift.end_time}
+                              {currentStatus.shift.is_night_shift && (
+                                <span className="ml-2 text-xs text-solarized-violet">(Night Shift)</span>
+                              )}
+                            </p>
+                          </div>
+                          <div className="text-right space-y-1">
+                            {currentStatus.late_minutes > 0 && (
+                              <div className="text-sm text-solarized-yellow">
+                                Late: {currentStatus.late_minutes} min
+                              </div>
+                            )}
+                            {currentStatus.overtime_minutes > 0 && (
+                              <div className="text-sm text-solarized-green">
+                                OT: {currentStatus.overtime_minutes} min
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
-                {currentStatus.clock_out && (
-                  <p className="text-solarized-base01">
-                    Clocked out at: <strong>{formatTimeString(currentStatus.clock_out)}</strong>
-                  </p>
-                )}
-                {currentStatus.total_hours !== null && currentStatus.total_hours > 0 && (
-                  <p className="text-solarized-base01">
-                    Total hours today: <strong>{currentStatus.total_hours.toFixed(2)}h</strong>
-                  </p>
-                )} */}
               </>
             ) : (
               <p className="text-solarized-base01">
@@ -530,16 +577,20 @@ const handleClockOut = async () => {
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
           <CardDescription>
-            {isAdminUser 
-              ? `Clock in/out for ${getCurrentStaffName() || 'selected staff member'}`
-              : 'Use the buttons below to record your attendance for today.'}
+            {currentStatus?.on_leave ? (
+              <span className="text-solarized-blue">Employee is on leave today</span>
+            ) : isAdminUser ? (
+              `Clock in/out for ${getCurrentStaffName() || 'selected staff member'}`
+            ) : (
+              'Use the buttons below to record your attendance for today.'
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4">
             <Button
               onClick={handleClockIn}
-              disabled={isLoading || !selectedStaff || (currentStatus?.status === 'clocked_in')}
+              disabled={isClockInDisabled()}
               className="flex-1 h-16 text-lg bg-solarized-green hover:bg-solarized-green/90"
             >
               <LogIn className="mr-2 h-6 w-6" />
@@ -547,7 +598,7 @@ const handleClockOut = async () => {
             </Button>
             <Button
               onClick={handleClockOut}
-              disabled={isLoading || !selectedStaff || (currentStatus?.status !== 'clocked_in')}
+              disabled={isClockOutDisabled()}
               variant="outline"
               className="flex-1 h-16 text-lg border-solarized-red text-solarized-red hover:bg-solarized-red/10"
             >
@@ -560,6 +611,11 @@ const handleClockOut = async () => {
               Please select a staff member to enable clock in/out
             </p>
           )}
+          {currentStatus?.on_leave && (
+            <p className="text-sm text-solarized-blue mt-2">
+              Cannot clock in/out: Employee is on approved leave today
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -568,23 +624,43 @@ const handleClockOut = async () => {
           <CardTitle>Today's Summary</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="text-center p-4 bg-solarized-base3 rounded-lg">
-              <Clock className="h-8 w-8 mx-auto mb-2 text-solarized-blue" />
-              <p className="text-sm text-solarized-base01">Clock In</p>
-              <p className="font-semibold">{formatTimeString(currentStatus?.clock_in) || '--:--'}</p>
+          {currentStatus?.on_leave ? (
+            <div className="text-center py-8">
+              <Calendar className="h-12 w-12 text-solarized-blue mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-solarized-base02">On Leave Today</h3>
+              <p className="text-solarized-base01 mt-1">
+                {currentStatus.leave_details?.category?.title || 'Approved Leave'}
+              </p>
             </div>
-            <div className="text-center p-4 bg-solarized-base3 rounded-lg">
-              <Clock className="h-8 w-8 mx-auto mb-2 text-solarized-red" />
-              <p className="text-sm text-solarized-base01">Clock Out</p>
-              <p className="font-semibold">{formatTimeString(currentStatus?.clock_out) || '--:--'}</p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-5">
+              <div className="text-center p-4 bg-solarized-base3 rounded-lg">
+                <Clock className="h-8 w-8 mx-auto mb-2 text-solarized-blue" />
+                <p className="text-sm text-solarized-base01">Clock In</p>
+                <p className="font-semibold">{formatTimeString(currentStatus?.clock_in) || '--:--'}</p>
+              </div>
+              <div className="text-center p-4 bg-solarized-base3 rounded-lg">
+                <Clock className="h-8 w-8 mx-auto mb-2 text-solarized-red" />
+                <p className="text-sm text-solarized-base01">Clock Out</p>
+                <p className="font-semibold">{formatTimeString(currentStatus?.clock_out) || '--:--'}</p>
+              </div>
+              <div className="text-center p-4 bg-solarized-base3 rounded-lg">
+                <Clock className="h-8 w-8 mx-auto mb-2 text-solarized-green" />
+                <p className="text-sm text-solarized-base01">Total Hours</p>
+                <p className="font-semibold">{currentStatus?.total_hours?.toFixed(2) || '0.00'}h</p>
+              </div>
+              <div className="text-center p-4 bg-solarized-base3 rounded-lg">
+                <Watch className="h-8 w-8 mx-auto mb-2 text-solarized-yellow" />
+                <p className="text-sm text-solarized-base01">Late Minutes</p>
+                <p className="font-semibold">{currentStatus?.late_minutes || 0}</p>
+              </div>
+              <div className="text-center p-4 bg-solarized-base3 rounded-lg">
+                <Watch className="h-8 w-8 mx-auto mb-2 text-solarized-orange" />
+                <p className="text-sm text-solarized-base01">Overtime</p>
+                <p className="font-semibold">{currentStatus?.overtime_minutes || 0} min</p>
+              </div>
             </div>
-            <div className="text-center p-4 bg-solarized-base3 rounded-lg">
-              <Clock className="h-8 w-8 mx-auto mb-2 text-solarized-green" />
-              <p className="text-sm text-solarized-base01">Total Hours</p>
-              <p className="font-semibold">{currentStatus?.total_hours?.toFixed(2) || '0.00'}h</p>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
