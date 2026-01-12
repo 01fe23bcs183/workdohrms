@@ -59,7 +59,7 @@ export default function LeaveApply() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await leaveService.getCategories();
+        const response = await leaveService.getCategoriesList(); // Use permission-free endpoint for dropdown
 
         // paginated response → data.data
         debugger;

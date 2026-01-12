@@ -154,7 +154,8 @@ export const attendanceService = {
 
 
 export const leaveService = {
-  getCategories: () => api.get('/time-off-categories'),
+  getCategories: () => api.get('/time-off-categories'), // Admin endpoint - requires permission
+  getCategoriesList: () => api.get('/leave/categories-list'), // Public endpoint for dropdown - no permission needed
   createCategory: (data: Record<string, unknown>) => api.post('/time-off-categories', data),
   updateCategory: (id: number, data: Record<string, unknown>) => api.put(`/time-off-categories/${id}`, data),
   getMyRequests: (params?: { page?: number; per_page?: number }) => api.get('/leave/my-requests', { params }),

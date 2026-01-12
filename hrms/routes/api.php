@@ -207,6 +207,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // PROMPT SET 7: Leave Management
     // ============================================
     Route::apiResource('time-off-categories', TimeOffCategoryController::class)->middleware('permission:manage_time_off_categories');
+    Route::get('/leave/categories-list', [TimeOffCategoryController::class, 'index']); // Public endpoint for dropdown - no permission needed
     Route::get('/leave/my-requests', [TimeOffRequestController::class, 'myRequests']);
     Route::get('/leave/all-requests', [TimeOffRequestController::class, 'index'])->middleware('permission:view_all_time_off');
     Route::apiResource('time-off-requests', TimeOffRequestController::class);
