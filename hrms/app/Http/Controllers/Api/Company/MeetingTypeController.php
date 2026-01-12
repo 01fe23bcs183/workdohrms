@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Company;
 
 use App\Http\Controllers\Controller;
+use App\Services\Company\MeetingTypeService;
 use App\Models\MeetingType;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
@@ -12,9 +13,16 @@ class MeetingTypeController extends Controller
 {
     use ApiResponse;
 
+    protected MeetingTypeService $service;
+
+    public function __construct(MeetingTypeService $service)
+    {
+        $this->service = $service;
+    }
+
     public function index(Request $request)
     {
-        $types = MeetingType::withCount('meetings')->get();
+        $types = $this->service->getAll($request->all());
 
         return $this->success($types);
     }

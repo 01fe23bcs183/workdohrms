@@ -50,8 +50,8 @@ interface MeetingActionItem {
     meeting_id: number;
     title: string;
     assigned_to: number | null;
-    due_date: string | null;
-    status: 'pending' | 'in_progress' | 'completed';
+    due_date: string ;
+    // status: 'pending' | 'in_progress' | 'completed';
     meeting?: {
         id: number;
         title: string;
@@ -78,7 +78,7 @@ export default function MeetingActionItems() {
     const [employees, setEmployees] = useState<{ id: number; full_name: string; last_name: string }[]>([]);
 
     // View Modal State
-    const [viewingItem, setViewingItem] = useState<MeetingActionItem | null>(null);
+    const [viewingItem, setViewingItem] = useState<MeetingActionItem>();
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
     const [formData, setFormData] = useState({
@@ -86,7 +86,7 @@ export default function MeetingActionItems() {
         title: '',
         assigned_to: '',
         due_date: '',
-        status: 'pending',
+        // status: 'pending',
     });
 
     const fetchMetadata = useCallback(async () => {
@@ -170,7 +170,7 @@ export default function MeetingActionItems() {
             title: '',
             assigned_to: '',
             due_date: '',
-            status: 'pending',
+            // status: 'pending',
         });
         setEditingItem(null);
     };
@@ -182,7 +182,7 @@ export default function MeetingActionItems() {
             title: item.title,
             assigned_to: item.assigned_to?.toString() || '',
             due_date: item.due_date || '',
-            status: item.status,
+            // status: item.status,
         });
         setIsDialogOpen(true);
     };
@@ -203,21 +203,21 @@ export default function MeetingActionItems() {
         }
     };
 
-    const getStatusBadge = (status: string) => {
-        const variants: Record<string, string> = {
-            completed: 'bg-green-100 text-green-700 border-green-200',
-            in_progress: 'bg-blue-100 text-blue-700 border-blue-200',
-            pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-        };
-        return (
-            <Badge variant="outline" className={`${variants[status] || 'bg-gray-100 text-gray-700'}`}>
-                {status.replace('_', ' ').toUpperCase()}
-            </Badge>
-        );
-    };
+    // const getStatusBadge = (status: string) => {
+    //     const variants: Record<string, string> = {
+    //         completed: 'bg-green-100 text-green-700 border-green-200',
+    //         in_progress: 'bg-blue-100 text-blue-700 border-blue-200',
+    //         pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+    //     };
+    //     return (
+    //         <Badge variant="outline" className={`${variants[status] || 'bg-gray-100 text-gray-700'}`}>
+    //             {status.replace('_', ' ').toUpperCase()}
+    //         </Badge>
+    //     );
+    // };
 
-    const isOverdue = (dueDate: string | null, status: string) => {
-        if (!dueDate || status === 'completed') return false;
+    const isOverdue = (dueDate: string ) => {
+        if (!dueDate) return false;
         return new Date(dueDate) < new Date();
     };
 
@@ -235,10 +235,10 @@ export default function MeetingActionItems() {
         },
         {
             name: 'Assigned To',
-            selector: (row) => `${row.assigned_employee?.full_name} ${row.assigned_employee?.last_name}`,
+            selector: (row) => `${row.assigned_employee?.full_name} `,
             cell: (row) => (
                 <span>
-                    {row.assigned_employee ? `${row.assigned_employee.full_name} ${row.assigned_employee.last_name}` : 'Unassigned'}
+                    {row.assigned_employee ? `${row.assigned_employee.full_name}` : 'Unassigned'}
                 </span>
             ),
             sortable: true,
@@ -248,22 +248,22 @@ export default function MeetingActionItems() {
             selector: (row) => row.due_date || '-',
             cell: (row) => (
                 <div>
-                    <p className={isOverdue(row.due_date, row.status) ? 'text-red-600 font-medium' : ''}>
+                    <p className= 'text-red-600 font-medium'>
                         {row.due_date ? new Date(row.due_date).toLocaleDateString() : '-'}
                     </p>
-                    {isOverdue(row.due_date, row.status) && (
+                    {/* {isOverdue(row.due_date, row.status) && (
                         <span className="text-[10px] text-red-500 uppercase font-bold">Overdue</span>
-                    )}
+                    )} */}
                 </div>
             ),
             sortable: true,
             width: '130px',
         },
-        {
-            name: 'Status',
-            cell: (row) => getStatusBadge(row.status),
-            width: '150px',
-        },
+        // {
+        //     name: 'Status',
+        //     cell: (row) => getStatusBadge(row.status),
+        //     width: '150px',
+        // },
         {
             name: 'Action',
             cell: (row) => (
@@ -337,9 +337,9 @@ export default function MeetingActionItems() {
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground">Overdue</p>
-                                <p className="text-xl font-bold text-solarized-base02">
+                                {/* <p className="text-xl font-bold text-solarized-base02">
                                     {actionItems.filter(i => isOverdue(i.due_date, i.status)).length}
-                                </p>
+                                </p> */}
                             </div>
                         </div>
                     </CardContent>
@@ -352,9 +352,9 @@ export default function MeetingActionItems() {
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground">Completion Rate</p>
-                                <p className="text-xl font-bold text-solarized-base02">
+                                {/* <p className="text-xl font-bold text-solarized-base02">
                                     {totalRows > 0 ? Math.round((actionItems.filter(i => i.status === 'completed').length / totalRows) * 100) : 0}%
-                                </p>
+                                </p> */}
                             </div>
                         </div>
                     </CardContent>
@@ -472,7 +472,7 @@ export default function MeetingActionItems() {
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
+                            {/* <div className="space-y-2">
                                 <Label htmlFor="status">Status *</Label>
                                 <Select
                                     value={formData.status}
@@ -488,7 +488,7 @@ export default function MeetingActionItems() {
                                         <SelectItem value="completed">Completed</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </div>
+                            </div> */}
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -533,18 +533,18 @@ export default function MeetingActionItems() {
                                 </div>
                                 <div>
                                     <Label className="text-muted-foreground">Due Date</Label>
-                                    <p className={isOverdue(viewingItem.due_date, viewingItem.status) ? 'font-medium text-red-600' : 'font-medium'}>
+                                    <p className={isOverdue(viewingItem.due_date) ? 'font-medium text-red-600' : 'font-medium'}>
                                         {viewingItem.due_date ? new Date(viewingItem.due_date).toLocaleDateString() : '-'}
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            {/* <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <Label className="text-muted-foreground">Status</Label>
                                     <div className="mt-1">{getStatusBadge(viewingItem.status)}</div>
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
                     )}
                     <DialogFooter>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Company;
 
 use App\Http\Controllers\Controller;
+use App\Services\Company\MeetingService;
 use App\Models\Meeting;
 use App\Models\MeetingActionItem;
 use App\Models\MeetingAttendee;
@@ -15,18 +16,16 @@ class MeetingController extends Controller
 {
     use ApiResponse;
 
+    protected MeetingService $meetingService;
+
+    public function __construct(MeetingService $meetingService)
+    {
+        $this->meetingService = $meetingService;
+    }
+
     public function index(Request $request)
     {
-        $query = Meeting::with(['meetingType', 'meetingRoom', 'attendees.staffMember']);
-
-        if ($request->date) {
-            $query->whereDate('date', $request->date);
-        }
-        if ($request->status) {
-            $query->where('status', $request->status);
-        }
-
-        $meetings = $query->orderBy('date')->orderBy('start_time')->paginate($request->per_page ?? 15);
+        $meetings = $this->meetingService->getAll($request->all());
 
         return $this->success($meetings);
     }

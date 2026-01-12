@@ -3,6 +3,7 @@
 namespace App\Services\Company;
 
 use App\Models\MeetingRoom;
+use Illuminate\Database\Eloquent\Model;
 use App\Services\Core\BaseService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -55,7 +56,7 @@ class MeetingRoomService extends BaseService
     /**
      * Update a meeting room.
      */
-    public function update(int|MeetingRoom $room, array $data): MeetingRoom
+    public function update(int|Model $room, array $data): Model
     {
         if (is_int($room)) {
             $room = $this->findOrFail($room);
@@ -69,7 +70,7 @@ class MeetingRoomService extends BaseService
     /**
      * Delete a meeting room.
      */
-    public function delete(int|MeetingRoom $room): bool
+    public function delete(int|Model $room): bool
     {
         if (is_int($room)) {
             $room = $this->findOrFail($room);
@@ -92,12 +93,11 @@ class MeetingRoomService extends BaseService
     /**
      * Get rooms for dropdown.
      */
-    public function getForDropdown(): Collection
+    public function getForDropdown(array $params = [], array $fields = ['id', 'name']): Collection
     {
-        return $this->query()
-            ->where('is_active', true)
-            ->select(['id', 'name', 'capacity'])
-            ->orderBy('name')
-            ->get();
+        $query = $this->query()->select($fields);
+        $query = $this->applyFilters($query, $params);
+
+        return $query->orderBy($fields[1] ?? 'id')->get();
     }
 }

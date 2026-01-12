@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Company;
 
 use App\Http\Controllers\Controller;
+use App\Services\Company\MeetingAttendeeService;
 use App\Models\MeetingAttendee;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
@@ -12,21 +13,16 @@ class MeetingAttendeeController extends Controller
 {
     use ApiResponse;
 
+    protected MeetingAttendeeService $service;
+
+    public function __construct(MeetingAttendeeService $service)
+    {
+        $this->service = $service;
+    }
+
     public function index(Request $request)
     {
-        $query = MeetingAttendee::with(['meeting', 'staffMember']);
-
-        if ($request->meeting_id) {
-            $query->where('meeting_id', $request->meeting_id);
-        }
-
-        if ($request->search) {
-            $query->whereHas('staffMember', function ($q) use ($request) {
-                $q->where('full_name', 'like', '%' . $request->search . '%');
-            });
-        }
-
-        $attendees = $query->latest()->paginate($request->per_page ?? 15);
+        $attendees = $this->service->getAll($request->all());
 
         return $this->success($attendees);
     }

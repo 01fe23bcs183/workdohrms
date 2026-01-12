@@ -58,7 +58,7 @@ interface MeetingAttendee {
     staff_member?: {
         id: number;
         full_name: string;
-        last_name: string;
+        // full_name: string;
     };
 }
 
@@ -74,7 +74,7 @@ export default function MeetingAttendees() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingAttendee, setEditingAttendee] = useState<MeetingAttendee | null>(null);
     const [meetings, setMeetings] = useState<{ id: number; title: string; date: string }[]>([]);
-    const [employees, setEmployees] = useState<{ id: number; full_name: string; last_name: string }[]>([]);
+    const [employees, setEmployees] = useState<{ id: number; full_name: string }[]>([]);
 
     // View Modal State
     const [viewingAttendee, setViewingAttendee] = useState<MeetingAttendee | null>(null);
@@ -216,10 +216,10 @@ export default function MeetingAttendees() {
     const columns: TableColumn<MeetingAttendee>[] = [
         {
             name: 'Attendee',
-            selector: (row) => `${row.staff_member?.full_name} ${row.staff_member?.last_name}`,
+            selector: (row) => row.staff_member?.full_name || '',
             cell: (row) => (
                 <div className="py-2">
-                    <p className="font-medium">{row.staff_member?.full_name} {row.staff_member?.last_name}</p>
+                    <p className="font-medium">{row.staff_member?.full_name || 'N/A'}</p>
                     {row.is_organizer && (
                         <Badge variant="secondary" className="text-[10px] mt-1 uppercase bg-purple-100 text-purple-700 border-purple-200">
                             Organizer
@@ -241,7 +241,7 @@ export default function MeetingAttendees() {
             sortable: true,
         },
 
-        
+
         {
             name: 'Status',
             cell: (row) => getStatusBadge(row.status),
@@ -427,7 +427,7 @@ export default function MeetingAttendees() {
                                     <SelectContent>
                                         {employees.map((e) => (
                                             <SelectItem key={e.id} value={e.id.toString()}>
-                                                {e.full_name} {e.last_name}
+                                                {e.full_name}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -490,7 +490,7 @@ export default function MeetingAttendees() {
                                 <div>
                                     <Label className="text-muted-foreground">Name</Label>
                                     <p className="font-medium text-lg">
-                                        {viewingAttendee.staff_member?.full_name} {viewingAttendee.staff_member?.last_name}
+                                        {viewingAttendee.staff_member?.full_name}
                                     </p>
                                 </div>
                                 <div>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Company;
 
 use App\Http\Controllers\Controller;
+use App\Services\Company\MeetingMinuteService;
 use App\Models\MeetingMinutes;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
@@ -12,19 +13,16 @@ class MeetingMinutesController extends Controller
 {
     use ApiResponse;
 
+    protected MeetingMinuteService $service;
+
+    public function __construct(MeetingMinuteService $service)
+    {
+        $this->service = $service;
+    }
+
     public function index(Request $request)
     {
-        $query = MeetingMinutes::with(['meeting', 'creator']);
-
-        if ($request->meeting_id) {
-            $query->where('meeting_id', $request->meeting_id);
-        }
-
-        if ($request->search) {
-            $query->where('content', 'like', '%' . $request->search . '%');
-        }
-
-        $minutes = $query->latest()->paginate($request->per_page ?? 15);
+        $minutes = $this->service->getAll($request->all());
 
         return $this->success($minutes);
     }

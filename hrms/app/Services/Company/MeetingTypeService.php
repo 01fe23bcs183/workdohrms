@@ -3,6 +3,7 @@
 namespace App\Services\Company;
 
 use App\Models\MeetingType;
+use Illuminate\Database\Eloquent\Model;
 use App\Services\Core\BaseService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -19,7 +20,7 @@ class MeetingTypeService extends BaseService
     protected array $defaultRelations = [];
 
     protected array $searchableFields = [
-        'name',
+        'title',
     ];
 
     /**
@@ -54,7 +55,7 @@ class MeetingTypeService extends BaseService
     /**
      * Update a meeting type.
      */
-    public function update(int|MeetingType $type, array $data): MeetingType
+    public function update(int|Model $type, array $data): Model
     {
         if (is_int($type)) {
             $type = $this->findOrFail($type);
@@ -68,7 +69,7 @@ class MeetingTypeService extends BaseService
     /**
      * Delete a meeting type.
      */
-    public function delete(int|MeetingType $type): bool
+    public function delete(int|Model $type): bool
     {
         if (is_int($type)) {
             $type = $this->findOrFail($type);
@@ -80,11 +81,11 @@ class MeetingTypeService extends BaseService
     /**
      * Get types for dropdown.
      */
-    public function getForDropdown(): Collection
+    public function getForDropdown(array $params = [], array $fields = ['id', 'title']): Collection
     {
-        return $this->query()
-            ->select(['id', 'name'])
-            ->orderBy('name')
-            ->get();
+        $query = $this->query()->select($fields);
+        $query = $this->applyFilters($query, $params);
+
+        return $query->orderBy($fields[1] ?? 'id')->get();
     }
 }

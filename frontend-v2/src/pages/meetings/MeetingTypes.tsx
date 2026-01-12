@@ -86,7 +86,7 @@ export default function MeetingTypes() {
                     search,
                 };
 
-                const response = await meetingTypeService.getAll();
+                const response = await meetingTypeService.getAll(params);
 
                 if (response.data.success) {
                     const data = response.data.data;
@@ -276,7 +276,7 @@ export default function MeetingTypes() {
                                 setIsViewDialogOpen(true);
                             }}
                         >
-                              <Eye className="mr-2 h-4 w-4" />  View
+                            <Eye className="mr-2 h-4 w-4" />  View
                         </DropdownMenuItem>
                         <DropdownMenuItem
                             onClick={() => {

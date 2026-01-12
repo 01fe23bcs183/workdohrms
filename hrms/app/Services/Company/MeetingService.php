@@ -3,6 +3,7 @@
 namespace App\Services\Company;
 
 use App\Models\Meeting;
+use Illuminate\Database\Eloquent\Model;
 use App\Models\MeetingActionItem;
 use App\Models\MeetingAttendee;
 use App\Models\MeetingMinutes;
@@ -10,6 +11,8 @@ use App\Services\Core\BaseService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Meeting Service
@@ -23,7 +26,6 @@ class MeetingService extends BaseService
     protected array $defaultRelations = [
         'meetingType',
         'meetingRoom',
-        'organizer',
         'attendees.staffMember',
     ];
 
@@ -39,6 +41,39 @@ class MeetingService extends BaseService
     ];
 
     /**
+     * Apply search to the query.
+     */
+    protected function applySearch(Builder $query, string $search): Builder
+    {
+        return $query->where(function ($q) use ($search) {
+            // 1. Search in own fields
+            foreach ($this->searchableFields as $field) {
+                $q->orWhere($field, 'like', "%{$search}%");
+            }
+
+            // 2. Search in Meeting Type
+            $q->orWhereHas('meetingType', function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%");
+            });
+
+            // 3. Search in Meeting Room
+            $q->orWhereHas('meetingRoom', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%");
+            });
+
+            // 4. Search in Minutes
+            $q->orWhereHas('minutes', function ($q) use ($search) {
+                $q->where('content', 'like', "%{$search}%");
+            });
+
+            // 5. Search in Attendees
+            $q->orWhereHas('attendees.staffMember', function ($q) use ($search) {
+                $q->where('full_name', 'like', "%{$search}%");
+            });
+        });
+    }
+
+    /**
      * Get all meetings with filtering and pagination.
      */
     public function getAll(array $params = []): LengthAwarePaginator|Collection
@@ -52,11 +87,11 @@ class MeetingService extends BaseService
         }
 
         if (! empty($params['date'])) {
-            $query->whereDate('start_time', $params['date']);
+            $query->whereDate('date', $params['date']);
         }
 
         if (! empty($params['start_date']) && ! empty($params['end_date'])) {
-            $query->whereBetween('start_time', [$params['start_date'], $params['end_date']]);
+            $query->whereBetween('date', [$params['start_date'], $params['end_date']]);
         }
 
         $query = $this->applyOrdering($query, $params);
@@ -94,10 +129,11 @@ class MeetingService extends BaseService
         });
     }
 
+
     /**
      * Update a meeting.
      */
-    public function update(int|Meeting $meeting, array $data): Meeting
+    public function update(int|Model $meeting, array $data): Model
     {
         if (is_int($meeting)) {
             $meeting = $this->findOrFail($meeting);
@@ -124,7 +160,7 @@ class MeetingService extends BaseService
     /**
      * Delete a meeting.
      */
-    public function delete(int|Meeting $meeting): bool
+    public function delete(int|Model $meeting): bool
     {
         if (is_int($meeting)) {
             $meeting = $this->findOrFail($meeting);

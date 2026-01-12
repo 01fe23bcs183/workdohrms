@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Company;
 
 use App\Http\Controllers\Controller;
+use App\Services\Company\MeetingRoomService;
 use App\Models\MeetingRoom;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
@@ -12,13 +13,16 @@ class MeetingRoomController extends Controller
 {
     use ApiResponse;
 
+    protected MeetingRoomService $service;
+
+    public function __construct(MeetingRoomService $service)
+    {
+        $this->service = $service;
+    }
+
     public function index(Request $request)
     {
-        $query = MeetingRoom::query();
-        if ($request->status) {
-            $query->where('status', $request->status);
-        }
-        $rooms = $query->get();
+        $rooms = $this->service->getAll($request->all());
 
         return $this->success($rooms);
     }

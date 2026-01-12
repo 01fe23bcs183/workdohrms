@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Company;
 
 use App\Http\Controllers\Controller;
 use App\Models\MeetingActionItem;
+use App\Services\Company\MeetingActionItemService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -12,23 +13,16 @@ class MeetingActionItemController extends Controller
 {
     use ApiResponse;
 
+    protected $service;
+
+    public function __construct(MeetingActionItemService $service)
+    {
+        $this->service = $service;
+    }
+
     public function index(Request $request)
     {
-        $query = MeetingActionItem::with(['meeting', 'assignedEmployee']);
-
-        if ($request->meeting_id) {
-            $query->where('meeting_id', $request->meeting_id);
-        }
-
-        if ($request->status) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->search) {
-            $query->where('title', 'like', '%' . $request->search . '%');
-        }
-
-        $items = $query->latest()->paginate($request->per_page ?? 15);
+        $items = $this->service->getAll($request->all());
 
         return $this->success($items);
     }
@@ -47,9 +41,9 @@ class MeetingActionItemController extends Controller
             return $this->validationError($validator->errors());
         }
 
-        $item = MeetingActionItem::create($request->all());
+        $item = $this->service->create($request->all());
 
-        return $this->created($item->load(['meeting', 'assignedEmployee']), 'Action item added');
+        return $this->created($item, 'Action item added');
     }
 
     public function show(MeetingActionItem $meetingActionItem)
@@ -70,14 +64,14 @@ class MeetingActionItemController extends Controller
             return $this->validationError($validator->errors());
         }
 
-        $meetingActionItem->update($request->all());
+        $item = $this->service->update($meetingActionItem, $request->all());
 
-        return $this->success($meetingActionItem->load(['meeting', 'assignedEmployee']), 'Action item updated');
+        return $this->success($item, 'Action item updated');
     }
 
     public function destroy(MeetingActionItem $meetingActionItem)
     {
-        $meetingActionItem->delete();
+        $this->service->delete($meetingActionItem);
 
         return $this->noContent('Action item deleted');
     }
