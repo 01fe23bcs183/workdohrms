@@ -305,10 +305,15 @@ class AttendanceService extends BaseService
             ];
         }
 
+        // Return clock_in and clock_out as datetime strings for frontend timezone conversion
+        // The model casts these to datetime, so they're already Carbon instances
+        $clockInDateTime = $workLog->clock_in?->format('Y-m-d H:i:s');
+        $clockOutDateTime = $workLog->clock_out?->format('Y-m-d H:i:s');
+
         return [
             'status' => $workLog->clock_out ? 'clocked_out' : 'clocked_in',
-            'clock_in' => $this->formatTime($workLog->clock_in),
-            'clock_out' => $this->formatTime($workLog->clock_out),
+            'clock_in' => $clockInDateTime,
+            'clock_out' => $clockOutDateTime,
             'total_hours' => $workLog->total_hours,
             'late_minutes' => $workLog->late_minutes,
             'early_leave_minutes' => $workLog->early_leave_minutes,

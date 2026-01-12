@@ -42,17 +42,13 @@ export default function ClockInOutSelf() {
         if (userStr) {
           const userData: UserData = JSON.parse(userStr);
           setCurrentUser(userData);
-          
-          if (!userData.staff_member_id) {
-            showAlert('error', 'Error', 'You are not linked to a staff member');
-          }
         }
       } catch (error) {
         console.error('Failed to parse user data:', error);
         showAlert('error', 'Error', 'Failed to load user data');
       }
     };
-    
+
     loadUserData();
     
     // Get IP address
@@ -117,35 +113,38 @@ const formatTimeString = (timeString: string | null | undefined) => {
   if (!timeString) return '--:--';
 
   try {
-    // Check if it's already a valid ISO date string (from backend)
-    if (timeString.includes('T')) {
-      const date = new Date(timeString);
+    // Check if it's a datetime string from backend (in UTC)
+    // Format: "YYYY-MM-DD HH:MM:SS" or ISO format
+    if (timeString.includes(' ') || timeString.includes('T')) {
+      // Replace space with T and add 'Z' to indicate UTC timezone
+      const isoString = (timeString.includes('T') ? timeString : timeString.replace(' ', 'T')) + 'Z';
+      const date = new Date(isoString);
 
-      // Get hours and minutes directly from the parsed date
-      const hours = date.getHours();
-      const minutes = date.getMinutes();
-
-      // Format as HH:MM AM/PM
-      const period = hours >= 12 ? 'PM' : 'AM';
-      const displayHours = hours % 12 || 12; // Convert 0 to 12
-      const displayMinutes = minutes.toString().padStart(2, '0');
-
-      return `${displayHours}:${displayMinutes} ${period}`;
+      // JavaScript automatically converts UTC to local timezone when parsing ISO strings with Z
+      // Use same format as formatTime: HH:MM:SS AM/PM
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
     }
 
-    // Handle time-only strings (e.g., "06:12:36")
+    // Handle time-only strings (fallback for legacy format)
     const timeParts = timeString.split(':');
 
     if (timeParts.length >= 2) {
       const hours = parseInt(timeParts[0], 10);
       const minutes = parseInt(timeParts[1], 10);
+      const seconds = timeParts.length >= 3 ? parseInt(timeParts[2], 10) : 0;
 
-      // Format as HH:MM AM/PM
+      // Format as HH:MM:SS AM/PM
       const period = hours >= 12 ? 'PM' : 'AM';
       const displayHours = hours % 12 || 12; // Convert 0 to 12
       const displayMinutes = minutes.toString().padStart(2, '0');
+      const displaySeconds = seconds.toString().padStart(2, '0');
 
-      return `${displayHours}:${displayMinutes} ${period}`;
+      return `${displayHours}:${displayMinutes}:${displaySeconds} ${period}`;
     }
 
     // If we can't parse it, return the original string
@@ -200,24 +199,26 @@ const formatTimeString = (timeString: string | null | undefined) => {
     }
   };
 
-  if (!currentUser?.staff_member_id) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <AlertCircle className="h-16 w-16 text-solarized-red mb-4" />
-        <h2 className="text-2xl font-bold text-solarized-base02 mb-2">Staff Member Not Found</h2>
-        <p className="text-solarized-base01 text-center max-w-md">
-          You are not linked to a staff member. Please contact your administrator to link your account.
-        </p>
-      </div>
-    );
-  }
+  const hasStaffMember = !!currentUser?.staff_member_id;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-solarized-base02">My Attendance</h1>
-        <p className="text-solarized-base01">Record your attendance for today</p>
+        <p className="text-solarized-base01">
+          {hasStaffMember ? 'Record your attendance for today' : 'View attendance information'}
+        </p>
       </div>
+
+      {!hasStaffMember && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            You are not linked to a staff member profile. Clock in/out functionality is not available.
+            Please contact your administrator if you need access to these features.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="border-0 shadow-md">
@@ -305,14 +306,16 @@ const formatTimeString = (timeString: string | null | undefined) => {
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
           <CardDescription>
-            Use the buttons below to record your attendance for today.
+            {hasStaffMember
+              ? 'Use the buttons below to record your attendance for today.'
+              : 'Clock in/out functionality is not available for your account.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4">
             <Button
               onClick={handleClockIn}
-              disabled={isLoading || (currentStatus?.status === 'clocked_in')}
+              disabled={!hasStaffMember || isLoading || (currentStatus?.status === 'clocked_in')}
               className="flex-1 h-16 text-lg bg-solarized-green hover:bg-solarized-green/90"
             >
               <LogIn className="mr-2 h-6 w-6" />
@@ -320,7 +323,7 @@ const formatTimeString = (timeString: string | null | undefined) => {
             </Button>
             <Button
               onClick={handleClockOut}
-              disabled={isLoading || (currentStatus?.status !== 'clocked_in')}
+              disabled={!hasStaffMember || isLoading || (currentStatus?.status !== 'clocked_in')}
               variant="outline"
               className="flex-1 h-16 text-lg border-solarized-red text-solarized-red hover:bg-solarized-red/10"
             >
