@@ -38,6 +38,14 @@ class AccessSeeder extends Seeder
         // Define permissions with resource and action - sorted by resource and action type
         $permissionDefinitions = [
             // ============================================
+            // DOCUMENTS (Admin, Org, Company, HR)
+            // ============================================
+            ['name' => 'view_documents', 'resource' => 'documents', 'action' => 'view', 'description' => 'View documents', 'sort_order' => 1],
+            ['name' => 'create_documents', 'resource' => 'documents', 'action' => 'create', 'description' => 'Create documents', 'sort_order' => 2],
+            ['name' => 'edit_documents', 'resource' => 'documents', 'action' => 'edit', 'description' => 'Edit documents', 'sort_order' => 3],
+            ['name' => 'delete_documents', 'resource' => 'documents', 'action' => 'delete', 'description' => 'Delete documents', 'sort_order' => 4],
+
+            // ============================================
             // ORGANIZATIONS (Admin only)
             // ============================================
             ['name' => 'view_organizations', 'resource' => 'organizations', 'action' => 'view', 'description' => 'View organizations', 'sort_order' => 1],
@@ -284,6 +292,8 @@ class AccessSeeder extends Seeder
         // COMPANY: Company-level access
         $companyRole = Role::findByName('company');
         $companyRole->syncPermissions([
+            // Documents (view only)
+            'view_documents',
             // Companies (view only - their own)
             'view_companies',
             // Staff (CRUD within company, no delete)
