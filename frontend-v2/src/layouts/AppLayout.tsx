@@ -59,7 +59,6 @@ const navigation: NavItem[] = [
     name: 'Documents',
     href: '/documents',
     icon: FileText,
-    permission: 'view_documents',
     children: [
       { name: 'Document Types', href: '/documents/types' },
       // { name: 'Document Locations', href: '/documents/locations' },

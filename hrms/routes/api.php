@@ -556,7 +556,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // ============================================
 
     // UNIFIED UPLOAD (Recommended - Auto-detects storage based on org/company)
-    Route::post('/documents/upload', [DocumentController::class, 'upload']);
+    Route::post('/documents/upload/{staff_id}', [DocumentController::class, 'upload']);
     // Standard CRUD
     Route::get('/documents', [DocumentController::class, 'index']);      // List
     Route::get('/documents/{id}', [DocumentController::class, 'show']);  // Show (includes URL)
@@ -578,11 +578,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/organizations/{organization}', [OrganizationController::class, 'destroy'])->middleware('permission:manage_settings');
 
     // Companies
-    Route::get('/companies', [CompanyController::class, 'index'])->middleware('permission:manage_settings');
-    Route::post('/companies', [CompanyController::class, 'store'])->middleware('permission:manage_settings');
-    Route::get('/companies/{company}', [CompanyController::class, 'show'])->middleware('permission:manage_settings');
-    Route::put('/companies/{company}', [CompanyController::class, 'update'])->middleware('permission:manage_settings');
-    Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->middleware('permission:manage_settings');
+    Route::get('/companies', [CompanyController::class, 'index'])->middleware('permission:view_companies');
+    Route::post('/companies', [CompanyController::class, 'store'])->middleware('permission:create_companies');
+    Route::get('/companies/{company}', [CompanyController::class, 'show'])->middleware('permission:view_companies');
+    Route::put('/companies/{company}', [CompanyController::class, 'update'])->middleware('permission:edit_companies');
+    Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->middleware('permission:delete_companies');
 
     // Document Locations
     Route::get('/document-locations', [DocumentLocationController::class, 'index']);

@@ -701,8 +701,8 @@ export const documentLocationService = {
 };
 
 export const documentService = {
-  upload: (data: FormData) =>
-    api.post('/documents/upload', data, {
+  upload: (staffId: number, data: FormData) =>
+    api.post(`/documents/upload/${staffId}`, data, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   getAll: (params?: {

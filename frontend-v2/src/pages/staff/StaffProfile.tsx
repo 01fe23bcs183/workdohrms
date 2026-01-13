@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { staffService, documentService, documentTypeService } from '../../services/api';
 import { showAlert, showConfirmDialog, getErrorMessage } from '../../lib/sweetalert';
+const API_BASE_URL = 'http://127.0.0.1:8000';
 import {
   Card,
   CardContent,
@@ -163,7 +164,7 @@ export default function StaffProfile() {
       formData.append('owner_id', String(id));
       // Optional: document_name defaults to file name if not provided
 
-      await documentService.upload(formData);
+      await documentService.upload(Number(id), formData);
 
       showAlert('success', 'Success!', 'Document uploaded successfully', 2000);
 
@@ -202,6 +203,64 @@ export default function StaffProfile() {
     } catch (error: unknown) {
       console.error('Failed to delete document:', error);
       showAlert('error', 'Error', getErrorMessage(error, 'Failed to delete document'));
+    }
+  };
+
+  const handleDownloadDocument = async (file: DocumentItem) => {
+    try {
+      // Try to use temporary_url first (for S3/Wasabi presigned URLs from list)
+      if (file.temporary_url) {
+        // Create a temporary anchor element to trigger download
+        const link = document.createElement('a');
+        link.href = file.temporary_url;
+        link.download = file.document_name || 'document';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return;
+      }
+
+      // Fallback to backend download endpoint
+      const response = await fetch(`${API_BASE_URL}/api/documents/${file.id}/download`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download document');
+      }
+
+      const contentType = response.headers.get('content-type');
+
+      // Check if response is JSON (S3/Wasabi returns JSON with download_url)
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        if (data.success && data.download_url) {
+          // Use the download_url from the response
+          const link = document.createElement('a');
+          link.href = data.download_url;
+          link.download = file.document_name || 'document';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          return;
+        }
+      }
+
+      // For local files, download the blob
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.document_name || 'document';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: unknown) {
+      console.error('Failed to download document:', error);
+      showAlert('error', 'Error', getErrorMessage(error, 'Failed to download document'));
     }
   };
 
@@ -251,7 +310,7 @@ export default function StaffProfile() {
 
   const handleViewDocument = (file: DocumentItem) => {
     window.open(
-      `http://127.0.0.1:8000/api/documents/${file.id}/view`,
+      `${API_BASE_URL}/api/documents/${file.id}/view`,
       '_blank'
     );
   };
@@ -526,17 +585,6 @@ export default function StaffProfile() {
                                       title="View document"
                                     >
                                       <Eye className="h-4 w-4" />
-                                    </Button>
-
-                                    {/* DOWNLOAD */}
-                                    <Button variant="ghost" size="icon" asChild>
-                                      <a
-                                        href={file.temporary_url || `http://127.0.0.1:8000/api/documents/${file.id}/download`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                      >
-                                        <Download className="h-4 w-4" />
-                                      </a>
                                     </Button>
 
                                     {/* DELETE */}

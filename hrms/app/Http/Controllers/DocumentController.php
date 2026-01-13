@@ -28,7 +28,7 @@ class DocumentController extends Controller
      * Upload Document - Automatically determines storage based on org/company
      * SINGLE API for all uploads
      */
-    public function upload(Request $request)
+    public function upload(Request $request, $staff_id)
     {
         $validator = Validator::make($request->all(), [
             'file' => 'required|file|max:20480', // 20MB
@@ -50,10 +50,21 @@ class DocumentController extends Controller
             // Get authenticated user
             $user = auth()->user();
 
-            // Prepare data with org_id and company_id from authenticated user
+            // Get the staff member to retrieve their user_id
+            $staffMember = \App\Models\StaffMember::find($staff_id);
+            if (!$staffMember) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Staff member not found'
+                ], 404);
+            }
+
+            // Prepare data with org_id, company_id from authenticated user
+            // and user_id from the staff member's user_id field (their login user ID)
             $data = $request->all();
             $data['org_id'] = $user->org_id ?? null;
             $data['company_id'] = $user->company_id ?? null;
+            $data['user_id'] = $staffMember->user_id; // Store the staff member's login user_id
 
             // Upload document
             $document = $this->documentService->uploadDocument(
@@ -79,7 +90,9 @@ class DocumentController extends Controller
                     'org_id' => $location->org_id,
                     'company_id' => $location->company_id
                 ],
-                'user_context' => [
+                'uploader_info' => [
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
                     'org_id' => $user->org_id ?? null,
                     'company_id' => $user->company_id ?? null
                 ]
@@ -286,24 +299,16 @@ class DocumentController extends Controller
 
         // LOCAL STORAGE → stream inline
         if ($storageType === 1) {
-            // Use doc_url field (the correct field name from the model)
+            // Files are stored on the 'public' disk at storage_path('app/public')
+            // doc_url contains the relative path like: employee/1/2026/filename.jpg
             $filePath = $document->doc_url;
-            
+
             if (empty($filePath)) {
                 abort(404, 'File path not found');
             }
-            
-            // Check if path is for public disk (starts with public/) or app disk
-            if (str_starts_with($filePath, 'public/')) {
-                $path = storage_path('app/' . $filePath);
-            } else {
-                // Try public disk first
-                $path = storage_path('app/public/' . $filePath);
-                if (!file_exists($path)) {
-                    // Fall back to app disk
-                    $path = storage_path('app/' . $filePath);
-                }
-            }
+
+            // Build full path to the file in the public disk
+            $path = storage_path('app/public/' . $filePath);
 
             if (!file_exists($path)) {
                 abort(404, 'File does not exist: ' . $filePath);
@@ -325,20 +330,20 @@ class DocumentController extends Controller
         abort(400, 'Unsupported storage type');
     }
 
-/**
- * Convert bytes into human readable format
- */
-private function formatBytes($bytes, $precision = 2): string
-{
-    if ($bytes <= 0) {
-        return '0 B';
+    /**
+     * Convert bytes into human readable format
+     */
+    private function formatBytes($bytes, $precision = 2): string
+    {
+        if ($bytes <= 0) {
+            return '0 B';
+        }
+
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $base = floor(log($bytes, 1024));
+
+        return round($bytes / pow(1024, $base), $precision) . ' ' . $units[$base];
     }
-
-    $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    $base = floor(log($bytes, 1024));
-
-    return round($bytes / pow(1024, $base), $precision) . ' ' . $units[$base];
-}
 
     /**
      * Update Metadata (Name, Type)

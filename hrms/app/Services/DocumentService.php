@@ -95,7 +95,7 @@ class DocumentService
             'document_location_id' => $location->id,
             'org_id' => $data['org_id'] ?? null,
             'company_id' => $data['company_id'] ?? null,
-            'user_id' => auth()->id(),
+            'user_id' => $data['user_id'],
             'owner_type' => $ownerType,
             'owner_id' => $ownerId,
             'doc_url' => $fullPath,

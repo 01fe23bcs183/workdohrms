@@ -76,6 +76,9 @@ export default function CompanyList() {
         org_id: '',
         company_name: '',
         address: '',
+        user_name: '', // Admin user name
+        email: '', // Admin user email
+        password: '', // Admin user password
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -163,6 +166,9 @@ export default function CompanyList() {
             org_id: company.org_id.toString(),
             company_name: company.company_name,
             address: company.address || '',
+            user_name: '',
+            email: '',
+            password: '',
         });
         setIsDialogOpen(true);
     };
@@ -186,6 +192,9 @@ export default function CompanyList() {
             org_id: user?.org_id ? user.org_id.toString() : '',
             company_name: '',
             address: '',
+            user_name: '',
+            email: '',
+            password: '',
         });
         setEditingCompany(null);
     };
@@ -286,27 +295,27 @@ export default function CompanyList() {
                         </DialogHeader>
                         <form onSubmit={handleSubmit}>
                             <div className="grid gap-4 py-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="org_id">Organization *</Label>
-                                    <Select
-                                        value={formData.org_id}
-                                        onValueChange={(value) => setFormData({ ...formData, org_id: value })}
-                                        disabled={!!user?.org_id}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select Organization" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {organizations
-                                                .filter(org => !user?.org_id || org.id === user.org_id)
-                                                .map((org) => (
+                                {/* Only show organization dropdown for super admin users */}
+                                {!user?.org_id && (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="org_id">Organization *</Label>
+                                        <Select
+                                            value={formData.org_id}
+                                            onValueChange={(value) => setFormData({ ...formData, org_id: value })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select Organization" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {organizations.map((org) => (
                                                     <SelectItem key={org.id} value={org.id.toString()}>
                                                         {org.name}
                                                     </SelectItem>
                                                 ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
                                 <div className="space-y-2">
                                     <Label htmlFor="company_name">Company Name *</Label>
                                     <Input
@@ -327,6 +336,46 @@ export default function CompanyList() {
                                         rows={3}
                                     />
                                 </div>
+
+                                {/* Admin User Fields - Only show when creating new company */}
+                                {!editingCompany && (
+                                    <>
+                                        <div className="border-t pt-4">
+                                            <p className="text-sm font-medium mb-3">Company Admin Account</p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="user_name">Admin Name *</Label>
+                                            <Input
+                                                id="user_name"
+                                                value={formData.user_name}
+                                                onChange={(e) => setFormData({ ...formData, user_name: e.target.value })}
+                                                placeholder="John Manager"
+                                                required={!editingCompany}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="email">Admin Email *</Label>
+                                            <Input
+                                                id="email"
+                                                type="email"
+                                                value={formData.email}
+                                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                                placeholder="admin@company.com"
+                                                required={!editingCompany}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="password">Password {!editingCompany && '(optional, defaults to password123)'}</Label>
+                                            <Input
+                                                id="password"
+                                                type="password"
+                                                value={formData.password}
+                                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                                placeholder="Enter password (optional)"
+                                            />
+                                        </div>
+                                    </>
+                                )}
                             </div>
                             <DialogFooter>
                                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
