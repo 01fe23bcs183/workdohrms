@@ -64,6 +64,7 @@ const STORAGE_CARDS = [
 
 export default function DocumentConfiguration() {
     const { user } = useAuth();
+    const [isLoading, setIsLoading] = useState(true);
     const [locations, setLocations] = useState<DocumentLocation[]>([]);
     const [loadingTypes, setLoadingTypes] = useState<Set<StorageType>>(new Set());
 
@@ -85,6 +86,7 @@ export default function DocumentConfiguration() {
 
     const fetchLocations = async () => {
         try {
+            setIsLoading(true);
             const response = await documentLocationService.getAll({});
             const payload = response.data.data;
             let rawLocations: DocumentLocation[] = Array.isArray(payload) ? payload : (payload?.data || []);
@@ -116,25 +118,37 @@ export default function DocumentConfiguration() {
             console.error('Failed to fetch locations:', error);
             showAlert('error', 'Error', 'Failed to fetch storage locations');
         } finally {
-            // setIsLoading(false); // Removed unused state
+            setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        if (locations.length > 0 && !selectedType) {
-            // Find active config first, or any existing config
-            // User requested to NOT auto-select for 'local' (id=1), only for 'wasabi' or 'aws'
+        if (!isLoading && locations.length > 0 && !selectedType) {
+            // Find active config first
+            // Logic updated: Allow ANY configured location to be auto-selected, prioritizing Active ones.
+            // Priority: Active Cloud > Active Local > Any Cloud Config > Any Local Config
+
+            // 1. Check for Active Cloud (Wasabi/AWS)
             let activeLoc = locations.find(loc => loc.config?.is_active && loc.location_type !== 1);
 
+            // 2. Check for Active Local
             if (!activeLoc) {
-                // If no active non-local, check if there is any existing non-local config
+                activeLoc = locations.find(loc => loc.config?.is_active);
+            }
+
+            // 3. Check for Any Configured Cloud
+            if (!activeLoc) {
                 activeLoc = locations.find(loc => loc.config && loc.location_type !== 1);
             }
 
+            // 4. Check for Any Configured Local (fallback)
+            if (!activeLoc) {
+                activeLoc = locations.find(loc => loc.config);
+            }
+
             if (activeLoc) {
-                const card = STORAGE_CARDS.find(c => c.id === activeLoc.location_type);
+                const card = STORAGE_CARDS.find(c => c.id === activeLoc?.location_type);
                 if (card) {
-                    // Directly set state to avoid triggering auto-create logic loop on load
                     setCurrentStorage(card);
                     setSelectedType(card.type);
 
@@ -151,7 +165,7 @@ export default function DocumentConfiguration() {
                 }
             }
         }
-    }, [locations]);
+    }, [locations, isLoading, selectedType]);
 
 
     const handleOptionClick = async (storage: { type: StorageType; id: number; title: string }) => {

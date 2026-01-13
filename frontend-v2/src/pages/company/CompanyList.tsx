@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { companyService, organizationService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { showAlert, showConfirmDialog, getErrorMessage } from '../../lib/sweetalert';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -39,7 +40,6 @@ import {
     Briefcase,
     Eye,
     MapPin,
-    Calendar,
     Building2,
 } from 'lucide-react';
 
@@ -59,6 +59,7 @@ interface Organization {
 }
 
 export default function CompanyList() {
+    const { user } = useAuth();
     const [companies, setCompanies] = useState<Company[]>([]);
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -150,21 +151,21 @@ export default function CompanyList() {
         setPage(1); // Reset to first page when changing rows per page
     };
 
-        // ================= DIALOG HANDLERS =================
-        const handleView = (company: Company) => {
-            setViewingCompany(company);
-            setIsViewDialogOpen(true);
-        };
+    // ================= DIALOG HANDLERS =================
+    const handleView = (company: Company) => {
+        setViewingCompany(company);
+        setIsViewDialogOpen(true);
+    };
 
-        const handleEdit = (company: Company) => {
-            setEditingCompany(company);
-            setFormData({
-                org_id: company.org_id.toString(),
-                company_name: company.company_name,
-                address: company.address || '',
-            });
-            setIsDialogOpen(true);
-        };
+    const handleEdit = (company: Company) => {
+        setEditingCompany(company);
+        setFormData({
+            org_id: company.org_id.toString(),
+            company_name: company.company_name,
+            address: company.address || '',
+        });
+        setIsDialogOpen(true);
+    };
 
     const handleDelete = async (id: number) => {
         const result = await showConfirmDialog('Delete Company', 'Are you sure you want to delete this company?');
@@ -182,7 +183,7 @@ export default function CompanyList() {
 
     const resetForm = () => {
         setFormData({
-            org_id: '',
+            org_id: user?.org_id ? user.org_id.toString() : '',
             company_name: '',
             address: '',
         });
@@ -241,20 +242,20 @@ export default function CompanyList() {
                             <MoreHorizontal className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
-                                                                                <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem onClick={() => handleView(row)}>
-                                                                    <Eye className="mr-2 h-4 w-4" /> View
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => handleEdit(row)}>
-                                                                    <Edit className="mr-2 h-4 w-4" /> Edit
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem
-                                                                    onClick={() => handleDelete(row.id)}
-                                                                    className="text-red-600"
-                                                                >
-                                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                                </DropdownMenuItem>
-                                                            </DropdownMenuContent>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleView(row)}>
+                            <Eye className="mr-2 h-4 w-4" /> View
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEdit(row)}>
+                            <Edit className="mr-2 h-4 w-4" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={() => handleDelete(row.id)}
+                            className="text-red-600"
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
                 </DropdownMenu>
             ),
             ignoreRowClick: true,
@@ -290,16 +291,19 @@ export default function CompanyList() {
                                     <Select
                                         value={formData.org_id}
                                         onValueChange={(value) => setFormData({ ...formData, org_id: value })}
+                                        disabled={!!user?.org_id}
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select Organization" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {organizations.map((org) => (
-                                                <SelectItem key={org.id} value={org.id.toString()}>
-                                                    {org.name}
-                                                </SelectItem>
-                                            ))}
+                                            {organizations
+                                                .filter(org => !user?.org_id || org.id === user.org_id)
+                                                .map((org) => (
+                                                    <SelectItem key={org.id} value={org.id.toString()}>
+                                                        {org.name}
+                                                    </SelectItem>
+                                                ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -333,55 +337,55 @@ export default function CompanyList() {
                                 </Button>
                             </DialogFooter>
                         </form>
-                                </DialogContent>
-                            </Dialog>
+                    </DialogContent>
+                </Dialog>
 
-                            {/* View Company Dialog */}
-                            <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-                                <DialogContent className="sm:max-w-[500px]">
-                                    <DialogHeader>
-                                        <DialogTitle className="flex items-center gap-2">
-                                            <Briefcase className="h-5 w-5 text-solarized-blue" />
-                                            Company Details
-                                        </DialogTitle>
-                                        <DialogDescription>
-                                            View company information
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                                                        {viewingCompany && (
-                                                                            <div className="space-y-4 py-4">
-                                                                                <div className="space-y-2">
-                                                                                    <Label className="text-sm text-muted-foreground">Company Name</Label>
-                                                                                    <p className="text-lg font-semibold">{viewingCompany.company_name}</p>
-                                                                                </div>
-                                                                                <div className="space-y-2">
-                                                                                    <Label className="text-sm text-muted-foreground flex items-center gap-1">
-                                                                                        <Building2 className="h-4 w-4" /> Organization
-                                                                                    </Label>
-                                                                                    <Badge variant="secondary">{viewingCompany.organization?.name || 'N/A'}</Badge>
-                                                                                </div>
-                                                                                <div className="space-y-2">
-                                                                                    <Label className="text-sm text-muted-foreground flex items-center gap-1">
-                                                                                        <MapPin className="h-4 w-4" /> Address
-                                                                                    </Label>
-                                                                                    <p className="text-base">{viewingCompany.address || 'No address provided'}</p>
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-                                                                        <DialogFooter>
-                                                                            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-                                                                                Close
-                                                                            </Button>
-                                                                        </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-                        </div>
+                {/* View Company Dialog */}
+                <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+                    <DialogContent className="sm:max-w-[500px]">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Briefcase className="h-5 w-5 text-solarized-blue" />
+                                Company Details
+                            </DialogTitle>
+                            <DialogDescription>
+                                View company information
+                            </DialogDescription>
+                        </DialogHeader>
+                        {viewingCompany && (
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <Label className="text-sm text-muted-foreground">Company Name</Label>
+                                    <p className="text-lg font-semibold">{viewingCompany.company_name}</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                                        <Building2 className="h-4 w-4" /> Organization
+                                    </Label>
+                                    <Badge variant="secondary">{viewingCompany.organization?.name || 'N/A'}</Badge>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                                        <MapPin className="h-4 w-4" /> Address
+                                    </Label>
+                                    <p className="text-base">{viewingCompany.address || 'No address provided'}</p>
+                                </div>
+                            </div>
+                        )}
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+                                Close
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
 
-                        <Card>
-                            <CardContent className="pt-6">
-                                <form onSubmit={handleSearchSubmit} className="flex gap-4 mb-4">
-                                    <Input
-                                        placeholder="Search companies..."
+            <Card>
+                <CardContent className="pt-6">
+                    <form onSubmit={handleSearchSubmit} className="flex gap-4 mb-4">
+                        <Input
+                            placeholder="Search companies..."
                             value={searchInput}
                             onChange={(e) => setSearchInput(e.target.value)}
                         />
