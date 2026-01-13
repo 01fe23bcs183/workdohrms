@@ -17,6 +17,7 @@ class WorkLog extends Model
         'status',
         'clock_in',
         'clock_out',
+        'total_hours',
         'late_minutes',
         'early_leave_minutes',
         'overtime_minutes',
