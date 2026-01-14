@@ -39,7 +39,8 @@ interface NavItem {
   href: string;
   icon: React.ElementType;
   permission?: string;
-  children?: { name: string; href: string; permission?: string }[];
+  check?: (user: any) => boolean;
+  children?: { name: string; href: string; permission?: string; check?: (user: any) => boolean }[];
 }
 
 const navigation: NavItem[] = [
@@ -108,22 +109,22 @@ const navigation: NavItem[] = [
       { name: 'Categories', href: '/leave/categories', permission: 'manage_time_off_categories' },
     ]
   },
-    {
-      name: 'Payroll',
-      href: '/payroll/my-slips',
-      icon: DollarSign,
-      children: [
-        { name: 'My Salary Slips', href: '/payroll/my-slips' },
-        // Admin-only items (hidden for user role)
-        { name: 'Salary Slips', href: '/payroll/slips', permission: 'view_payslips' },
-        { name: 'Generate Payroll', href: '/payroll/generate', permission: 'generate_payslips' },
-        { name: 'Benefit Types', href: '/payroll/benefits/types', permission: 'view_benefits' },
-        { name: 'Benefits', href: '/payroll/benefits', permission: 'view_benefits' },
-        { name: 'Deduction Types', href: '/payroll/deductions/types', permission: 'view_benefits' },
-        { name: 'Deductions', href: '/payroll/deductions', permission: 'view_benefits' },
-        { name: 'Tax Slabs', href: '/payroll/tax', permission: 'view_benefits' },
-      ]
-    },
+  {
+    name: 'Payroll',
+    href: '/payroll/my-slips',
+    icon: DollarSign,
+    children: [
+      { name: 'My Salary Slips', href: '/payroll/my-slips' },
+      // Admin-only items (hidden for user role)
+      { name: 'Salary Slips', href: '/payroll/slips', permission: 'view_payslips' },
+      { name: 'Generate Payroll', href: '/payroll/generate', permission: 'generate_payslips' },
+      { name: 'Benefit Types', href: '/payroll/benefits/types', permission: 'view_benefits' },
+      { name: 'Benefits', href: '/payroll/benefits', permission: 'view_benefits' },
+      { name: 'Deduction Types', href: '/payroll/deductions/types', permission: 'view_benefits' },
+      { name: 'Deductions', href: '/payroll/deductions', permission: 'view_benefits' },
+      { name: 'Tax Slabs', href: '/payroll/tax', permission: 'view_benefits' },
+    ]
+  },
   {
     name: 'Recruitment',
     href: '/recruitment',
@@ -223,7 +224,12 @@ const navigation: NavItem[] = [
       { name: 'Holidays', href: '/settings/holidays', permission: 'view_settings' },
       { name: 'File Categories', href: '/settings/file-categories', permission: 'view_settings' },
       { name: 'Notices', href: '/settings/company-notices', permission: 'view_settings' },
-      { name: 'Document Configuration', href: '/settings/document-config', permission: 'view_settings' },
+      {
+        name: 'Document Configuration',
+        href: '/settings/document-config',
+        permission: 'view_settings',
+        check: (user) => user?.roles?.includes('company') && !!user?.org_id && !!user?.company_id
+      },
     ]
   },
   {
@@ -366,14 +372,19 @@ export default function AppLayout() {
               if (item.permission && !hasPermission(item.permission)) {
                 return false;
               }
+              if (item.check && !item.check(user)) {
+                return false;
+              }
               return true;
             }).map((item) => {
               // Also filter children based on permissions
               const filteredItem = item.children ? {
                 ...item,
-                children: item.children.filter(child =>
-                  !child.permission || hasPermission(child.permission)
-                )
+                children: item.children.filter(child => {
+                  if (child.permission && !hasPermission(child.permission)) return false;
+                  if (child.check && !child.check(user)) return false;
+                  return true;
+                })
               } : item;
               // Only show parent if it has visible children or no children
               if (filteredItem.children && filteredItem.children.length === 0) {
