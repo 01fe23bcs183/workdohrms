@@ -75,11 +75,20 @@ class StaffMemberService extends BaseService
     public function createWithUser(array $data, ?int $authorId = null): StaffMember
     {
         return DB::transaction(function () use ($data, $authorId) {
-            // Create user account
+            // Get the authenticated user to inherit org_id and company_id
+            $authenticatedUser = auth()->user();
+
+            // Extract org_id and company_id from data or authenticated user
+            $orgId = $data['org_id'] ?? $authenticatedUser->org_id ?? null;
+            $companyId = $data['company_id'] ?? $authenticatedUser->company_id ?? null;
+
+            // Create user account with org_id and company_id
             $user = User::create([
                 'name' => $data['full_name'],
                 'email' => $data['email'],
                 'password' => Hash::make($data['password'] ?? 'password123'),
+                'org_id' => $orgId,
+                'company_id' => $companyId,
                 'is_active' => true,
             ]);
             $user->assignRole('user');
@@ -87,6 +96,9 @@ class StaffMemberService extends BaseService
             // Prepare staff member data
             $staffData = collect($data)->except(['email', 'password'])->toArray();
             $staffData['user_id'] = $user->id;
+            // Ensure org_id and company_id are stored in staff_members table
+            $staffData['org_id'] = $orgId;
+            $staffData['company_id'] = $companyId;
 
             if ($authorId) {
                 $staffData['author_id'] = $authorId;

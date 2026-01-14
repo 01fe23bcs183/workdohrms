@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasOrgAndCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class DocumentLocation extends Model
 {
-    use HasFactory;
+    use HasFactory, HasOrgAndCompany;
 
     protected $fillable = [
         'location_type', // 1 = local, 2 = wasabi, 3 = aws

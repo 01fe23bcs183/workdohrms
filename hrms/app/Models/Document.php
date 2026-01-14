@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use App\Enums\DocumentOwnerType;
+use App\Traits\HasOrgAndCompany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Document extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasOrgAndCompany, SoftDeletes;
 
     protected $fillable = [
         'document_type_id',

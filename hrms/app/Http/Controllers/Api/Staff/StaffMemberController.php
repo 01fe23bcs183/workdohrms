@@ -60,9 +60,14 @@ class StaffMemberController extends Controller
         try {
             $validated = $this->validateStoreRequest($request);
 
+            // Add org_id and company_id from authenticated user
+            $authenticatedUser = $request->user();
+            $validated['org_id'] = $authenticatedUser->org_id ?? null;
+            $validated['company_id'] = $authenticatedUser->company_id ?? null;
+
             $staffMember = $this->service->createWithUser(
                 $validated,
-                $request->user()?->id
+                $authenticatedUser?->id
             );
 
             $staffMember->load(['user', 'officeLocation', 'division', 'jobTitle']);
