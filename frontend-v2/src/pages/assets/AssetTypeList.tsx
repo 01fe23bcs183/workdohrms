@@ -181,18 +181,28 @@ export default function AssetTypeList() {
     try {
       if (editingAssetType) {
         await assetTypeService.update(editingAssetType.id, formData);
+        setIsDialogOpen(false); // Close dialog first
         showAlert('success', 'Success', 'Asset type updated successfully', 2000);
       } else {
         await assetTypeService.create(formData);
+        setIsDialogOpen(false); // Close dialog first
         showAlert('success', 'Success', 'Asset type created successfully', 2000);
       }
-      setIsDialogOpen(false);
       resetForm();
       fetchAssetTypes(page);
     } catch (error) {
       console.error('Failed to save asset type:', error);
       const errorMessage = getErrorMessage(error, 'Failed to save asset type');
-      showAlert('error', 'Error', errorMessage);
+
+      // Close the dialog FIRST
+      setIsDialogOpen(false);
+
+      // Wait for the dialog to fully close/unmount to release focus BEFORE showing the alert.
+      // This prevents the "focus trap" issue where the alert's OK button is unclickable
+      // because the focus is still trapped by the (now closing) dialog.
+      setTimeout(() => {
+        showAlert('error', 'Error', errorMessage);
+      }, 100);
     } finally {
       setIsSubmitting(false);
     }
@@ -479,7 +489,7 @@ export default function AssetTypeList() {
             <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
               Close
             </Button>
-            
+
           </DialogFooter>
         </DialogContent>
       </Dialog>

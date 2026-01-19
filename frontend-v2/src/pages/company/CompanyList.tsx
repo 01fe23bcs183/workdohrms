@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { companyService, organizationService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { showAlert, showConfirmDialog, getErrorMessage } from '../../lib/sweetalert';
@@ -23,13 +24,6 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '../../components/ui/select';
 import DataTable, { TableColumn } from 'react-data-table-component';
 import {
     Plus,
@@ -53,34 +47,16 @@ interface Company {
     updated_at?: string;
 }
 
-interface Organization {
-    id: number;
-    name: string;
-}
-
 export default function CompanyList() {
+    const navigate = useNavigate();
     const { user } = useAuth();
     const [companies, setCompanies] = useState<Company[]>([]);
-    const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [searchInput, setSearchInput] = useState(''); // What user types
     const [search, setSearch] = useState(''); // What's sent to API
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(10);
     const [totalRows, setTotalRows] = useState(0);
-
-    // Dialog state
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [editingCompany, setEditingCompany] = useState<Company | null>(null);
-    const [formData, setFormData] = useState({
-        org_id: '',
-        company_name: '',
-        address: '',
-        user_name: '', // Admin user name
-        email: '', // Admin user email
-        password: '', // Admin user password
-    });
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // View dialog state
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -120,22 +96,7 @@ export default function CompanyList() {
 
     useEffect(() => {
         fetchCompanies(page);
-        fetchOrganizations();
     }, [page, fetchCompanies]);
-
-    const fetchOrganizations = async () => {
-        try {
-            const response = await organizationService.getAll({ page: 1 });
-            const payload = response.data.data;
-            if (Array.isArray(payload)) {
-                setOrganizations(payload);
-            } else if (payload && Array.isArray(payload.data)) {
-                setOrganizations(payload.data);
-            }
-        } catch (error) {
-            console.error('Failed to fetch organizations for dropdown:', error);
-        }
-    }
 
     // ================= SEARCH =================
     const handleSearchSubmit = (e: React.FormEvent) => {
@@ -160,19 +121,6 @@ export default function CompanyList() {
         setIsViewDialogOpen(true);
     };
 
-    const handleEdit = (company: Company) => {
-        setEditingCompany(company);
-        setFormData({
-            org_id: company.org_id.toString(),
-            company_name: company.company_name,
-            address: company.address || '',
-            user_name: '',
-            email: '',
-            password: '',
-        });
-        setIsDialogOpen(true);
-    };
-
     const handleDelete = async (id: number) => {
         const result = await showConfirmDialog('Delete Company', 'Are you sure you want to delete this company?');
         if (!result.isConfirmed) return;
@@ -184,41 +132,6 @@ export default function CompanyList() {
             console.error('Failed to delete company:', error);
             const errorMessage = getErrorMessage(error, 'Failed to delete company');
             showAlert('error', 'Error', errorMessage);
-        }
-    };
-
-    const resetForm = () => {
-        setFormData({
-            org_id: user?.org_id ? user.org_id.toString() : '',
-            company_name: '',
-            address: '',
-            user_name: '',
-            email: '',
-            password: '',
-        });
-        setEditingCompany(null);
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsSubmitting(true);
-        try {
-            if (editingCompany) {
-                await companyService.update(editingCompany.id, formData);
-                showAlert('success', 'Success', 'Company updated successfully', 2000);
-            } else {
-                await companyService.create(formData);
-                showAlert('success', 'Success', 'Company created successfully', 2000);
-            }
-            setIsDialogOpen(false);
-            resetForm();
-            fetchCompanies(page);
-        } catch (error) {
-            console.error('Failed to save company:', error);
-            const errorMessage = getErrorMessage(error, 'Failed to save company');
-            showAlert('error', 'Error', errorMessage);
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
@@ -255,7 +168,7 @@ export default function CompanyList() {
                         <DropdownMenuItem onClick={() => handleView(row)}>
                             <Eye className="mr-2 h-4 w-4" /> View
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEdit(row)}>
+                        <DropdownMenuItem onClick={() => navigate(`/companies/${row.id}/edit`)}>
                             <Edit className="mr-2 h-4 w-4" /> Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
@@ -280,154 +193,9 @@ export default function CompanyList() {
                     <h1 className="text-2xl font-bold">Companies</h1>
                     <p className="text-muted-foreground">Manage your companies under organizations</p>
                 </div>
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button className="bg-solarized-blue hover:bg-solarized-blue/90" onClick={() => resetForm()}>
-                            <Plus className="mr-2 h-4 w-4" /> Add Company
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>{editingCompany ? 'Edit Company' : 'Add New Company'}</DialogTitle>
-                            <DialogDescription>
-                                {editingCompany ? 'Update the company details.' : 'Add a new company.'}
-                            </DialogDescription>
-                        </DialogHeader>
-                        <form onSubmit={handleSubmit}>
-                            <div className="grid gap-4 py-4">
-                                {/* Only show organization dropdown for super admin users */}
-                                {!user?.org_id && (
-                                    <div className="space-y-2">
-                                        <Label htmlFor="org_id">Organization *</Label>
-                                        <Select
-                                            value={formData.org_id}
-                                            onValueChange={(value) => setFormData({ ...formData, org_id: value })}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select Organization" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {organizations.map((org) => (
-                                                    <SelectItem key={org.id} value={org.id.toString()}>
-                                                        {org.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                )}
-                                <div className="space-y-2">
-                                    <Label htmlFor="company_name">Company Name *</Label>
-                                    <Input
-                                        id="company_name"
-                                        value={formData.company_name}
-                                        onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                                        placeholder="Company Name"
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="address">Address</Label>
-                                    <Textarea
-                                        id="address"
-                                        value={formData.address}
-                                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                        placeholder="123 Main St, City, Country"
-                                        rows={3}
-                                    />
-                                </div>
-
-                                {/* Admin User Fields - Only show when creating new company */}
-                                {!editingCompany && (
-                                    <>
-                                        <div className="border-t pt-4">
-                                            <p className="text-sm font-medium mb-3">Company Admin Account</p>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="user_name">Admin Name *</Label>
-                                            <Input
-                                                id="user_name"
-                                                value={formData.user_name}
-                                                onChange={(e) => setFormData({ ...formData, user_name: e.target.value })}
-                                                placeholder="John Manager"
-                                                required={!editingCompany}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="email">Admin Email *</Label>
-                                            <Input
-                                                id="email"
-                                                type="email"
-                                                value={formData.email}
-                                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                placeholder="admin@company.com"
-                                                required={!editingCompany}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="password">Password {!editingCompany && '(optional, defaults to password123)'}</Label>
-                                            <Input
-                                                id="password"
-                                                type="password"
-                                                value={formData.password}
-                                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                                placeholder="Enter password (optional)"
-                                            />
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                            <DialogFooter>
-                                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                                    Cancel
-                                </Button>
-                                <Button type="submit" className="bg-solarized-blue hover:bg-solarized-blue/90" disabled={isSubmitting}>
-                                    {isSubmitting ? 'Saving...' : (editingCompany ? 'Update' : 'Create')}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
-
-                {/* View Company Dialog */}
-                <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-                    <DialogContent className="sm:max-w-[500px]">
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <Briefcase className="h-5 w-5 text-solarized-blue" />
-                                Company Details
-                            </DialogTitle>
-                            <DialogDescription>
-                                View company information
-                            </DialogDescription>
-                        </DialogHeader>
-                        {viewingCompany && (
-                            <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                    <Label className="text-sm text-muted-foreground">Company Name</Label>
-                                    <p className="text-lg font-semibold">{viewingCompany.company_name}</p>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-sm text-muted-foreground flex items-center gap-1">
-                                        <Building2 className="h-4 w-4" /> Organization
-                                    </Label>
-                                    <Badge variant="secondary">{viewingCompany.organization?.name || 'N/A'}</Badge>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-sm text-muted-foreground flex items-center gap-1">
-                                        <MapPin className="h-4 w-4" /> Address
-                                    </Label>
-                                    <p className="text-base">{viewingCompany.address || 'No address provided'}</p>
-                                </div>
-                            </div>
-                        )}
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-                                Close
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                <Button className="bg-solarized-blue hover:bg-solarized-blue/90" onClick={() => navigate('/companies/create')}>
+                    <Plus className="mr-2 h-4 w-4" /> Add Company
+                </Button>
             </div>
 
             <Card>
@@ -467,6 +235,46 @@ export default function CompanyList() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* View Company Dialog */}
+            <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Briefcase className="h-5 w-5 text-solarized-blue" />
+                            Company Details
+                        </DialogTitle>
+                        <DialogDescription>
+                            View company information
+                        </DialogDescription>
+                    </DialogHeader>
+                    {viewingCompany && (
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label className="text-sm text-muted-foreground">Company Name</Label>
+                                <p className="text-lg font-semibold">{viewingCompany.company_name}</p>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                                    <Building2 className="h-4 w-4" /> Organization
+                                </Label>
+                                <Badge variant="secondary">{viewingCompany.organization?.name || 'N/A'}</Badge>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                                    <MapPin className="h-4 w-4" /> Address
+                                </Label>
+                                <p className="text-base">{viewingCompany.address || 'No address provided'}</p>
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+                            Close
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

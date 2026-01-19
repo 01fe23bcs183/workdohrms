@@ -23,9 +23,6 @@ interface SelectOption {
 }
 
 interface FieldErrors {
-  full_name?: string;
-  email?: string;
-  hire_date?: string;
   [key: string]: string | undefined;
 }
 
@@ -57,7 +54,7 @@ export default function StaffCreate() {
     division_id: '',
     job_title_id: '',
     hire_date: '',
-    employment_status: 'active',
+    employment_status: '',
     employment_type: 'full_time',
     compensation_type: 'monthly',
     base_salary: '',
@@ -101,35 +98,80 @@ export default function StaffCreate() {
 
   const validateForm = (): boolean => {
     const errors: FieldErrors = {};
+    let isValid = true;
 
-    if (!formData.full_name.trim()) {
-      errors.full_name = 'Full name is required';
-    }
+    // Helper to validate required fields
+    const validateRequired = (field: keyof typeof formData, label: string) => {
+      if (!formData[field] || (typeof formData[field] === 'string' && !formData[field].trim())) {
+        errors[field] = `${label} is required`;
+        isValid = false;
+      }
+    };
 
-    if (!formData.email.trim()) {
-      errors.email = 'Work email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    // Personal Information
+    validateRequired('full_name', 'Full Name');
+
+    validateRequired('email', 'Work Email');
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.email = 'Please enter a valid email address';
+      isValid = false;
     }
 
-    if (!formData.personal_email.trim()) {
-      errors.personal_email = 'Personal email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.personal_email)) {
+    validateRequired('personal_email', 'Personal Email');
+    if (formData.personal_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.personal_email)) {
       errors.personal_email = 'Please enter a valid email address';
+      isValid = false;
     }
 
-    if (!formData.hire_date) {
-      errors.hire_date = 'Hire date is required';
+    validateRequired('mobile_number', 'Mobile Number');
+    if (formData.mobile_number && !/^\d{10}$/.test(formData.mobile_number)) {
+      errors.mobile_number = 'Mobile number must be exactly 10 digits';
+      isValid = false;
     }
+
+    validateRequired('birth_date', 'Date of Birth');
+    validateRequired('gender', 'Gender');
+
+    // Address
+    validateRequired('home_address', 'Home Address');
+    validateRequired('city_name', 'City');
+    validateRequired('region', 'Region/State');
+    validateRequired('country_code', 'Country Code');
+    validateRequired('postal_code', 'Postal Code');
+    validateRequired('nationality', 'Nationality');
+    validateRequired('passport_number', 'Passport Number');
+
+    // Employment Details
+    validateRequired('office_location_id', 'Office Location');
+    validateRequired('division_id', 'Department');
+    validateRequired('job_title_id', 'Designation');
+    validateRequired('hire_date', 'Hire Date');
+    validateRequired('employment_status', 'Employment Status');
+    validateRequired('employment_type', 'Employment Type');
+    validateRequired('compensation_type', 'Compensation Type');
+    validateRequired('base_salary', 'Base Salary');
+
+    // Emergency Contact
+    validateRequired('emergency_contact_name', 'Contact Name');
+    validateRequired('emergency_contact_phone', 'Contact Phone');
+    validateRequired('emergency_contact_relationship', 'Relationship');
 
     setFieldErrors(errors);
 
-    if (Object.keys(errors).length > 0) {
+    if (!isValid) {
       showAlert('error', 'Validation Error', 'Please fix the errors in the form');
-      return false;
+      // Focus first error
+      const firstErrorField = Object.keys(errors)[0];
+      if (firstErrorField) {
+        const element = document.getElementById(firstErrorField);
+        if (element) {
+          element.focus();
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
     }
 
-    return true;
+    return isValid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -158,6 +200,16 @@ export default function StaffCreate() {
           apiErrors[key] = errors[key][0];
         });
         setFieldErrors(apiErrors);
+
+        // Focus first API error
+        const firstErrorField = Object.keys(apiErrors)[0];
+        if (firstErrorField) {
+          const element = document.getElementById(firstErrorField);
+          if (element) {
+            element.focus();
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
       }
 
       setError(errorMessage);
@@ -165,6 +217,12 @@ export default function StaffCreate() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const renderError = (field: string) => {
+    return fieldErrors[field] ? (
+      <p className="text-sm text-red-500 mt-1">{fieldErrors[field]}</p>
+    ) : null;
   };
 
   return (
@@ -179,7 +237,7 @@ export default function StaffCreate() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} noValidate>
         {error && (
           <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
@@ -201,11 +259,10 @@ export default function StaffCreate() {
                   name="full_name"
                   value={formData.full_name}
                   onChange={handleChange}
+                  placeholder="John Doe"
                   aria-invalid={!!fieldErrors.full_name}
                 />
-                {fieldErrors.full_name && (
-                  <p className="text-sm text-red-500">{fieldErrors.full_name}</p>
-                )}
+                {renderError('full_name')}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="personal_email" className={fieldErrors.personal_email ? 'text-red-500' : ''}>Personal Email *</Label>
@@ -215,11 +272,10 @@ export default function StaffCreate() {
                   type="email"
                   value={formData.personal_email}
                   onChange={handleChange}
+                  placeholder="john.doe@gmail.com"
                   aria-invalid={!!fieldErrors.personal_email}
                 />
-                {fieldErrors.personal_email && (
-                  <p className="text-sm text-red-500">{fieldErrors.personal_email}</p>
-                )}
+                {renderError('personal_email')}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email" className={fieldErrors.email ? 'text-red-500' : ''}>Work Email (Login) *</Label>
@@ -229,38 +285,43 @@ export default function StaffCreate() {
                   type="email"
                   value={formData.email}
                   onChange={handleChange}
+                  placeholder="john.doe@company.com"
                   aria-invalid={!!fieldErrors.email}
                 />
-                {fieldErrors.email && (
-                  <p className="text-sm text-red-500">{fieldErrors.email}</p>
-                )}
+                {renderError('email')}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="mobile_number">Mobile Number</Label>
+                <Label htmlFor="mobile_number" className={fieldErrors.mobile_number ? 'text-red-500' : ''}>Mobile Number *</Label>
                 <Input
                   id="mobile_number"
                   name="mobile_number"
                   value={formData.mobile_number}
                   onChange={handleChange}
+                  placeholder="9876543210"
+                  maxLength={10}
+                  aria-invalid={!!fieldErrors.mobile_number}
                 />
+                {renderError('mobile_number')}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="birth_date">Date of Birth</Label>
+                <Label htmlFor="birth_date" className={fieldErrors.birth_date ? 'text-red-500' : ''}>Date of Birth *</Label>
                 <Input
                   id="birth_date"
                   name="birth_date"
                   type="date"
                   value={formData.birth_date}
                   onChange={handleChange}
+                  aria-invalid={!!fieldErrors.birth_date}
                 />
+                {renderError('birth_date')}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="gender">Gender</Label>
+                <Label htmlFor="gender" className={fieldErrors.gender ? 'text-red-500' : ''}>Gender *</Label>
                 <Select
                   value={formData.gender}
                   onValueChange={(value) => handleSelectChange('gender', value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="gender" aria-invalid={!!fieldErrors.gender}>
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
                   <SelectContent>
@@ -269,6 +330,7 @@ export default function StaffCreate() {
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
+                {renderError('gender')}
               </div>
             </CardContent>
           </Card>
@@ -280,69 +342,90 @@ export default function StaffCreate() {
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="home_address">Home Address</Label>
+                <Label htmlFor="home_address" className={fieldErrors.home_address ? 'text-red-500' : ''}>Home Address *</Label>
                 <Textarea
                   id="home_address"
                   name="home_address"
                   value={formData.home_address}
                   onChange={handleChange}
                   rows={2}
+                  placeholder="Flat 101, MG Road, Indiranagar"
+                  aria-invalid={!!fieldErrors.home_address}
                 />
+                {renderError('home_address')}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="city_name">City</Label>
+                <Label htmlFor="city_name" className={fieldErrors.city_name ? 'text-red-500' : ''}>City *</Label>
                 <Input
                   id="city_name"
                   name="city_name"
                   value={formData.city_name}
                   onChange={handleChange}
+                  placeholder="Bengaluru"
+                  aria-invalid={!!fieldErrors.city_name}
                 />
+                {renderError('city_name')}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="region">Region/State</Label>
+                <Label htmlFor="region" className={fieldErrors.region ? 'text-red-500' : ''}>Region/State *</Label>
                 <Input
                   id="region"
                   name="region"
                   value={formData.region}
                   onChange={handleChange}
+                  placeholder="Karnataka"
+                  aria-invalid={!!fieldErrors.region}
                 />
+                {renderError('region')}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="country_code">Country Code</Label>
+                <Label htmlFor="country_code" className={fieldErrors.country_code ? 'text-red-500' : ''}>Country Code *</Label>
                 <Input
                   id="country_code"
                   name="country_code"
                   value={formData.country_code}
                   onChange={handleChange}
                   maxLength={3}
+                  placeholder="IND"
+                  aria-invalid={!!fieldErrors.country_code}
                 />
+                {renderError('country_code')}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="postal_code">Postal Code</Label>
+                <Label htmlFor="postal_code" className={fieldErrors.postal_code ? 'text-red-500' : ''}>Postal Code *</Label>
                 <Input
                   id="postal_code"
                   name="postal_code"
                   value={formData.postal_code}
                   onChange={handleChange}
+                  placeholder="560038"
+                  aria-invalid={!!fieldErrors.postal_code}
                 />
+                {renderError('postal_code')}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="nationality">Nationality</Label>
+                <Label htmlFor="nationality" className={fieldErrors.nationality ? 'text-red-500' : ''}>Nationality *</Label>
                 <Input
                   id="nationality"
                   name="nationality"
                   value={formData.nationality}
                   onChange={handleChange}
+                  placeholder="Indian"
+                  aria-invalid={!!fieldErrors.nationality}
                 />
+                {renderError('nationality')}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="passport_number">Passport Number</Label>
+                <Label htmlFor="passport_number" className={fieldErrors.passport_number ? 'text-red-500' : ''}>Passport Number *</Label>
                 <Input
                   id="passport_number"
                   name="passport_number"
                   value={formData.passport_number}
                   onChange={handleChange}
+                  placeholder="A12345678"
+                  aria-invalid={!!fieldErrors.passport_number}
                 />
+                {renderError('passport_number')}
               </div>
             </CardContent>
           </Card>
@@ -354,12 +437,12 @@ export default function StaffCreate() {
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="office_location_id">Office Location</Label>
+                <Label htmlFor="office_location_id" className={fieldErrors.office_location_id ? 'text-red-500' : ''}>Office Location *</Label>
                 <Select
                   value={formData.office_location_id}
                   onValueChange={(value) => handleSelectChange('office_location_id', value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="office_location_id" aria-invalid={!!fieldErrors.office_location_id}>
                     <SelectValue placeholder="Select location" />
                   </SelectTrigger>
                   <SelectContent>
@@ -370,15 +453,16 @@ export default function StaffCreate() {
                     ))}
                   </SelectContent>
                 </Select>
+                {renderError('office_location_id')}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="division_id">Division</Label>
+                <Label htmlFor="division_id" className={fieldErrors.division_id ? 'text-red-500' : ''}>Department *</Label>
                 <Select
                   value={formData.division_id}
                   onValueChange={(value) => handleSelectChange('division_id', value)}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select division" />
+                  <SelectTrigger id="division_id" aria-invalid={!!fieldErrors.division_id}>
+                    <SelectValue placeholder="Select department" />
                   </SelectTrigger>
                   <SelectContent>
                     {divisions.map((div) => (
@@ -388,15 +472,16 @@ export default function StaffCreate() {
                     ))}
                   </SelectContent>
                 </Select>
+                {renderError('division_id')}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="job_title_id">Job Title</Label>
+                <Label htmlFor="job_title_id" className={fieldErrors.job_title_id ? 'text-red-500' : ''}>Designation *</Label>
                 <Select
                   value={formData.job_title_id}
                   onValueChange={(value) => handleSelectChange('job_title_id', value)}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select job title" />
+                  <SelectTrigger id="job_title_id" aria-invalid={!!fieldErrors.job_title_id}>
+                    <SelectValue placeholder="Select designation" />
                   </SelectTrigger>
                   <SelectContent>
                     {jobTitles.map((job) => (
@@ -406,6 +491,7 @@ export default function StaffCreate() {
                     ))}
                   </SelectContent>
                 </Select>
+                {renderError('job_title_id')}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="hire_date" className={fieldErrors.hire_date ? 'text-red-500' : ''}>Hire Date *</Label>
@@ -417,18 +503,16 @@ export default function StaffCreate() {
                   onChange={handleChange}
                   aria-invalid={!!fieldErrors.hire_date}
                 />
-                {fieldErrors.hire_date && (
-                  <p className="text-sm text-red-500">{fieldErrors.hire_date}</p>
-                )}
+                {renderError('hire_date')}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="employment_status">Employment Status</Label>
+                <Label htmlFor="employment_status" className={fieldErrors.employment_status ? 'text-red-500' : ''}>Employment Status *</Label>
                 <Select
                   value={formData.employment_status}
                   onValueChange={(value) => handleSelectChange('employment_status', value)}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger id="employment_status" aria-invalid={!!fieldErrors.employment_status}>
+                    <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="active">Active</SelectItem>
@@ -438,15 +522,16 @@ export default function StaffCreate() {
                     <SelectItem value="resigned">Resigned</SelectItem>
                   </SelectContent>
                 </Select>
+                {renderError('employment_status')}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="employment_type">Employment Type</Label>
+                <Label htmlFor="employment_type" className={fieldErrors.employment_type ? 'text-red-500' : ''}>Employment Type *</Label>
                 <Select
                   value={formData.employment_type}
                   onValueChange={(value) => handleSelectChange('employment_type', value)}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger id="employment_type" aria-invalid={!!fieldErrors.employment_type}>
+                    <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="full_time">Full Time</SelectItem>
@@ -455,15 +540,16 @@ export default function StaffCreate() {
                     <SelectItem value="intern">Intern</SelectItem>
                   </SelectContent>
                 </Select>
+                {renderError('employment_type')}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="compensation_type">Compensation Type</Label>
+                <Label htmlFor="compensation_type" className={fieldErrors.compensation_type ? 'text-red-500' : ''}>Compensation Type *</Label>
                 <Select
                   value={formData.compensation_type}
                   onValueChange={(value) => handleSelectChange('compensation_type', value)}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger id="compensation_type" aria-invalid={!!fieldErrors.compensation_type}>
+                    <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="monthly">Monthly</SelectItem>
@@ -472,16 +558,20 @@ export default function StaffCreate() {
                     <SelectItem value="contract">Contract</SelectItem>
                   </SelectContent>
                 </Select>
+                {renderError('compensation_type')}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="base_salary">Base Salary</Label>
+                <Label htmlFor="base_salary" className={fieldErrors.base_salary ? 'text-red-500' : ''}>Base Salary *</Label>
                 <Input
                   id="base_salary"
                   name="base_salary"
                   type="number"
                   value={formData.base_salary}
                   onChange={handleChange}
+                  placeholder="50000"
+                  aria-invalid={!!fieldErrors.base_salary}
                 />
+                {renderError('base_salary')}
               </div>
             </CardContent>
           </Card>
@@ -493,31 +583,41 @@ export default function StaffCreate() {
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="emergency_contact_name">Contact Name</Label>
+                <Label htmlFor="emergency_contact_name" className={fieldErrors.emergency_contact_name ? 'text-red-500' : ''}>Contact Name *</Label>
                 <Input
                   id="emergency_contact_name"
                   name="emergency_contact_name"
                   value={formData.emergency_contact_name}
                   onChange={handleChange}
+                  placeholder="Jane Doe"
+                  aria-invalid={!!fieldErrors.emergency_contact_name}
                 />
+                {renderError('emergency_contact_name')}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="emergency_contact_phone">Contact Phone</Label>
+                <Label htmlFor="emergency_contact_phone" className={fieldErrors.emergency_contact_phone ? 'text-red-500' : ''}>Contact Phone *</Label>
                 <Input
                   id="emergency_contact_phone"
                   name="emergency_contact_phone"
                   value={formData.emergency_contact_phone}
                   onChange={handleChange}
+                  maxLength={10}
+                  placeholder="9876543210"
+                  aria-invalid={!!fieldErrors.emergency_contact_phone}
                 />
+                {renderError('emergency_contact_phone')}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="emergency_contact_relationship">Relationship</Label>
+                <Label htmlFor="emergency_contact_relationship" className={fieldErrors.emergency_contact_relationship ? 'text-red-500' : ''}>Relationship *</Label>
                 <Input
                   id="emergency_contact_relationship"
                   name="emergency_contact_relationship"
                   value={formData.emergency_contact_relationship}
                   onChange={handleChange}
+                  placeholder="Spouse"
+                  aria-invalid={!!fieldErrors.emergency_contact_relationship}
                 />
+                {renderError('emergency_contact_relationship')}
               </div>
             </CardContent>
           </Card>

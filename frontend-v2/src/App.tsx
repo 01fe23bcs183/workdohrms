@@ -22,7 +22,11 @@ import StaffEdit from './pages/staff/StaffEdit';
 
 // Organization
 import OrganizationList from './pages/organization/OrganizationList';
+import OrganizationCreate from './pages/organization/OrganizationCreate';
+import OrganizationEdit from './pages/organization/OrganizationEdit';
 import CompanyList from './pages/company/CompanyList';
+import CompanyCreate from './pages/company/CompanyCreate';
+import CompanyEdit from './pages/company/CompanyEdit';
 
 // Assets
 import AssetsList from './pages/assets/AssetsList';
@@ -165,7 +169,11 @@ function App() {
 
             {/* Organization */}
             <Route path="/organizations" element={<OrganizationList />} />
+            <Route path="/organizations/create" element={<OrganizationCreate />} />
+            <Route path="/organizations/:id/edit" element={<OrganizationEdit />} />
             <Route path="/companies" element={<CompanyList />} />
+            <Route path="/companies/create" element={<CompanyCreate />} />
+            <Route path="/companies/:id/edit" element={<CompanyEdit />} />
 
             {/* Assets */}
             <Route path="/assets" element={<AssetsList />} />
